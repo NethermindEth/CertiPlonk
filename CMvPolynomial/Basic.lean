@@ -78,13 +78,15 @@ theorem CMvMonomial.le_trans :
     compare x z ≠ Ordering.gt
 := by
   intros x y z
+  intros h₁ h₂
+  rw [compare_le_iff_le] at h₁
   rcases x with ⟨⟨x⟩, _⟩
   rcases y with ⟨⟨y⟩, _⟩
   rcases z with ⟨⟨z⟩, _⟩
   rw [Vector.compare_eq_compare_toList, Vector.compare_eq_compare_toList]
   dsimp only []
   intros h_le₁ h_le₂
-  rw [compare_le_iff_le]
+  rw [compare_le_iff_le] at h_le₁
   sorry
 
 instance : TransCmp (λ x1 x2 : CMvMonomial n => compare x1 x2) where

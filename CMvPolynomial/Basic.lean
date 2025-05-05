@@ -13,14 +13,34 @@ def hello := "world"
 /-- Monomial in `n` variables. `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂ -/
 abbrev CMvMonomial n := Vector ℕ n
 
--- instance : LawfulOrd (CMvMonomial n) where
---   symm := sorry
---   le_trans := sorry
---   cmp_iff_beq := sorry
---   cmp_iff_lt := sorry
---   cmp_iff_le := sorry
+#check Vector.le_trans
 
--- #check List.compare_le
+instance : Std.Irrefl (α := ℕ) (·<·) := ⟨by simp [(·≤·)]⟩
+instance : Std.Asymm (α := ℕ) (·<·) := ⟨by omega⟩
+instance : Trans (α := ℕ) (¬·<·) (¬·<·) (¬·<·) := ⟨by omega⟩
+instance : Std.Total (α := ℕ) (¬·<·) := ⟨by omega⟩
+
+instance {n : ℕ} : LinearOrder (CMvMonomial n) where
+  le_refl := Vector.le_refl
+  le_trans _ _ _ := Vector.le_trans       
+  le_antisymm := by
+    dsimp [(·≤·)]
+    simp
+    rintro ⟨⟨a⟩, _⟩ ⟨⟨b⟩, _⟩ h₁ h₂
+    simp at *
+    dsimp [(·≤·)] at h₁ h₂
+    simp at h₁ h₂
+    rcases h₁ with h₁ | h₁ <;> rcases h₂ with h₂ | h₂ <;> try tauto
+    have : a < a := lt_trans h₁ h₂
+    have : ¬a < a := lt_irrefl _
+    contradiction
+  le_total := by rintro ⟨⟨a⟩, _⟩ ⟨⟨b⟩, _⟩
+                 apply List.le_total
+  toDecidableLE := by infer_instance
+  lt_iff_le_not_le := by 
+    rintro ⟨⟨a⟩, _⟩ ⟨⟨b⟩, _⟩
+    aesop (add simp (·≤·))
+  compare_eq_compareOfLessAndEq := sorry
 
 theorem List.symm :
   ∀ (x y : List ℕ), (compare x y).swap = compare y x
@@ -64,7 +84,7 @@ theorem CMvMonomial.le_trans :
   rw [Vector.compare_eq_compare_toList, Vector.compare_eq_compare_toList]
   dsimp only []
   intros h_le₁ h_le₂
-  -- rw [compare_le_iff_le (a := x) (b := y)] at h_le₁
+  rw [compare_le_iff_le]
   sorry
 
 instance : TransCmp (λ x1 x2 : CMvMonomial n => compare x1 x2) where

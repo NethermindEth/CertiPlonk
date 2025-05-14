@@ -10,8 +10,6 @@ open Batteries
 
 def hello := "world"
 
-#check List.le
-
 /-- Monomial in `n` variables. `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂ -/
 abbrev CMvMonomial n := Vector ℕ n
 
@@ -90,10 +88,7 @@ def monomial_symm : ∀ (x y : CMvMonomial n),
   unfold simpleCmp
   split
   case isTrue h =>
-    simp
-    simp only [beq_iff_eq] at h
-    subst h
-    simp only [↓reduceIte]
+    aesop
   case isFalse h =>
     simp [neq_of_not_iff] at h
     simp_all only [beq_iff_eq]
@@ -126,14 +121,7 @@ lemma monomial_eq : ∀ m₁ m₂ : CMvMonomial n,
   simpleCmp m₁ m₂ = .eq → m₁ = m₂
 := by
   unfold simpleCmp
-  intros m₁ m₂ h
-  split at h
-  case isTrue h_eq => simp_all only [beq_iff_eq]
-  case isFalse h_neq =>
-    simp_all only [beq_iff_eq]
-    split at h
-    next h_1 => simp_all only [reduceCtorEq]
-    next h_1 => simp_all only [Vector.not_lt, reduceCtorEq]
+  aesop
 
 
 lemma monomial_not_gt : ∀ m₁ m₂ : CMvMonomial n,
@@ -224,5 +212,3 @@ instance [Repr R] [CommSemiring R] : Repr (UnlawfulCMvPolynomial n R) where
 
 def myPolynomial : UnlawfulCMvPolynomial 3 ℕ :=
   [⟨#m[1, 2, 1], 5⟩, ⟨#m[3, 2, 0], 5⟩].toRBMap simpleCmp
-
--- #eval myPolynomial

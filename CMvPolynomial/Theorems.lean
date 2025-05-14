@@ -37,41 +37,14 @@ def finRangeNoDup (top n : Nat) (le_top_n : top ≤ n) :
         · exact nodup
 
 def fromCMvMonomial (m : CMvMonomial n) : (Fin n →₀ ℕ) :=
-  let ⟨l, in_l_iff_lt, nodup⟩ := finRangeNoDup n n (Nat.le_refl n)
-  let ms : Multiset (Fin n) := Multiset.ofList l
-  let support0 : Finset (Fin n) :=
-    { val := Multiset.ofList l
-      nodup := by simp only [Multiset.coe_nodup, nodup]
-    }
-  let support := { i ∈ support0 | m.get i ≠ 0 }
-  let toFun : Fin n → ℕ := m.get
-  let mem_support_fun : ∀ (a : Fin n), a ∈ support ↔ toFun a ≠ 0 := by
-    intro a; constructor
-    · intro a_belongs
-      simp [support] at a_belongs
-      simp [a_belongs, toFun]
-    · intro toFunNeZero
-      simp only [toFun] at toFunNeZero
-      simp [support]
-      constructor <;> simp [support0, in_l_iff_lt a, *]
-  Finsupp.mk support toFun mem_support_fun
+  ⟨{i : Fin n | m.get i ≠ 0}, m.get, by aesop⟩
 
-lemma size_zero : ∀ (a : Array α), a.size = 0 → a = #[] := by
-  intros a h
-  rcases a with ⟨l⟩
-  cases l
-  · rfl
-  · contradiction
+lemma size_zero (a : Array α) : a.size = 0 → a = #[] := Array.eq_empty_of_size_eq_zero
 
 lemma Finsupp.toFun_eq :
   ∀ (f₁ f₂ : Fin n →₀ ℕ), f₁ = f₂ → f₁.toFun = f₂.toFun
 := by
-  intro f₁ f₂ h_eq
-  rcases f₁ with ⟨_, toFun₁, _⟩
-  rcases f₂ with ⟨_, toFun₂, _⟩
-  simp
-  cases h_eq
-  rfl
+  aesop
 
 lemma vector_get_eq :
   ∀ (v₁ v₂ : Vector ℕ n), Vector.get v₁ = Vector.get v₂ → v₁ = v₂

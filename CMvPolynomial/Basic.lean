@@ -1,9 +1,11 @@
 import Batteries.Data.RBMap
 
-import Mathlib.Algebra.Ring.Nat
-import Mathlib.Order.Defs.LinearOrder
-import Mathlib.Data.List.Lex
-
+-- import Mathlib.Algebra.Ring.Nat
+-- import Mathlib.Order.Defs.LinearOrder
+-- import Mathlib.Data.List.Lex
+-- import Mathlib.Data.Quot
+-- import Mathlib.Data.Multiset.Basic
+import Mathlib
 import Aesop
 
 open Batteries
@@ -181,27 +183,6 @@ def UnlawfulCMvPolynomial.isNoZeroCoef [CommSemiring R]
 :=
   ∀ m, p.find? m ≠ some 0
 
-def CMvPolynomial n R [CommSemiring R] :=
-  { p : UnlawfulCMvPolynomial n R // p.isNoZeroCoef}
-
-def CMvPolynomial.monomialsList [CommSemiring R] (p : CMvPolynomial n R) :=
-  p.val.toList.unzip.1
-
-def CMvPolynomial.find? [CommSemiring R]
-  (p : CMvPolynomial n R)
-  (m : CMvMonomial n) :
-  Option R
-:=
-  p.val.find? m
-
-def CMvPolynomial.findD [CommSemiring R]
-  (p : CMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R
-:=
-  (p.find? m).getD v₀
-
--- #check (compare : (CMvMonomial 1) → (CMvMonomial 1) → Ordering)
--- #check Vector.compare
-
 instance [Repr R] [CommSemiring R] : Repr (UnlawfulCMvPolynomial n R) where
   reprPrec p _ :=
     let toFormat : Std.ToFormat (CMvMonomial n × R) :=
@@ -210,3 +191,141 @@ instance [Repr R] [CommSemiring R] : Repr (UnlawfulCMvPolynomial n R) where
 
 def myPolynomial : UnlawfulCMvPolynomial 3 ℕ :=
   [⟨#m[1, 2, 1], 5⟩, ⟨#m[3, 2, 0], 5⟩].toRBMap simpleCmp
+
+def LawfulCMvPolynomial n R [CommSemiring R] :=
+  { p : UnlawfulCMvPolynomial n R // p.isNoZeroCoef}
+
+def LawfulCMvPolynomial.find? [CommSemiring R]
+  (p : LawfulCMvPolynomial n R)
+  (m : CMvMonomial n) :
+  Option R
+:=
+  p.val.find? m
+
+def LawfulCMvPolynomial.monomialsList [CommSemiring R]
+  (p : LawfulCMvPolynomial n R)
+:=
+  p.val.toList.unzip.1
+
+def LawfulCMvPolynomial.findD [CommSemiring R]
+  (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R
+:=
+  (p.find? m).getD v₀
+
+-- #eval myPolynomial
+
+def extEquiv {n R} [CommSemiring R] : Setoid (LawfulCMvPolynomial n R) where
+  r a b := ∀ x, a.find? x = b.find? x
+  iseqv := by constructor <;> (intros; simp only [*])
+
+@[reducible]
+def CMvPolynomial (n : ℕ) R [CommSemiring R] : Type :=
+  Quotient (@extEquiv n R _)
+
+#check Quotient.sound
+
+def CMvPolynomial.find? [CommSemiring R]
+  (p : CMvPolynomial n R)
+  (m : CMvMonomial n) :
+  Option R
+:=
+  Quotient.lift LawfulCMvPolynomial.find? valid p m
+where
+  valid := by
+    intros p₁ p₂
+    unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r extEquiv
+    simp
+    intro h
+    funext x
+    simp [*]
+
+noncomputable def CMvPolynomial.toList [CommSemiring R]
+  (p : CMvPolynomial n R) :
+  List (CMvMonomial n × R)
+:=
+  -- Quotient.out p |>.val.toList
+  Quotient.lift (·.val.toList) valid p
+where
+  valid := sorry
+
+#check Multiset
+#check Quotient.lift
+
+
+def P [CommSemiring R]
+  (f : CMvMonomial n → R → Multiset (CMvMonomial n) → Multiset (CMvMonomial n)) :
+  Prop
+:=
+  f = λ m _ acc => m ::ₘ acc
+
+def R' [CommSemiring R] (a b : UnlawfulCMvPolynomial n R) : Prop :=
+  ∀ (x : CMvMonomial n), a.find? x = b.find? x
+
+def P' [CommSemiring R]
+  (f : CMvMonomial n → R → Finset (CMvMonomial n) → Finset (CMvMonomial n)) :
+  Prop
+:=
+  f = λ m _ acc => insert m acc
+
+lemma RBMap.size_zero [CommSemiring R] :
+  ∀ (p : UnlawfulCMvPolynomial n R), p.size = 0 → p = ∅
+:= by
+  intros a h
+  rcases a with ⟨n⟩
+  cases n <;> trivial
+
+theorem fake' [CommSemiring R]
+  (f : CMvMonomial n → R → Finset (CMvMonomial n) → Finset (CMvMonomial n))
+  (a b : UnlawfulCMvPolynomial n R)
+  (s_a s_b : ℕ)
+  (p₁ : s_a = a.size)
+  (p₂ : s_b = b.size)
+  (h_ext : R' a b)
+  (h_f : P' f) :
+  -- (h_m : P' m)
+  x ∈ RBMap.foldr f ∅ ↑a → x ∈ RBMap.foldr f ∅ ↑b
+:= by
+  unfold R' at h_ext
+  unfold P' at h_f
+  induction' s_a with s_a' ih generalizing a b s_b
+  · have a_empty : a = ∅ := RBMap.size_zero a p₁.symm
+    subst a_empty
+    · intro x_in_a
+      simp [RBMap.foldr_eq_foldr_toList] at x_in_a
+  · let a' := a.erase sorry
+    sorry
+
+def CMvPolynomial.monomials' [CommSemiring R]
+  (p : CMvPolynomial n R) :
+  Finset (CMvMonomial n)
+:=
+  let monomials (lp : LawfulCMvPolynomial n R) : Finset (CMvMonomial n) :=
+    lp.1.foldr (init := ∅) λ m _ acc => insert m acc
+  Quotient.lift monomials valid p
+where
+  valid := by
+    simp only [HasEquiv.Equiv, extEquiv]
+    intros a b h
+    ext x
+    generalize eq :
+      (fun m _ acc => insert m acc :
+        CMvMonomial n → R → Finset (CMvMonomial n) → Finset (CMvMonomial n)
+      ) = f
+    have h' : ∀ (x : CMvMonomial n), b.find? x = a.find? x := by simp [h]
+    refine
+      ⟨ fake' (f := f) (a := a.1) (b := b.1) (s_a := a.1.size) (s_b := b.1.size)
+          (p₁ := rfl)
+          (p₂ := rfl)
+          h
+          eq.symm
+      , fake' (f := f) (a := b.1) (b := a.1) (s_a := b.1.size) (s_b := a.1.size)
+          (p₁ := rfl)
+          (p₂ := rfl)
+          h'
+          eq.symm
+      ⟩
+
+def CMvPolynomial.findD [CommSemiring R]
+  (p : CMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R
+:=
+  (p.find? m).getD v₀

@@ -4,38 +4,6 @@ import Batteries.Data.RBMap.Alter
 
 open Batteries
 
--- def finRangeNoDup (top n : Nat) (le_top_n : top ≤ n) :
---   Σ' (l : List (Fin n)), (∀ x, x ∈ l ↔ x.val < top) ∧ List.Nodup l := by
---   cases top with
---     | zero => exists []; simp
---     | succ top' =>
---       have top_le_n : top' ≤ n := by
---         apply le_trans _ le_top_n
---         simp only [Nat.le_step, Nat.le_refl]
---       let ⟨l', in_l_iff_lt, nodup⟩ := finRangeNoDup top' n top_le_n
---       exists ⟨top', le_top_n⟩ :: l'
---       constructor
---       · intro x
---         constructor
---         · intro x_belongs
---           cases x_belongs with
---           | head l' => simp
---           | tail n' belongs =>
---             have x_le_top := (in_l_iff_lt x).1 belongs
---             simp only [Nat.lt_succ_of_lt, x_le_top]
---         · intro a_le_succ_top
---           rw [Nat.lt_succ_iff_lt_or_eq] at a_le_succ_top
---           simp only [List.mem_cons]
---           rcases a_le_succ_top with h₁ | h₂
---           · simp only [in_l_iff_lt x, h₁, or_true]
---           · left; cases h₂; simp only [Fin.eta]
---       · apply List.Pairwise.cons
---         · intros a a_in_l'
---           simp only [Fin.ne_iff_vne, Nat.ne_iff_lt_or_gt]
---           right
---           simp_all only
---         · exact nodup
-
 def fromCMvMonomial (m : CMvMonomial n) : (Fin n →₀ ℕ) :=
   ⟨{i : Fin n | m.get i ≠ 0}, m.get, by aesop⟩
 
@@ -72,8 +40,6 @@ def toCMvMonomial {n} (m : Fin n →₀ ℕ) : CMvMonomial n := by
     exact
       init.mapFinIdx
         λ i _ le_n => if ⟨i, le_n⟩ ∈ m.support then m.toFun ⟨i, le_n⟩ else 0
-
-#check Finset.toList
 
 lemma if_zero_then_zero : ∀ n : ℕ, (if n = 0 then 0 else n) = n := by
   simp only [ite_eq_right_iff, forall_eq]

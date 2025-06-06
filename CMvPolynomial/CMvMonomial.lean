@@ -1,6 +1,10 @@
-import Mathlib.Data.Nat.Basic
-import Mathlib.Algebra.Ring.Defs
-import Mathlib.Algebra.Group.Nat.Defs
+import Mathlib
+import Mathlib.Algebra.MvPolynomial.Basic
+import Batteries.Classes.Order
+import Batteries.Data.RBMap
+import CMvPolynomial.Instances
+
+open Batteries
 
 /-- Monomial in `n` variables. `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂ -/
 abbrev CMvMonomial n := Vector ℕ n
@@ -64,3 +68,56 @@ def grevlex (m₁ m₂ : CMvMonomial n) : Ordering :=
 
 abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
   compareOfLessAndEq a₁ a₂
+
+theorem CMvMonomial.lt_iff_not_gt_and_ne : ∀ (x y : CMvMonomial n),
+  x < y ↔ ¬y < x ∧ x ≠ y
+:= by
+  intro x y
+  constructor
+  · intro h
+    constructor
+    · simp [Vector.le_iff_lt_or_eq, h]
+    · simp
+      intro contra
+      subst contra
+      apply Vector.lt_irrefl x
+      exact h
+  · intro ⟨h₁, h₂⟩
+    rw [Vector.not_lt] at h₁
+    rw [Vector.le_iff_lt_or_eq] at h₁
+    rcases h₁ with hl | hr
+    · exact hl
+    · contradiction
+
+def CMvMonomial.symm : ∀ (x y : CMvMonomial n),
+  (simpleCmp x y).swap = simpleCmp y x
+:= by
+  intros x y
+  unfold simpleCmp
+  rw [←compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne CMvMonomial.lt_iff_not_gt_and_ne]
+
+lemma CMvMonomial.not_gt : ∀ m₁ m₂ : CMvMonomial n,
+  simpleCmp m₁ m₂ ≠ .gt ↔ m₁ ≤ m₂
+:= by
+  intro m₁ m₂
+  unfold simpleCmp
+  simp
+  rw [compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne CMvMonomial.lt_iff_not_gt_and_ne]
+  rw [Vector.not_lt]
+
+def CMvMonomial.le_trans : ∀ {x y z : CMvMonomial n},
+  simpleCmp x y ≠ Ordering.gt →
+  simpleCmp y z ≠ Ordering.gt →
+  simpleCmp x z ≠ Ordering.gt
+:= by
+  intros x y z h_lt₁ h_lt₂
+  have h_lt₁' := (CMvMonomial.not_gt x y).1 h_lt₁
+  have h_lt₂' := (CMvMonomial.not_gt y z).1 h_lt₂
+  have h_lt₃ : x ≤ z := by
+    apply Vector.le_trans (ys := y) <;> simp [*]
+  rw [CMvMonomial.not_gt x z]
+  apply Vector.le_trans (ys := y) <;> simp only [*]
+
+instance : TransCmp (λ x1 x2 : CMvMonomial n => simpleCmp x1 x2) where
+  symm := CMvMonomial.symm
+  le_trans := CMvMonomial.le_trans

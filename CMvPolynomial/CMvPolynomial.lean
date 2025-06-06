@@ -145,7 +145,6 @@ theorem RBMap.mem_insert [CommSemiring R]
 
 #check Finset.fold_insert
 #check Std.Commutative
--- instance : Std.Commutative (RBMap.insert a)
 
 theorem RBMap.in_foldr_insert [CommSemiring R]
   (f : CMvMonomial n → R → Finset (CMvMonomial n) → Finset (CMvMonomial n))

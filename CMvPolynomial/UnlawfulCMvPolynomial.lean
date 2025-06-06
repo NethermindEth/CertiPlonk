@@ -94,19 +94,49 @@ where
   nsmul_succ := sorry
   add_comm := sorry
 
+instance : TransCmp (λ x1 x2 : (CMvMonomial n × R) => simpleCmp x1.1 x2.1) where
+  symm := by
+    intros
+    apply CMvMonomial.symm
+  le_trans := by
+    intros x y z
+    apply CMvMonomial.le_trans
+
+lemma list_pairwise_lt_nodup (l : List (CMvMonomial n × R)) :
+  l.Pairwise (RBNode.cmpLT (simpleCmp ·.1 ·.1)) → l.Nodup
+:= by
+  intro h
+  induction h with
+  | nil => simp
+  | @cons a l head tail ih =>
+    apply List.Pairwise.cons
+    · intros a' a'_in contra
+      rw [contra] at head
+      specialize head a' a'_in
+      simp [RBNode.cmpLT] at head
+      specialize head
+      simp [Vector.lt_irrefl] at head
+    · apply ih
+
+theorem UnlawfulCMvPolynomial.list_nodup [CommSemiring R] (p : UnlawfulCMvPolynomial n R) :
+  p.toList.Nodup
+:= by
+  apply list_pairwise_lt_nodup
+  apply RBMap.toList_sorted
+
 def UnlawfulCMvPolynomial.mul [CommRing R] [BEq R]
   (p₁ : UnlawfulCMvPolynomial n R)
   (p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
-  let ABC := {x : CMvMonomial n × R // x ∈ p₁.toList}
-  have : Fintype ABC :=
+  let Pairs : Type := {x : CMvMonomial n × R // x ∈ p₁.toList}
+  have : Fintype Pairs :=
     { elems :=
       ⟨ Multiset.ofList p₁.toList.attach
       , by
           simp
           rw [List.nodup_attach]
-          sorry
+          apply UnlawfulCMvPolynomial.list_nodup
       ⟩
     , complete := by
         rintro ⟨x, hs⟩
@@ -116,7 +146,7 @@ def UnlawfulCMvPolynomial.mul [CommRing R] [BEq R]
   -- let terms : List (UnlawfulCMvPolynomial n R) :=
   --   p₁.foldl (λ acc m c => UnlawfulCMvPolynomial.mul₀ (m, c) p₂ :: acc) []
   -- terms.foldl UnlawfulCMvPolynomial.add .empty
-  ∑ t : ABC, UnlawfulCMvPolynomial.mul₀ t p₂
+  ∑ t : Pairs, UnlawfulCMvPolynomial.mul₀ t p₂
 
 def UnlawfulCMvPolynomial.reduce [CommRing R] [BEq R]
   (p : UnlawfulCMvPolynomial n R)

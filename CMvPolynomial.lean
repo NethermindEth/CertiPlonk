@@ -6,3 +6,4 @@ import CMvPolynomial.CMvPolynomial
 import CMvPolynomial.CMvMonomial
 import CMvPolynomial.Theorems
 import CMvPolynomial.Tests
+import CMvPolynomial.Instances

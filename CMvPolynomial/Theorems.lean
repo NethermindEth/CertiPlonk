@@ -1,6 +1,7 @@
 import CMvPolynomial.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
 import Batteries.Data.RBMap.Alter
+import CMvPolynomial.Instances
 
 open Batteries
 
@@ -158,22 +159,6 @@ lemma findFst (a : α) (l : List (α × β)) (a_in : a ∈ l.unzip.1) :
 --       simp [RBNode.cmpLT, *]
 --     · apply ih
 
--- lemma list_pairwise_lt_nodup (l : List (CMvMonomial n)) :
---   l.Pairwise (RBNode.cmpLT simpleCmp) → l.Nodup
--- := by
---   intro h
---   induction h with
---   | nil => simp
---   | @cons a l head tail ih =>
---     apply List.Pairwise.cons
---     · intros a' a'_in contra
---       rw [contra] at head
---       specialize head a' a'_in
---       simp [RBNode.cmpLT] at head
---       specialize head
---       simp [simpleCmp] at head
---     · apply ih
-
 -- theorem monomials_nodup [CommRing R] (p : CMvPolynomial n R) :
 --   p.monomialsList.Nodup
 -- := by
@@ -181,12 +166,6 @@ lemma findFst (a : α) (l : List (α × β)) (a_in : a ∈ l.unzip.1) :
 --   apply pair_list_pairwise_lt
 --   apply RBMap.toList_sorted
 
--- theorem monomials_nodup [CommSemiring R] (p : CMvPolynomial n R) :
---   p.monomialsList.Nodup
--- := by
---   apply list_pairwise_lt_nodup
---   apply pair_list_pairwise_lt
---   apply RBMap.toList_sorted
 
 theorem find_no_zero [CommSemiring R]
   : ∀ (p : LawfulCMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0

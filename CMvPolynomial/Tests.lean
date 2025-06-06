@@ -1,4 +1,4 @@
-import CMvPolynomial.Basic
+import CMvPolynomial.CMvMonomial
 
 /--
   The total degree of the first CMvMonomial < total degree of the second CMvMonomial.

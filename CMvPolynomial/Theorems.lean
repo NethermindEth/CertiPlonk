@@ -1,4 +1,4 @@
-import CMvPolynomial.Basic
+import CMvPolynomial.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
 import Batteries.Data.RBMap.Alter
 

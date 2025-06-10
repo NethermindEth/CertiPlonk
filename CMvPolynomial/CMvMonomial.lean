@@ -24,6 +24,10 @@ instance : Repr (CMvMonomial n) where
 
 abbrev Term n R [CommSemiring R] := CMvMonomial n × R
 
+instance [CommSemiring R] [Repr R] : Repr (Term n R) where
+  reprPrec
+    | (m, c), _ => repr c ++ " * " ++ repr m
+
 def myMonomial : CMvMonomial 3 := #m[4, 2, 5]
 
 -- #eval myMonomial
@@ -36,7 +40,7 @@ def CMvMonomial.mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
   Vector.zipWith .add
 
 def CMvMonomial.divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
-  Vector.all (Vector.zipWith (flip Nat.blt) m₁ m₂) (· == true)
+  Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
 def CMvMonomial.div (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) :
   Option (CMvMonomial n)

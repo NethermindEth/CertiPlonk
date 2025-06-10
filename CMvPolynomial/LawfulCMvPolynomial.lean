@@ -70,3 +70,15 @@ def LawfulCMvPolynomial.findD [CommSemiring R]
 def extEquiv {n R} [CommSemiring R] : Setoid (LawfulCMvPolynomial n R) where
   r a b := ∀ x, a.find? x = b.find? x
   iseqv := by constructor <;> (intros; simp only [*])
+
+def p : LawfulCMvPolynomial 2 ℤ where -- 2 * X0^2 * X1^3
+  val := [⟨#m[2, 3], 2⟩].toRBMap simpleCmp
+  property := by sorry
+
+def d : LawfulCMvPolynomial 2 ℤ where -- X0^2 * X1^0 + X0^2 * X1^2
+  val := [⟨#m[2, 2], 1⟩, ⟨#m[2, 0], 1⟩].toRBMap simpleCmp
+  property := sorry
+
+#eval! p
+#eval! d
+#eval! p.reduce d -- some -2 * X0^2 * X1^1

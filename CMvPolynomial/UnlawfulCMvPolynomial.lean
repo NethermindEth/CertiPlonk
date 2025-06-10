@@ -159,6 +159,7 @@ def UnlawfulCMvPolynomial.reduce [CommRing R] [BEq R]
   let termQuotient : UnlawfulCMvPolynomial n R := RBMap.single m t.2
   pure <| p.sub (UnlawfulCMvPolynomial.mul termQuotient d)
 
+
 def myPolynomial₃ : UnlawfulCMvPolynomial 2 ℤ :=
   [⟨#m[1, 0], 2⟩, ⟨#m[0, 1], 3⟩].toRBMap simpleCmp
 

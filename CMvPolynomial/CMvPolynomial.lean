@@ -207,30 +207,30 @@ theorem fake' [CommSemiring R]
       · -- we know h_eq and x_in_foldr_a
         sorry
 
-theorem fake'' [CommSemiring R]
-  (f : CMvMonomial n → R → Finset (CMvMonomial n) → Finset (CMvMonomial n))
-  (a b : UnlawfulCMvPolynomial n R)
-  (la lb : List (CMvMonomial n × R))
-  (s_a s_b : ℕ)
-  (p₁ : la = a.toList)
-  (p₂ : lb = b.toList)
-  (hl₁ : s_a = a.size)
-  (hl₂ : s_b = b.size)
-  (h_ext : incl a b)
-  (h_f : P' f) :
-  x ∈ List.foldr (fun p r => f p.1 p.2 r) ∅ la →
-  x ∈ List.foldr (fun p r => f p.1 p.2 r) ∅ lb
-:= by
-  induction' s_a with s_a' ih generalizing a
-  · intro h₀
-    rw [RBMap.size_eq, ←p₁] at hl₁
-    have h₀ : la = [] := by
-      apply List.length_eq_zero_iff.1
-      exact hl₁.symm
-    subst h₀
-    contradiction
-  · intro h
-    sorry
+-- theorem fake'' [CommSemiring R]
+--   (f : CMvMonomial n → R → Finset (CMvMonomial n) → Finset (CMvMonomial n))
+--   (a b : UnlawfulCMvPolynomial n R)
+--   (la lb : List (CMvMonomial n × R))
+--   (s_a s_b : ℕ)
+--   (p₁ : la = a.toList)
+--   (p₂ : lb = b.toList)
+--   (hl₁ : s_a = a.size)
+--   (hl₂ : s_b = b.size)
+--   (h_ext : incl a b)
+--   (h_f : P' f) :
+--   x ∈ List.foldr (fun p r => f p.1 p.2 r) ∅ la →
+--   x ∈ List.foldr (fun p r => f p.1 p.2 r) ∅ lb
+-- := by
+--   induction' s_a with s_a' ih generalizing a
+--   · intro h₀
+--     rw [RBMap.size_eq, ←p₁] at hl₁
+--     have h₀ : la = [] := by
+--       apply List.length_eq_zero_iff.1
+--       exact hl₁.symm
+--     subst h₀
+--     contradiction
+--   · intro h
+--     sorry
 
 example [CommSemiring R]
   (a b : LawfulCMvPolynomial n R)

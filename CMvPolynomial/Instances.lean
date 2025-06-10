@@ -10,9 +10,9 @@ instance : Std.Asymm fun (x1 x2 : ℕ) => x1 < x2 := ⟨λ _ _ h => Nat.lt_asymm
 
 instance :
   Trans
-    (fun (x1 x2 : ℕ) => ¬x1 < x2)
-    (fun x1 x2 => ¬x1 < x2)
-    fun (x1 x2 : ℕ) => ¬x1 < x2
+    (λ x1 x2 : ℕ => ¬x1 < x2)
+    (λ x1 x2 => ¬x1 < x2)
+    λ x1 x2 : ℕ => ¬x1 < x2
 := by
   constructor
   intros a b c h₁ h₂

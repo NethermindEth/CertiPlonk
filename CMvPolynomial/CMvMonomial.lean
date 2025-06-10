@@ -89,7 +89,7 @@ theorem CMvMonomial.lt_iff_not_gt_and_ne : ∀ (x y : CMvMonomial n),
     · exact hl
     · contradiction
 
-def CMvMonomial.symm : ∀ (x y : CMvMonomial n),
+lemma CMvMonomial.symm : ∀ (x y : CMvMonomial n),
   (simpleCmp x y).swap = simpleCmp y x
 := by
   intros x y
@@ -105,7 +105,7 @@ lemma CMvMonomial.not_gt : ∀ m₁ m₂ : CMvMonomial n,
   rw [compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne CMvMonomial.lt_iff_not_gt_and_ne]
   rw [Vector.not_lt]
 
-def CMvMonomial.le_trans : ∀ {x y z : CMvMonomial n},
+lemma CMvMonomial.le_trans : ∀ {x y z : CMvMonomial n},
   simpleCmp x y ≠ Ordering.gt →
   simpleCmp y z ≠ Ordering.gt →
   simpleCmp x z ≠ Ordering.gt

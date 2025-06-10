@@ -169,10 +169,6 @@ def myPolynomial₄ : UnlawfulCMvPolynomial 2 ℤ :=
 #eval myPolynomial₄
 #eval! myPolynomial₃.mul myPolynomial₄
 
-instance : Std.Irrefl fun (x1 x2 : ℕ) => x1 < x2 := by
-  constructor
-  apply Nat.lt_irrefl
-
 theorem UnlawfulCMvPolynomial.nonemptySome [CommSemiring R]
   (p : UnlawfulCMvPolynomial n R)
   (h_size : p.size > 0) :

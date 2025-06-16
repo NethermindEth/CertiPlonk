@@ -59,9 +59,9 @@ def parseVarAssignment (s: TSyntax `ffmodel) : Except String (Variable × Finite
 def parseModel (s: TSyntax `ffsat) : Except String Model := do
   match s with
   | `(ffsat| SAT($ms:ffmodel*)) =>
-    match ms.toList with
-    | [] => throw s!"Empty model"
-    | ms => return (← (ms.mapM parseVarAssignment)).toAssocList
+    let ml := ms.toList
+    if ml.isEmpty then throw s!"Empty model" else
+    return (← (ml.mapM parseVarAssignment)).toAssocList
   | stx => throw s!"Unrecognised SAT: {stx}"
 
 -- unsafe def checkFFV (input : String) : IO FiniteFieldValue :=

@@ -1,4 +1,8 @@
 import CMvPolynomial
+import Certificate
 
-def main : IO Unit :=
+open Lean in
+unsafe def main : IO Unit := do
+  initSearchPath (← findSysroot)
+  enableInitializersExecution
   IO.println s!"Hello, {hello}!"

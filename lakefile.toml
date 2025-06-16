@@ -5,10 +5,15 @@ defaultTargets = ["poly"]
 [[lean_lib]]
 name = "CMvPolynomial"
 
+[[lean_lib]]
+name = "Certificate"
+
 [[lean_exe]]
 name = "poly"
 root = "Main"
+supportInterpreter = true
 
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
+rev = "v4.20.1"

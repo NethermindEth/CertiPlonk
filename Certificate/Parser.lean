@@ -1,3 +1,4 @@
+import Lean.Meta
 import Mathlib.Lean.CoreM
 import Certificate.SAT
 
@@ -25,15 +26,39 @@ namespace CertiPlonk
 -- scoped instance : MonadLift IO (EIO String) := ⟨IO.toEIO (s!"{·}")⟩
 -- scoped instance : MonadLift (EIO String) IO := ⟨EIO.toIO (s!"{·}")⟩
 
+-- SAT
 declare_syntax_cat ffval
 declare_syntax_cat ffmodel
 declare_syntax_cat ffsat
 
+-- UNSAT
+declare_syntax_cat ffunsat
+declare_syntax_cat ffpolys
+declare_syntax_cat ffred
+
 section Syntax
 
+-- SAT
 syntax "FFV(" num "," num ")" : ffval
 syntax "MODEL(" ident "," ffval ")" : ffmodel
 syntax "SAT(" ffmodel+ ")" : ffsat
+
+-- UNSAT
+-- syntax "P(" num "," term ")" : ffpoly
+syntax "POLYNOMIALS(" ("P(" num "," term ")")+ ")" : ffpolys
+syntax "M(" num "," num ")" : ffred
+syntax "S(" num "," num "," num "," term ")" : ffred
+syntax "R(" num ";" (num"{" term "}"),+ ";" num ")" : ffred
+syntax "UNSAT(" ("NO_CERTIFICATE" <|> num) ")" : ffunsat
+
+-- Test
+syntax "test_pol(" ffpolys ")" : term
+syntax "test_red(" ffred ")" : term
+
+#check_failure test_pol( POLYNOMIALS(P(42, x + 2) P(52, x + 3)) )
+#check_failure test_red( M(1, 2) )
+#check_failure test_red( S(1, 2, 3, z + 42) )
+#check_failure test_red( R(1; 4{x + 1}, 42{z * 2}; 5) )
 
 end Syntax
 
@@ -96,6 +121,33 @@ def parseModel (s: TSyntax `ffsat) : Except String Model := do
 -- "
 
 end SAT
+
+section UNSAT
+
+open Lean Elab Term Meta
+
+opaque X : Nat → Nat := fun n => n
+
+-- COMMENT FUTURE:
+-- I think a better option is to create a parser for polynomials, something like:
+-- monomial: num*(indets "*")+
+-- indets: var("^" num)?
+-- var: ident "_" num
+-- Then we can extract all information we want and construct an MVPolynomial
+-- Instead of parsing as a term and traversing TSyntax to extract the information
+#check `(fun x1 x2 x3 => 3*x1^6 + 4*x2^7)
+#check `(fun x1 x2 x3 => 3*(X 1)^6 + 4*(X 2)^7)
+
+def elabPolynomial (s: TSyntax `term): MetaM Expr :=
+  match s with
+  | stx@`(ffpolys| POLYNOMIALS( $[P($n:num, $p:term)]* ) ) =>
+    if n.isEmpty || p.isEmpty then throw $ .error stx "WRONG1" else
+    _
+  | stx@_ => throw $ .error stx "WRONG2"
+
+
+
+end UNSAT
 
 end Semantic
 

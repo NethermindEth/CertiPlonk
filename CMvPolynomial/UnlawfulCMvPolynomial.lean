@@ -2,6 +2,7 @@ import Mathlib.Algebra.Lie.OfAssociative
 import Batteries.Data.RBMap.Lemmas
 import Aesop
 import CMvPolynomial.CMvMonomial
+import CMvPolynomial.Wheels
 
 open Batteries
 
@@ -43,11 +44,20 @@ def UnlawfulCMvPolynomial.toFinset [DecidableEq R] [CommSemiring R]
 :=
   p.val.foldr (init := .empty) (λ a s ↦ insert a s)
 
-def UnlawfulCMvPolynomial.monomials [DecidableEq R] [CommSemiring R]
+def UnlawfulCMvPolynomial.monomials [CommSemiring R]
   (p : UnlawfulCMvPolynomial n R) :
   Finset (CMvMonomial n)
 :=
   p.val.foldr (init := .empty) (λ (a, _) s ↦ insert a s)
+
+lemma UnlawfulCMvPolynomial.mem_monomials_of_mem [CommSemiring R]
+  {p : UnlawfulCMvPolynomial n R} :
+  (a₀, b₀) ∈ p.val → a₀ ∈ p.monomials
+:= by
+  unfold UnlawfulCMvPolynomial.monomials
+  intro h
+  apply RBNode.mem_foldr_insert_of_mem (b₀ := b₀)
+  assumption
 
 instance [Repr R] [CommSemiring R] : Repr (UnlawfulCMvPolynomial n R) where
   reprPrec p _ :=

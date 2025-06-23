@@ -102,6 +102,14 @@ def grevlex (m₁ m₂ : CMvMonomial n) : Ordering :=
 abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
   compareOfLessAndEq a₁ a₂
 
+lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq → a₁ = a₂ := by
+  unfold simpleCmp
+  intro h
+  rw [←compareOfLessAndEq_eq_eq]
+  · assumption
+  · apply Vector.le_refl
+  · intro x y; apply Vector.not_le
+
 theorem CMvMonomial.lt_iff_not_gt_and_ne : ∀ (x y : CMvMonomial n),
   x < y ↔ ¬y < x ∧ x ≠ y
 := by

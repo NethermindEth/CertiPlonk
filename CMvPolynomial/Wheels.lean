@@ -20,10 +20,11 @@ lemma RBNode.mem_Finset₀ [DecidableEq α] (n : RBNode (α × β)) :
     assumption
 
 lemma RBNode.mem_foldr_insert_of_mem [DecidableEq α] (n : RBNode (α × b)) :
-  (a₀, b₀) ∈ n →
-    ∀ init : Finset α, a₀ ∈ n.foldr (init := init) (λ (a, _) s ↦ insert a s)
+  ∀ init : Finset α,
+    (a₀, b₀) ∈ n → a₀ ∈ n.foldr (init := init) (λ (a, _) s ↦ insert a s)
 := by
-  intro h
+  intro init h
+  revert init
   induction n
   case nil h => contradiction
   case node l v r ih₁ ih₂ =>

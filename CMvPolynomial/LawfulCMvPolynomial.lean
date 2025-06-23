@@ -98,11 +98,20 @@ def LawfulCMvPolynomial.find? [CommSemiring R]
 :=
   p.val.find? m
 
-def LawfulCMvPolynomial.monomials [DecidableEq R] [CommSemiring R]
+def LawfulCMvPolynomial.monomials [CommSemiring R]
   (p : LawfulCMvPolynomial n R) :
   Finset (CMvMonomial n)
 :=
   p.val.monomials
+
+lemma LawfulCMvPolynomial.mem_monomials_of_mem [CommSemiring R]
+  {p : LawfulCMvPolynomial n R} :
+  (a₀, b₀) ∈ p.val.val → a₀ ∈ p.monomials
+:= by
+  unfold LawfulCMvPolynomial.monomials
+  intro h
+  apply UnlawfulCMvPolynomial.mem_monomials_of_mem
+  assumption
 
 def LawfulCMvPolynomial.findD [CommSemiring R]
   (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R

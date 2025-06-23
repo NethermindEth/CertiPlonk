@@ -317,28 +317,28 @@ where
       case h.mp.none =>
         apply RBNode.mem_Finset'' at h
         rcases h with (⟨b₀, h_in⟩ | contra)
-        · apply LawfulCMvPolynomial.mem_node' at h_in
+        · rw [←LawfulCMvPolynomial.mem_node] at h_in
           rw [x_in_a] at h_in
           contradiction
         . contradiction
       case h.mp.some val =>
         rw [x_in_a] at h_eq
         apply RBNode.mem_Finset' (b₀ := val)
-        apply LawfulCMvPolynomial.mem_node
+        rw [←LawfulCMvPolynomial.mem_node]
         exact symm h_eq
     · intro h
       cases x_in_b : b.find? x
       case h.mpr.none =>
         apply RBNode.mem_Finset'' at h
         rcases h with (⟨b₀, h_in⟩ | contra)
-        · apply LawfulCMvPolynomial.mem_node' at h_in
+        · rw [←LawfulCMvPolynomial.mem_node] at h_in
           rw [x_in_b] at h_in
           contradiction
         . contradiction
       case h.mpr.some val =>
         rw [x_in_b] at h_eq
         apply RBNode.mem_Finset' (b₀ := val)
-        apply LawfulCMvPolynomial.mem_node
+        rw [←LawfulCMvPolynomial.mem_node]
         exact h_eq
 
 def CMvPolynomial.monomials' [CommSemiring R]

@@ -109,54 +109,36 @@ def LawfulCMvPolynomial.findD [CommSemiring R]
 :=
   (p.find? m).getD v₀
 
--- theorem find?_some_mem' {t : RBNode α} : x ∈ t.find? cut → x ∈ t := by
---   induction t <;> simp [RBNode.find?];
---   split <;>
---     simp (config := { contextual := true }) [*]
-
--- private def myNode : RBNode ℕ := .node .black .nil 1 .nil
--- example : 2 ∈ myNode := by
---   apply RBNode.find?_some_mem (cut := λ _ ↦ .lt)
---   . unfold RBNode.find?
---     simp
---     unfold myNode
---     simp
-
-
-lemma LawfulCMvPolynomial.mem_node [CommSemiring R] (a : LawfulCMvPolynomial n R) :
-  a.find? x = some c → (x, c) ∈ a.val.val
+lemma LawfulCMvPolynomial.mem_node [CommSemiring R]
+  {a : LawfulCMvPolynomial n R} :
+  a.find? x = some c ↔ (x, c) ∈ a.val.val
 := by
   unfold LawfulCMvPolynomial.find? RBMap.find? RBMap.findEntry? RBSet.findP?
-  intro h
-  apply RBNode.find?_some_mem (cut := (fun x_1 => simpleCmp x x_1.1))
-  simp
-  simp only [Option.map_eq_some', Prod.exists, exists_eq_right] at h
-  obtain ⟨w, h⟩ := h
-  simp_all only [Option.some.injEq, Prod.mk.injEq, and_true]
-  rw [←Option.mem_def] at h
-  apply RBNode.find?_some_eq_eq at h
-  unfold simpleCmp compareOfLessAndEq at h
-  simp at h
-  rcases h with ⟨_, h⟩
-  symm
-  assumption
-
-lemma LawfulCMvPolynomial.mem_node' [CommSemiring R] (a : LawfulCMvPolynomial n R) :
-  (x, c) ∈ a.val.val → a.find? x = some c
-:= by
-  unfold LawfulCMvPolynomial.find? RBMap.find? RBMap.findEntry? RBSet.findP?
-  unfold Membership.mem RBNode.instMembership
-  intro h
-  simp [RBNode.EMem] at h
-  simp
-  use x
-  let p := a.val.2.out.1
-  apply (RBNode.Ordered.find?_some p).2
   constructor
-  · aesop
-  · unfold simpleCmp compareOfLessAndEq
+  · intro h
+    apply RBNode.find?_some_mem (cut := (fun x_1 => simpleCmp x x_1.1))
     simp
-    apply Vector.le_refl
+    simp only [Option.map_eq_some', Prod.exists, exists_eq_right] at h
+    obtain ⟨w, h⟩ := h
+    simp_all only [Option.some.injEq, Prod.mk.injEq, and_true]
+    rw [←Option.mem_def] at h
+    apply RBNode.find?_some_eq_eq at h
+    unfold simpleCmp compareOfLessAndEq at h
+    simp at h
+    rcases h with ⟨_, h⟩
+    symm; assumption
+  · unfold Membership.mem RBNode.instMembership
+    intro h
+    simp [RBNode.EMem] at h
+    simp
+    use x
+    let p := a.val.2.out.1
+    apply (RBNode.Ordered.find?_some p).2
+    constructor
+    · aesop
+    · unfold simpleCmp compareOfLessAndEq
+      simp
+      apply Vector.le_refl
 
 -- #eval myPolynomial
 -- #check RBNode.find

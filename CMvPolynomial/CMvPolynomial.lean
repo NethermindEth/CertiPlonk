@@ -12,6 +12,12 @@ def hello := "world"
 def CMvPolynomial (n : ℕ) R [CommSemiring R] : Type :=
   Quotient (@extEquiv n R _)
 
+def fromLawful [CommSemiring R]
+  (p : LawfulCMvPolynomial n R) :
+  CMvPolynomial n R
+:=
+  Quotient.mk extEquiv p
+
 def CMvPolynomial.add [CommSemiring R] [BEq R]
   (p₁ : CMvPolynomial n R)
   (p₂ : CMvPolynomial n R) :
@@ -26,12 +32,36 @@ def CMvPolynomial.sub [CommRing R] [BEq R]
 :=
   Quotient.mk extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.sub sorry p₁ p₂
 
-def CMvPolynomial.mul [CommRing R] [BEq R]
+def CMvPolynomial.mul [CommSemiring R] [BEq R]
   (p₁ : CMvPolynomial n R)
   (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
   Quotient.mk extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.mul sorry p₁ p₂
+
+open CMvPolynomial
+instance [CommSemiring R] [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
+  add := .add
+  add_assoc := sorry
+  zero := Quotient.mk extEquiv (LawfulCMvPolynomial.fromUnlawful ∅)
+  zero_add := sorry
+  add_zero := sorry
+  nsmul c p := (fromLawful (LawfulCMvPolynomial.constant c : LawfulCMvPolynomial n R)).mul p
+  nsmul_zero := sorry
+  nsmul_succ := sorry
+  add_comm := sorry
+  mul := .mul
+  left_distrib := sorry
+  right_distrib := sorry
+  zero_mul := sorry
+  mul_zero := sorry
+  one := fromLawful (LawfulCMvPolynomial.constant 1 : LawfulCMvPolynomial n R)
+  one_mul := sorry
+  mul_one := sorry
+  natCast := sorry
+  natCast_zero := sorry
+  natCast_succ := sorry
+
 
 def CMvPolynomial.reduce [CommRing R] [BEq R]
   (p₁ : CMvPolynomial n R)

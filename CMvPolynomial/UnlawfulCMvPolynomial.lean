@@ -110,7 +110,7 @@ def UnlawfulCMvPolynomial.sub [CommRing R] [BEq R]
 :=
   UnlawfulCMvPolynomial.add p₁ p₂.neg
 
-def UnlawfulCMvPolynomial.mul₀ [CommRing R] [BEq R]
+def UnlawfulCMvPolynomial.mul₀ [CommSemiring R] [BEq R]
   (t : Term n R)
   (p : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
@@ -193,7 +193,7 @@ theorem UnlawfulCMvPolynomial.list_nodup [CommSemiring R] (p : UnlawfulCMvPolyno
   apply list_pairwise_lt_nodup
   apply RBMap.toList_sorted
 
-def UnlawfulCMvPolynomial.mul [CommRing R] [BEq R]
+def UnlawfulCMvPolynomial.mul [CommSemiring R] [BEq R]
   (p₁ : UnlawfulCMvPolynomial n R)
   (p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R

@@ -47,6 +47,11 @@ def LawfulCMvPolynomial.constant [CommSemiring R] [BEq R] [LawfulBEq R]
         aesop
     ⟩
 
+instance [CommSemiring R] [BEq R] [LawfulBEq R]:
+  OfNat (LawfulCMvPolynomial n R) natural
+where
+  ofNat := LawfulCMvPolynomial.constant natural
+
 def LawfulCMvPolynomial.extend [CommRing R] [BEq R]
   (n' : ℕ) (p : LawfulCMvPolynomial n R) :
   LawfulCMvPolynomial (max n n') R
@@ -75,7 +80,7 @@ def LawfulCMvPolynomial.sub [CommRing R] [BEq R]
 :=
   LawfulCMvPolynomial.add p₁ p₂.neg
 
-def LawfulCMvPolynomial.mul [CommRing R] [BEq R]
+def LawfulCMvPolynomial.mul [CommSemiring R] [BEq R]
   (p₁ : LawfulCMvPolynomial n R)
   (p₂ : LawfulCMvPolynomial n R) :
   LawfulCMvPolynomial n R

@@ -18,11 +18,6 @@ open Lean Batteries
 
 -- #eval @test 3 -- 11
 
-instance [CommSemiring R] [BEq R] [LawfulBEq R]:
-  OfNat (LawfulCMvPolynomial n R) natural
-where
-  ofNat := LawfulCMvPolynomial.constant natural
-
 instance : Neg (LawfulCMvPolynomial n ℤ) where
   neg p := (LawfulCMvPolynomial.constant 0).sub p
 

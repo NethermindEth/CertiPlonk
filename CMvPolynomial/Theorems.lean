@@ -360,3 +360,11 @@ where
     -- simp
     -- simp [Finset.toList]
   right_inv := sorry
+
+def homomorphism₁ [BEq R] [CommSemiring R] [LawfulBEq R] :
+  RingHom (CMvPolynomial n R) (MvPolynomial (Fin n) R)
+:= sorry
+
+def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
+  RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
+:= sorry

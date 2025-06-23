@@ -22,7 +22,31 @@ instance : Repr (CMvMonomial n) where
       ⟨λ (i, p) => "X" ++ repr i ++ "^" ++ repr p⟩
     @Std.Format.joinSep _ toFormat indexed.toList " * "
 
+def CMvMonomial.extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
+  if h_le : n' ≤ n then by
+    have : max n n' = n := by
+      rw [sup_eq_left]
+      exact h_le
+    rw [this]
+    exact m
+  else by
+    let diff := n' - n
+    have : max n n' = n + diff := by
+      unfold diff
+      simp only [not_le] at h_le
+      have h_le : n ≤ n' := by
+        rw [le_iff_lt_or_eq]
+        left; exact h_le
+      rw [sup_comm, sup_eq_left.2 h_le]
+      rw [←Nat.add_sub_assoc h_le]
+      simp
+    rw [this]
+    exact m ++ (Vector.replicate diff 0)
+
 abbrev Term n R [CommSemiring R] := CMvMonomial n × R
+
+instance [DecidableEq R] : DecidableEq (CMvMonomial n × R) :=
+  instDecidableEqProd
 
 instance [CommSemiring R] [Repr R] : Repr (Term n R) where
   reprPrec
@@ -35,6 +59,11 @@ def myMonomial : CMvMonomial 3 := #m[4, 2, 5]
 example : CMvMonomial 2 := #m[1, 2]
 
 def totalDegree (m : CMvMonomial n) : ℕ := m.foldl Nat.add 0
+
+def CMvMonomial.one : CMvMonomial n := Vector.replicate n 0
+
+def Term.constant [CommSemiring R] (c : R) : Term n R :=
+  (CMvMonomial.one, c)
 
 def CMvMonomial.mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
   Vector.zipWith .add

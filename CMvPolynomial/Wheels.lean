@@ -3,47 +3,7 @@ import Mathlib
 
 open Batteries
 
--- lemma RBNode.mem_Finset₀ [DecidableEq α] (n : RBNode α) :
---   ∀ init : Finset α, x ∈ init → x ∈ n.foldr (init := init) (λ a s ↦ insert a s)
--- := by
---   induction n
---   case nil h =>
---     intro init h
---     simp; assumption
---   case node l v r ih₁ ih₂ =>
---     intro init h
---     simp
---     apply ih₁
---     rw [Finset.mem_insert]
---     right
---     apply ih₂
---     assumption
-
--- lemma RBNode.mem_Finset [DecidableEq α] (n : RBNode α) :
---   ∀ init : Finset α, x ∈ n → x ∈ n.foldr (init := init) (λ a s ↦ insert a s)
--- := by
---   intro init h
---   revert init
---   induction n
---   case nil h => contradiction
---   case node l v r ih₁ ih₂ =>
---     simp
---     intro init
---     rw [RBNode.mem_node] at h
---     rcases h with (h₁ | h₂ | h₃)
---     · apply RBNode.mem_Finset₀ l
---       rw [Finset.mem_insert]
---       left
---       assumption
---     · apply ih₁
---       assumption
---     · apply RBNode.mem_Finset₀ l
---       rw [Finset.mem_insert]
---       right
---       apply ih₂
---       assumption
-
-lemma RBNode.mem_Finset₀' [DecidableEq α] (n : RBNode (α × β)) :
+lemma RBNode.mem_Finset₀ [DecidableEq α] (n : RBNode (α × β)) :
   ∀ init : Finset α, x ∈ init → x ∈ n.foldr (init := init) (λ (a, _) s ↦ insert a s)
 := by
   induction n
@@ -59,12 +19,11 @@ lemma RBNode.mem_Finset₀' [DecidableEq α] (n : RBNode (α × β)) :
     apply ih₂
     assumption
 
-lemma RBNode.mem_Finset' [DecidableEq α] (n : RBNode (α × b)) :
-  ∀ init : Finset α,
-    (a₀, b₀) ∈ n → a₀ ∈ n.foldr (init := init) (λ (a, _) s ↦ insert a s)
+lemma RBNode.mem_foldr_insert_of_mem [DecidableEq α] (n : RBNode (α × b)) :
+  (a₀, b₀) ∈ n →
+    ∀ init : Finset α, a₀ ∈ n.foldr (init := init) (λ (a, _) s ↦ insert a s)
 := by
-  intro init h
-  revert init
+  intro h
   induction n
   case nil h => contradiction
   case node l v r ih₁ ih₂ =>
@@ -72,25 +31,23 @@ lemma RBNode.mem_Finset' [DecidableEq α] (n : RBNode (α × b)) :
     intro init
     rw [RBNode.mem_node] at h
     rcases h with (h₁ | h₂ | h₃)
-    · apply RBNode.mem_Finset₀' l
+    · apply RBNode.mem_Finset₀ l
       rw [Finset.mem_insert]
       left
       cases h₁
       rfl
     · apply ih₁
       assumption
-    · apply RBNode.mem_Finset₀' l
+    · apply RBNode.mem_Finset₀ l
       rw [Finset.mem_insert]
       right
       apply ih₂
       assumption
 
-lemma RBNode.mem_Finset'' [DecidableEq α] (n : RBNode (α × b)) :
+lemma RBNode.mem_of_mem_foldr_insert [DecidableEq α] (n : RBNode (α × b)) :
   ∀ init : Finset α,
     a₀ ∈ n.foldr (λ (a, _) s ↦ insert a s) init → (∃ b₀, (a₀, b₀) ∈ n) ∨ a₀ ∈ init
 := by
-  -- intro init h
-  -- revert init
   induction n
   case nil h =>
     intro init h

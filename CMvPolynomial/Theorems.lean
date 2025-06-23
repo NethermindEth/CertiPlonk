@@ -40,7 +40,7 @@ def toCMvMonomial {n} (m : Fin n →₀ ℕ) : CMvMonomial n := by
     let init : Vector ℕ n := default
     exact
       init.mapFinIdx
-        λ i _ le_n => if ⟨i, le_n⟩ ∈ m.support then m.toFun ⟨i, le_n⟩ else 0
+        λ i _ le_n ↦ if ⟨i, le_n⟩ ∈ m.support then m.toFun ⟨i, le_n⟩ else 0
 
 lemma if_zero_then_zero : ∀ n : ℕ, (if n = 0 then 0 else n) = n := by
   simp only [ite_eq_right_iff, forall_eq]
@@ -65,7 +65,7 @@ theorem monomial_id₁ :
 
 theorem Vector.get_at :
   ∀ (v : Vector ℕ n) (f : Fin n → ℕ) (ix : Fin n),
-    (v.mapFinIdx λ i _ le_n => f ⟨i, le_n⟩)[ix] = f ix
+    (v.mapFinIdx λ i _ le_n ↦ f ⟨i, le_n⟩)[ix] = f ix
 := by
   intros v f ix
   apply Vector.getElem_mapFinIdx ix.2
@@ -154,7 +154,7 @@ lemma findFst (a : α) (l : List (α × β)) (a_in : a ∈ l.unzip.1) :
 --       replace head := head (a', r) r_in
 --       simp [RBNode.cmpLT] at head
 --       have instanceTransMonomial :
---         TransCmp (λ x1 x2 : (CMvMonomial n × R) => simpleCmp x1.1 x2.1) := by
+--         TransCmp (λ x1 x2 : (CMvMonomial n × R) ↦ simpleCmp x1.1 x2.1) := by
 --           infer_instance
 --       simp [RBNode.cmpLT, *]
 --     · apply ih
@@ -239,7 +239,8 @@ def fromLawfulCMvPolynomial [CommSemiring R]
       · apply monomial_id₂
   Finsupp.mk support toFun mem_support_fun
 
--- -- TODO: Use `σ` instead of `Fin n`
+#check Finset
+-- TODO: Use `σ` instead of `Fin n`
 noncomputable def toLawfulCMvPolynomial [CommSemiring R]
   (p : MvPolynomial (Fin n) R) :
   LawfulCMvPolynomial n R
@@ -247,18 +248,14 @@ noncomputable def toLawfulCMvPolynomial [CommSemiring R]
   let {support, toFun, mem_support_toFun} := p
   let monomials := support.toList
   let unlawful :=
-    monomials.foldr
-    (fun m p => p.insert (toCMvMonomial m) (toFun m) )
-    (mkRBMap (CMvMonomial n) R simpleCmp)
+    monomials.foldr (λ m p ↦ p.insert (toCMvMonomial m) (toFun m)) ∅
   { val := unlawful
   , property := by
       unfold UnlawfulCMvPolynomial.isNoZeroCoef
       intro m
       let m' := fromCMvMonomial m
-      have h : m' ∈ support ∨ ¬ m' ∈ support := by
-        apply Classical.em (m' ∈ support)
-      cases h with
-      | inl h_in =>
+      by_cases m' ∈ support
+      case pos h_in =>
         unfold unlawful
         induction monomials with
         | nil =>
@@ -268,14 +265,14 @@ noncomputable def toLawfulCMvPolynomial [CommSemiring R]
         | cons head tail ih =>
           simp only [RBMap.mkRBSet_eq, List.foldr_cons, RBMap.find?_insert] at *
           split
-          case inl.cons.isTrue h_cmp =>
+          case cons.isTrue h_cmp =>
             apply simpleCmp_eq at h_cmp
             simp_all only [ne_eq, Option.some.injEq, m']
             intro a
             apply h_in
             simp only [monomial_id₂, a]
-          case inl.cons.isFalse => apply ih
-      | inr h_out =>
+          case cons.isFalse => apply ih
+      case neg h_out =>
         unfold unlawful
         have h_out' : m' ∉ monomials := by simp [monomials, h_out]
         revert h_out'
@@ -290,13 +287,13 @@ noncomputable def toLawfulCMvPolynomial [CommSemiring R]
           simp only [List.mem_cons, not_or] at h_out
           rcases h_out with ⟨h_out₁, h_out₂⟩
           split
-          case inr.cons.intro.isTrue h_cmp =>
+          case cons.intro.isTrue h_cmp =>
             apply simpleCmp_eq at h_cmp
             subst h_cmp
             have head_eq : m' = head := by
               simp only [monomial_id₂, m']
             contradiction
-          case inr.cons.intro.isFalse =>
+          case cons.intro.isFalse =>
             apply ih
             exact h_out₂
   }

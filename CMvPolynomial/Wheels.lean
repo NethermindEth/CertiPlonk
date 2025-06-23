@@ -59,7 +59,7 @@ lemma RBNode.mem_of_mem_foldr_insert [DecidableEq α] (n : RBNode (α × b)) :
     intro init h
     simp
     simp at h
-    specialize ih₁ (insert v.1 (RBNode.foldr (fun x s => insert x.1 s) r init)) h
+    specialize ih₁ (insert v.1 (RBNode.foldr (λ x s ↦ insert x.1 s) r init)) h
     rcases ih₁ with (in_l | ih₁)
     · rcases in_l with ⟨b₀, in_l⟩
       left;

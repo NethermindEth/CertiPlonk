@@ -11,7 +11,7 @@ def LawfulCMvPolynomial.fromUnlawful [CommSemiring R] [BEq R]
   (p : UnlawfulCMvPolynomial n R) :
   LawfulCMvPolynomial n R
 :=
-  { val := p.filter (λ _ c => ¬ c == 0)
+  { val := p.filter (λ _ c ↦ ¬ c == 0)
     property := sorry
   }
 
@@ -66,7 +66,7 @@ def LawfulCMvPolynomial.add [CommSemiring R] [BEq R]
   LawfulCMvPolynomial n R
 :=
   LawfulCMvPolynomial.fromUnlawful <|
-    UnlawfulCMvPolynomial.add p₁.val p₂.val |>.filter (λ _ c => ¬ c == 0)
+    UnlawfulCMvPolynomial.add p₁.val p₂.val |>.filter (λ _ c ↦ ¬ c == 0)
 
 def LawfulCMvPolynomial.sub [CommRing R] [BEq R]
   (p₁ : LawfulCMvPolynomial n R)
@@ -81,7 +81,7 @@ def LawfulCMvPolynomial.mul [CommRing R] [BEq R]
   LawfulCMvPolynomial n R
 :=
   LawfulCMvPolynomial.fromUnlawful <|
-    UnlawfulCMvPolynomial.mul p₁.val p₂.val |>.filter (λ _ c => ¬ c == 0)
+    UnlawfulCMvPolynomial.mul p₁.val p₂.val |>.filter (λ _ c ↦ ¬ c == 0)
 
 def LawfulCMvPolynomial.reduce [CommRing R] [BEq R]
   (p : LawfulCMvPolynomial n R)
@@ -113,6 +113,15 @@ lemma LawfulCMvPolynomial.mem_monomials_of_mem [CommSemiring R]
   apply UnlawfulCMvPolynomial.mem_monomials_of_mem
   assumption
 
+lemma LawfulCMvPolynomial.mem_of_mem_monomials [CommSemiring R]
+  {p : LawfulCMvPolynomial n R} :
+  a₀ ∈ p.monomials → (∃ b₀, (a₀, b₀) ∈ p.val.val)
+:= by
+  unfold LawfulCMvPolynomial.monomials
+  intro h
+  apply UnlawfulCMvPolynomial.mem_of_mem_monomials
+  assumption
+
 def LawfulCMvPolynomial.findD [CommSemiring R]
   (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R
 :=
@@ -125,7 +134,7 @@ lemma LawfulCMvPolynomial.mem_node [CommSemiring R]
   unfold LawfulCMvPolynomial.find? RBMap.find? RBMap.findEntry? RBSet.findP?
   constructor
   · intro h
-    apply RBNode.find?_some_mem (cut := (fun x_1 => simpleCmp x x_1.1))
+    apply RBNode.find?_some_mem (cut := (λ x_1 ↦ simpleCmp x x_1.1))
     simp
     simp only [Option.map_eq_some', Prod.exists, exists_eq_right] at h
     obtain ⟨w, h⟩ := h

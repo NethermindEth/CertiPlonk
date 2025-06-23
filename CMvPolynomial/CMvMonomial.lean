@@ -19,7 +19,7 @@ instance : Repr (CMvMonomial n) where
   reprPrec m _ :=
     let indexed := (Array.range m.size).zip m.1
     let toFormat : Std.ToFormat (ℕ × ℕ) :=
-      ⟨λ (i, p) => "X" ++ repr i ++ "^" ++ repr p⟩
+      ⟨λ (i, p) ↦ "X" ++ repr i ++ "^" ++ repr p⟩
     @Std.Format.joinSep _ toFormat indexed.toList " * "
 
 def CMvMonomial.extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
@@ -159,6 +159,6 @@ lemma CMvMonomial.le_trans : ∀ {x y z : CMvMonomial n},
   rw [CMvMonomial.not_gt x z]
   apply Vector.le_trans (ys := y) <;> simp only [*]
 
-instance : TransCmp (λ x1 x2 : CMvMonomial n => simpleCmp x1 x2) where
+instance : TransCmp (λ x1 x2 : CMvMonomial n ↦ simpleCmp x1 x2) where
   symm := CMvMonomial.symm
   le_trans := CMvMonomial.le_trans

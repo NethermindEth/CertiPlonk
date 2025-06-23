@@ -56,25 +56,6 @@ where
     funext x
     simp [*]
 
-def P [CommSemiring R]
-  (f : CMvMonomial n → R → Multiset (CMvMonomial n) → Multiset (CMvMonomial n)) :
-  Prop
-:=
-  f = λ m _ acc => m ::ₘ acc
-
-def incl' [CommSemiring R] (a b : UnlawfulCMvPolynomial n R) : Prop :=
-  ∀ (m : CMvMonomial n) (c : R), (m, c) ∈ a → (m, c) ∈ b
-  --  a.find? m = some c → b.find? m = some c
-
-def incl [CommSemiring R] (a b : UnlawfulCMvPolynomial n R) : Prop :=
-  ∀ (m : CMvMonomial n) (c : R), a.find? m = some c → b.find? m = some c
-
-def P' [CommSemiring R]
-  (f : CMvMonomial n → R → Finset (CMvMonomial n) → Finset (CMvMonomial n)) :
-  Prop
-:=
-  f = λ m _ acc => insert m acc
-
 lemma RBMap.size_zero [CommSemiring R] :
   ∀ (p : UnlawfulCMvPolynomial n R), p.size = 0 → p = ∅
 := by
@@ -184,36 +165,33 @@ where
     dsimp
     unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r extEquiv at h_eq
     dsimp at h_eq
-    unfold LawfulCMvPolynomial.monomials UnlawfulCMvPolynomial.monomials
     ext x
     specialize h_eq x
     constructor
     · intro h
       cases x_in_a : a.find? x
       case h.mp.none =>
-        apply RBNode.mem_of_mem_foldr_insert at h
-        rcases h with (⟨b₀, h_in⟩ | contra)
-        · rw [←LawfulCMvPolynomial.mem_node] at h_in
-          rw [x_in_a] at h_in
-          contradiction
-        . contradiction
+        apply LawfulCMvPolynomial.mem_of_mem_monomials at h
+        rcases h with ⟨b₀, h_in⟩
+        rw [←LawfulCMvPolynomial.mem_node] at h_in
+        rw [x_in_a] at h_in
+        contradiction
       case h.mp.some val =>
+        apply LawfulCMvPolynomial.mem_monomials_of_mem
         rw [x_in_a] at h_eq
-        apply RBNode.mem_foldr_insert_of_mem (b₀ := val)
         rw [←LawfulCMvPolynomial.mem_node]
         exact symm h_eq
     · intro h
       cases x_in_b : b.find? x
       case h.mpr.none =>
-        apply RBNode.mem_of_mem_foldr_insert at h
-        rcases h with (⟨b₀, h_in⟩ | contra)
-        · rw [←LawfulCMvPolynomial.mem_node] at h_in
-          rw [x_in_b] at h_in
-          contradiction
-        . contradiction
+        apply LawfulCMvPolynomial.mem_of_mem_monomials at h
+        rcases h with ⟨b₀, h_in⟩
+        rw [←LawfulCMvPolynomial.mem_node] at h_in
+        rw [x_in_b] at h_in
+        contradiction
       case h.mpr.some val =>
         rw [x_in_b] at h_eq
-        apply RBNode.mem_foldr_insert_of_mem (b₀ := val)
+        apply LawfulCMvPolynomial.mem_monomials_of_mem
         rw [←LawfulCMvPolynomial.mem_node]
         exact h_eq
 

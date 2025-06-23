@@ -1,18 +1,18 @@
 import Mathlib
 
-instance : Std.Irrefl λ x1 x2 : ℕ => x1 < x2 := ⟨Nat.lt_irrefl⟩
+instance : Std.Irrefl λ x1 x2 : ℕ ↦ x1 < x2 := ⟨Nat.lt_irrefl⟩
 
-instance : Std.Total λ x1 x2 : ℕ => ¬x1 < x2 := by
+instance : Std.Total λ x1 x2 : ℕ ↦ ¬x1 < x2 := by
   constructor
   simp [Nat.le_total]
 
-instance : Std.Asymm λ x1 x2 : ℕ => x1 < x2 := ⟨λ _ _ h => Nat.lt_asymm h⟩
+instance : Std.Asymm λ x1 x2 : ℕ ↦ x1 < x2 := ⟨λ _ _ h ↦ Nat.lt_asymm h⟩
 
 instance :
   Trans
-    (λ x1 x2 : ℕ => ¬x1 < x2)
-    (λ x1 x2 => ¬x1 < x2)
-    λ x1 x2 : ℕ => ¬x1 < x2
+    (λ x1 x2 : ℕ ↦ ¬x1 < x2)
+    (λ x1 x2 ↦ ¬x1 < x2)
+    λ x1 x2 : ℕ ↦ ¬x1 < x2
 := by
   constructor
   intros a b c h₁ h₂
@@ -22,7 +22,7 @@ instance :
 -- instance isStrictCut {x : CMvMonomial n} [CommSemiring R] :
 --   RBNode.IsStrictCut
 --     (Ordering.byKey Prod.fst simpleCmp)
---     (λ x₁ : CMvMonomial n × R => simpleCmp x x₁.1)
+--     (λ x₁ : CMvMonomial n × R ↦ simpleCmp x x₁.1)
 -- where
 --   le_lt_trans := by
 --     unfold simpleCmp compareOfLessAndEq

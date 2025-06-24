@@ -69,9 +69,7 @@ def constant [BEq R] (c : R) : UnlawfulCMvPolynomial n R :=
   Function.uncurry RBMap.single (Term.constant c)
   -- Function.uncurry RBMap.empty.insert (Term.constant c)
 
-def add [BEq R]
-  (p₁ : UnlawfulCMvPolynomial n R)
-  (p₂ : UnlawfulCMvPolynomial n R) :
+def add [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   RBMap.mergeWith (λ _ c₁ c₂ ↦ c₁ + c₂) p₁ p₂
@@ -89,9 +87,7 @@ theorem list_nodup (p : UnlawfulCMvPolynomial n R) :
   apply CMvMonomial.list_pairwise_lt_nodup
   apply RBMap.toList_sorted
 
-def mul [CommSemiring R] [BEq R]
-  (p₁ : UnlawfulCMvPolynomial n R)
-  (p₂ : UnlawfulCMvPolynomial n R) :
+def mul [CommSemiring R] [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   let Pairs : Type := {x : CMvMonomial n × R // x ∈ p₁.toList}
@@ -140,9 +136,7 @@ variable {n R} [CommRing R]
 def neg [BEq R] (p : UnlawfulCMvPolynomial n R) : UnlawfulCMvPolynomial n R :=
   p.map (λ (m, c) ↦ (m, -c))
 
-def sub [BEq R]
-  (p₁ : UnlawfulCMvPolynomial n R)
-  (p₂ : UnlawfulCMvPolynomial n R) :
+def sub [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   UnlawfulCMvPolynomial.add p₁ p₂.neg
@@ -191,9 +185,7 @@ def div₀
 --     · sorry
 --   add_comm := sorry
 
-def reduce [BEq R]
-  (p : UnlawfulCMvPolynomial n R)
-  (d : UnlawfulCMvPolynomial n R) :
+def reduce [BEq R] (p d : UnlawfulCMvPolynomial n R) :
   Option (UnlawfulCMvPolynomial n R)
 := do
   let lm_d ← d.leadingMonomial?
@@ -203,6 +195,8 @@ def reduce [BEq R]
   pure <| p.sub (UnlawfulCMvPolynomial.mul termQuotient d)
 
 end R_CommRing
+
+
 end UnlawfulCMvPolynomial
 
 def myPolynomial₃ : UnlawfulCMvPolynomial 2 ℤ :=

@@ -63,18 +63,10 @@ def extend [BEq R]
 :=
   LawfulCMvPolynomial.fromUnlawful <| p.val.extend n'
 
-def add [BEq R]
-  (p₁ : LawfulCMvPolynomial n R)
-  (p₂ : LawfulCMvPolynomial n R) :
-  LawfulCMvPolynomial n R
-:=
+def add [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   LawfulCMvPolynomial.fromUnlawful <| UnlawfulCMvPolynomial.add p₁.val p₂.val
 
-def mul [BEq R]
-  (p₁ : LawfulCMvPolynomial n R)
-  (p₂ : LawfulCMvPolynomial n R) :
-  LawfulCMvPolynomial n R
-:=
+def mul [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   LawfulCMvPolynomial.fromUnlawful <| UnlawfulCMvPolynomial.mul p₁.val p₂.val
 
 def find? (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) : Option R :=
@@ -182,22 +174,13 @@ end R_CommSemiring
 section R_CommRing
 variable {n R} [CommRing R]
 
-def neg [BEq R]
-  (p : LawfulCMvPolynomial n R) :
-  LawfulCMvPolynomial n R
-:=
+def neg [BEq R] (p : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   LawfulCMvPolynomial.fromUnlawful p.val.neg
 
-def sub [BEq R]
-  (p₁ : LawfulCMvPolynomial n R)
-  (p₂ : LawfulCMvPolynomial n R) :
-  LawfulCMvPolynomial n R
-:=
+def sub [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   LawfulCMvPolynomial.add p₁ p₂.neg
 
-def reduce [BEq R]
-  (p : LawfulCMvPolynomial n R)
-  (d : LawfulCMvPolynomial n R) :
+def reduce [BEq R] (p d : LawfulCMvPolynomial n R) :
   Option (LawfulCMvPolynomial n R)
 := do
   let up ← UnlawfulCMvPolynomial.reduce p.val d.val

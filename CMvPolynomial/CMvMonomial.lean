@@ -122,9 +122,37 @@ lemma le_trans : ∀ {x y z : CMvMonomial n},
 
 end CMvMonomial
 
-instance : TransCmp (λ x1 x2 : CMvMonomial n ↦ CMvMonomial.simpleCmp x1 x2) where
+instance :
+  TransCmp (λ x1 x2 : CMvMonomial n ↦ CMvMonomial.simpleCmp x1 x2)
+where
   symm := CMvMonomial.symm
   le_trans := CMvMonomial.le_trans
+
+instance :
+  TransCmp (λ x1 x2 : (CMvMonomial n × R) ↦ CMvMonomial.simpleCmp x1.1 x2.1)
+where
+  symm := by
+    intros
+    apply CMvMonomial.symm
+  le_trans := by
+    intros x y z
+    apply CMvMonomial.le_trans
+
+lemma CMvMonomial.list_pairwise_lt_nodup (l : List (CMvMonomial n × R)) :
+  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup
+:= by
+  intro h
+  induction h with
+  | nil => simp
+  | @cons a l head tail ih =>
+    apply List.Pairwise.cons
+    · intros a' a'_in contra
+      rw [contra] at head
+      specialize head a' a'_in
+      simp [RBNode.cmpLT] at head
+      specialize head
+      simp [Vector.lt_irrefl] at head
+    · apply ih
 
 abbrev Term n R [CommSemiring R] := CMvMonomial n × R
 

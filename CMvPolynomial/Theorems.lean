@@ -309,7 +309,7 @@ noncomputable def toCMvPolynomial [CommSemiring R]
   (p : MvPolynomial (Fin n) R) :
   CMvPolynomial n R
 :=
-  Quotient.mk extEquiv (toLawfulCMvPolynomial p)
+  Quotient.mk LawfulCMvPolynomial.extEquiv (toLawfulCMvPolynomial p)
 
 -- theorem polynomial_id₁ {n R} [CommSemiring R] :
 --   ∀ (p : CMvPolynomial n R), toCMvPolynomial (fromCMvPolynomial p) = p

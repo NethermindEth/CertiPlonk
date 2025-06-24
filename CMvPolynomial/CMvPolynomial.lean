@@ -10,40 +10,40 @@ def hello := "world"
 
 @[reducible]
 def CMvPolynomial (n : ℕ) R [CommSemiring R] : Type :=
-  Quotient (@extEquiv n R _)
+  Quotient (@LawfulCMvPolynomial.extEquiv n R _)
 
 def fromLawful [CommSemiring R]
   (p : LawfulCMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  Quotient.mk extEquiv p
+  Quotient.mk LawfulCMvPolynomial.extEquiv p
 
 def CMvPolynomial.add [CommSemiring R] [BEq R]
   (p₁ : CMvPolynomial n R)
   (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  Quotient.mk extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.add sorry p₁ p₂
+  Quotient.mk LawfulCMvPolynomial.extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.add sorry p₁ p₂
 
 def CMvPolynomial.sub [CommRing R] [BEq R]
   (p₁ : CMvPolynomial n R)
   (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  Quotient.mk extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.sub sorry p₁ p₂
+  Quotient.mk LawfulCMvPolynomial.extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.sub sorry p₁ p₂
 
 def CMvPolynomial.mul [CommSemiring R] [BEq R]
   (p₁ : CMvPolynomial n R)
   (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  Quotient.mk extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.mul sorry p₁ p₂
+  Quotient.mk LawfulCMvPolynomial.extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.mul sorry p₁ p₂
 
 open CMvPolynomial
 instance [CommSemiring R] [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
   add := .add
   add_assoc := sorry
-  zero := Quotient.mk extEquiv (LawfulCMvPolynomial.fromUnlawful ∅)
+  zero := Quotient.mk LawfulCMvPolynomial.extEquiv (LawfulCMvPolynomial.fromUnlawful ∅)
   zero_add := sorry
   add_zero := sorry
   nsmul c p := (fromLawful (LawfulCMvPolynomial.constant c : LawfulCMvPolynomial n R)).mul p
@@ -69,7 +69,7 @@ def CMvPolynomial.reduce [CommRing R] [BEq R]
   Option (CMvPolynomial n R)
 := do
   let p ← Quotient.lift₂ LawfulCMvPolynomial.reduce sorry p₁ p₂
-  return Quotient.mk extEquiv p
+  return Quotient.mk LawfulCMvPolynomial.extEquiv p
 
 def CMvPolynomial.find? [CommSemiring R]
   (p : CMvPolynomial n R)
@@ -80,7 +80,7 @@ def CMvPolynomial.find? [CommSemiring R]
 where
   valid := by
     intros p₁ p₂
-    unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r extEquiv
+    unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r LawfulCMvPolynomial.extEquiv
     simp
     intro h
     funext x
@@ -193,7 +193,7 @@ where
   valid := by
     intro a b h_eq
     dsimp
-    unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r extEquiv at h_eq
+    unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r LawfulCMvPolynomial.extEquiv at h_eq
     dsimp at h_eq
     ext x
     specialize h_eq x

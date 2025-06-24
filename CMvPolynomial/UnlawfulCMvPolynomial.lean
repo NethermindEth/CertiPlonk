@@ -25,7 +25,7 @@ where
 
 /-- Polynomial in `n` variables with coefficients in `R`. -/
 abbrev UnlawfulCMvPolynomial n R [CommSemiring R] :=
-  Batteries.RBMap (CMvMonomial n) R simpleCmp
+  Batteries.RBMap (CMvMonomial n) R CMvMonomial.simpleCmp
 
 def UnlawfulCMvPolynomial.extend [CommSemiring R]
   (n' : ℕ) (p : UnlawfulCMvPolynomial n R) :
@@ -78,10 +78,10 @@ instance [Repr R] [CommSemiring R] : Repr (UnlawfulCMvPolynomial n R) where
     @Std.Format.joinSep _ toFormat p.toList " + "
 
 def myPolynomial : UnlawfulCMvPolynomial 3 ℤ :=
-  [⟨#m[1, 2, 1], 5⟩, ⟨#m[3, 2, 0], 5⟩].toRBMap simpleCmp
+  [⟨#m[1, 2, 1], 5⟩, ⟨#m[3, 2, 0], 5⟩].toRBMap CMvMonomial.simpleCmp
 
 def myPolynomial₂ : UnlawfulCMvPolynomial 3 ℤ :=
-  [⟨#m[1, 2, 1], -5⟩, ⟨#m[3, 2, 0], -5⟩].toRBMap simpleCmp
+  [⟨#m[1, 2, 1], -5⟩, ⟨#m[3, 2, 0], -5⟩].toRBMap CMvMonomial.simpleCmp
 
 def UnlawfulCMvPolynomial.constant [CommSemiring R] [BEq R]
   (c : R) :
@@ -163,7 +163,7 @@ def UnlawfulCMvPolynomial.div₀ [CommRing R]
 --     · sorry
 --   add_comm := sorry
 
-instance : TransCmp (λ x1 x2 : (CMvMonomial n × R) ↦ simpleCmp x1.1 x2.1) where
+instance : TransCmp (λ x1 x2 : (CMvMonomial n × R) ↦ CMvMonomial.simpleCmp x1.1 x2.1) where
   symm := by
     intros
     apply CMvMonomial.symm
@@ -172,7 +172,7 @@ instance : TransCmp (λ x1 x2 : (CMvMonomial n × R) ↦ simpleCmp x1.1 x2.1) wh
     apply CMvMonomial.le_trans
 
 lemma list_pairwise_lt_nodup (l : List (CMvMonomial n × R)) :
-  l.Pairwise (RBNode.cmpLT (simpleCmp ·.1 ·.1)) → l.Nodup
+  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup
 := by
   intro h
   induction h with
@@ -231,10 +231,10 @@ def UnlawfulCMvPolynomial.reduce [CommRing R] [BEq R]
 
 
 def myPolynomial₃ : UnlawfulCMvPolynomial 2 ℤ :=
-  [⟨#m[1, 0], 2⟩, ⟨#m[0, 1], 3⟩].toRBMap simpleCmp
+  [⟨#m[1, 0], 2⟩, ⟨#m[0, 1], 3⟩].toRBMap CMvMonomial.simpleCmp
 
 def myPolynomial₄ : UnlawfulCMvPolynomial 2 ℤ :=
-  [⟨#m[1, 1], 1⟩, ⟨#m[2, 0], -1⟩].toRBMap simpleCmp
+  [⟨#m[1, 1], 1⟩, ⟨#m[2, 0], -1⟩].toRBMap CMvMonomial.simpleCmp
 
 #eval myPolynomial₃
 #eval myPolynomial₄
@@ -253,7 +253,7 @@ theorem UnlawfulCMvPolynomial.nonemptySome [CommSemiring R]
       rcases v with ⟨m, r⟩
       exists m, r
       simp
-        [ RBMap.find?, RBMap.findEntry?, RBSet.findP?, RBNode.find?, simpleCmp
+        [ RBMap.find?, RBMap.findEntry?, RBSet.findP?, RBNode.find?, CMvMonomial.simpleCmp
         , compareOfLessAndEq, gt_iff_lt
         ]
       split <;> (try simp [Vector.lt_irrefl] at *)

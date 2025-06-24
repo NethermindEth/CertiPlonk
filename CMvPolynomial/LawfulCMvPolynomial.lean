@@ -139,14 +139,14 @@ lemma LawfulCMvPolynomial.mem_node [CommSemiring R]
   unfold LawfulCMvPolynomial.find? RBMap.find? RBMap.findEntry? RBSet.findP?
   constructor
   · intro h
-    apply RBNode.find?_some_mem (cut := (λ x_1 ↦ simpleCmp x x_1.1))
+    apply RBNode.find?_some_mem (cut := (λ x_1 ↦ CMvMonomial.simpleCmp x x_1.1))
     simp
     simp only [Option.map_eq_some', Prod.exists, exists_eq_right] at h
     obtain ⟨w, h⟩ := h
     simp_all only [Option.some.injEq, Prod.mk.injEq, and_true]
     rw [←Option.mem_def] at h
     apply RBNode.find?_some_eq_eq at h
-    unfold simpleCmp compareOfLessAndEq at h
+    unfold CMvMonomial.simpleCmp compareOfLessAndEq at h
     simp at h
     rcases h with ⟨_, h⟩
     symm; assumption
@@ -159,7 +159,7 @@ lemma LawfulCMvPolynomial.mem_node [CommSemiring R]
     apply (RBNode.Ordered.find?_some p).2
     constructor
     · aesop
-    · unfold simpleCmp compareOfLessAndEq
+    · unfold CMvMonomial.simpleCmp compareOfLessAndEq
       simp
       apply Vector.le_refl
 
@@ -204,28 +204,28 @@ lemma to_list_equiv [DecidableEq R] [CommSemiring R]
   · sorry
 
 private def p : LawfulCMvPolynomial 2 ℤ where -- 2 * X0^2 * X1^3
-  val := [⟨#m[2, 3], 2⟩].toRBMap simpleCmp
+  val := [⟨#m[2, 3], 2⟩].toRBMap CMvMonomial.simpleCmp
   property := by sorry
 
 private def d : LawfulCMvPolynomial 2 ℤ where -- X0^2 * X1^0 + X0^2 * X1^2
-  val := [⟨#m[2, 2], 1⟩, ⟨#m[2, 0], 1⟩].toRBMap simpleCmp
+  val := [⟨#m[2, 2], 1⟩, ⟨#m[2, 0], 1⟩].toRBMap CMvMonomial.simpleCmp
   property := sorry
 
 #eval! p
 #eval! d
 #eval! p.reduce d -- some -2 * X0^2 * X1^1
 
--- private def p₁_1 := [⟨#m[2], 1⟩, ⟨#m[0], -1⟩].toRBMap simpleCmp
--- private def p₁_2 := [⟨#m[1], 2⟩, ⟨#m[0], -1⟩].toRBMap simpleCmp
-private def i : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[2], 1⟩, ⟨#m[0], -1⟩].toRBMap simpleCmp
+-- private def p₁_1 := [⟨#m[2], 1⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
+-- private def p₁_2 := [⟨#m[1], 2⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
+private def i : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[2], 1⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
 #eval i
-private def p₁ : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], -2⟩, ⟨#m[0], -1⟩].toRBMap simpleCmp
+private def p₁ : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], -2⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
 #eval p₁
-private def p₂ : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], 2⟩, ⟨#m[0], 2⟩].toRBMap simpleCmp
+private def p₂ : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], 2⟩, ⟨#m[0], 2⟩].toRBMap CMvMonomial.simpleCmp
 #eval p₂
-private def t₁ : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], 1⟩, ⟨#m[0], 2⟩].toRBMap simpleCmp
+private def t₁ : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], 1⟩, ⟨#m[0], 2⟩].toRBMap CMvMonomial.simpleCmp
 #eval t₁
-private def x : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], 1⟩].toRBMap simpleCmp
+private def x : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], 1⟩].toRBMap CMvMonomial.simpleCmp
 #eval! x
 #eval! i.reduce t₁
 #eval! i.sub (x.mul t₁)

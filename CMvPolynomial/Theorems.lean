@@ -266,7 +266,7 @@ noncomputable def toLawfulCMvPolynomial [CommSemiring R]
           simp only [RBMap.mkRBSet_eq, List.foldr_cons, RBMap.find?_insert] at *
           split
           case cons.isTrue h_cmp =>
-            apply simpleCmp_eq at h_cmp
+            apply CMvMonomial.simpleCmp_eq at h_cmp
             simp_all only [ne_eq, Option.some.injEq, m']
             intro a
             apply h_in
@@ -288,7 +288,7 @@ noncomputable def toLawfulCMvPolynomial [CommSemiring R]
           rcases h_out with ⟨h_out₁, h_out₂⟩
           split
           case cons.intro.isTrue h_cmp =>
-            apply simpleCmp_eq at h_cmp
+            apply CMvMonomial.simpleCmp_eq at h_cmp
             subst h_cmp
             have head_eq : m' = head := by
               simp only [monomial_id₂, m']
@@ -361,10 +361,20 @@ where
     -- simp [Finset.toList]
   right_inv := sorry
 
-def homomorphism₁ [BEq R] [CommSemiring R] [LawfulBEq R] :
+noncomputable def homomorphism₁ [BEq R] [CommSemiring R] [LawfulBEq R] :
   RingHom (CMvPolynomial n R) (MvPolynomial (Fin n) R)
-:= sorry
+where
+  toFun := fromCMvPolynomial
+  map_one' := sorry
+  map_mul' := sorry
+  map_zero' := sorry
+  map_add' := sorry
 
-def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
+noncomputable def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
   RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
-:= sorry
+where
+  toFun := toCMvPolynomial
+  map_one' := sorry
+  map_mul' := sorry
+  map_zero' := sorry
+  map_add' := sorry

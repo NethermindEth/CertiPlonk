@@ -6,193 +6,45 @@ import CMvPolynomial.Wheels
 
 open Batteries
 
-def hello := "world"
-
 @[reducible]
 def CMvPolynomial (n : ℕ) R [CommSemiring R] : Type :=
   Quotient (@LawfulCMvPolynomial.extEquiv n R _)
 
-def fromLawful [CommSemiring R]
-  (p : LawfulCMvPolynomial n R) :
-  CMvPolynomial n R
-:=
+namespace CMvPolynomial
+
+section R_CommSemiring
+variable {n R} [CommSemiring R]
+
+def fromLawful (p : LawfulCMvPolynomial n R) : CMvPolynomial n R :=
   Quotient.mk LawfulCMvPolynomial.extEquiv p
 
-def CMvPolynomial.add [CommSemiring R] [BEq R]
-  (p₁ : CMvPolynomial n R)
-  (p₂ : CMvPolynomial n R) :
+def add [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  Quotient.mk LawfulCMvPolynomial.extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.add sorry p₁ p₂
+  fromLawful <| Quotient.lift₂ LawfulCMvPolynomial.add sorry p₁ p₂
 
-def CMvPolynomial.sub [CommRing R] [BEq R]
-  (p₁ : CMvPolynomial n R)
-  (p₂ : CMvPolynomial n R) :
+def mul [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  Quotient.mk LawfulCMvPolynomial.extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.sub sorry p₁ p₂
+  fromLawful <| Quotient.lift₂ LawfulCMvPolynomial.mul sorry p₁ p₂
 
-def CMvPolynomial.mul [CommSemiring R] [BEq R]
-  (p₁ : CMvPolynomial n R)
-  (p₂ : CMvPolynomial n R) :
-  CMvPolynomial n R
-:=
-  Quotient.mk LawfulCMvPolynomial.extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.mul sorry p₁ p₂
-
-open CMvPolynomial
-instance [CommSemiring R] [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
-  add := .add
-  add_assoc := sorry
-  zero := Quotient.mk LawfulCMvPolynomial.extEquiv (LawfulCMvPolynomial.fromUnlawful ∅)
-  zero_add := sorry
-  add_zero := sorry
-  nsmul c p := (fromLawful (LawfulCMvPolynomial.constant c : LawfulCMvPolynomial n R)).mul p
-  nsmul_zero := sorry
-  nsmul_succ := sorry
-  add_comm := sorry
-  mul := .mul
-  left_distrib := sorry
-  right_distrib := sorry
-  zero_mul := sorry
-  mul_zero := sorry
-  one := fromLawful (LawfulCMvPolynomial.constant 1 : LawfulCMvPolynomial n R)
-  one_mul := sorry
-  mul_one := sorry
-  natCast := sorry
-  natCast_zero := sorry
-  natCast_succ := sorry
-
-
-def CMvPolynomial.reduce [CommRing R] [BEq R]
-  (p₁ : CMvPolynomial n R)
-  (p₂ : CMvPolynomial n R) :
-  Option (CMvPolynomial n R)
-:= do
-  let p ← Quotient.lift₂ LawfulCMvPolynomial.reduce sorry p₁ p₂
-  return Quotient.mk LawfulCMvPolynomial.extEquiv p
-
-def CMvPolynomial.find? [CommSemiring R]
-  (p : CMvPolynomial n R)
-  (m : CMvMonomial n) :
-  Option R
-:=
+def find? (p : CMvPolynomial n R) (m : CMvMonomial n) : Option R :=
   Quotient.lift LawfulCMvPolynomial.find? valid p m
 where
   valid := by
     intros p₁ p₂
-    unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r LawfulCMvPolynomial.extEquiv
-    simp
+    simp [instHasEquivOfSetoid, LawfulCMvPolynomial.extEquiv]
     intro h
     funext x
     simp [*]
 
-lemma RBMap.size_zero [CommSemiring R] :
-  ∀ (p : UnlawfulCMvPolynomial n R), p.size = 0 → p = ∅
-:= by
-  intros a h
-  rcases a with ⟨n⟩
-  cases n <;> trivial
-
--- theorem UnlawfulCMvPolynomial.removeOne [CommSemiring R]
---   (p : UnlawfulCMvPolynomial n R)
---   (sizePred : ℕ)
---   (h_size : p.size = sizePred + 1) :
---   ∃ (p' : UnlawfulCMvPolynomial n R),
---     p'.size = sizePred ∧
---       ∀ (m : CMvMonomial n) c, p'.find? m = some c → p.find? m = some c
--- := by
---   unfold UnlawfulCMvPolynomial at *
---   let pList := p.toList
---   rcases p with ⟨p⟩
---   cases p with
---     | nil => contradiction
---     | node _ l v r =>
---       let p' : UnlawfulCMvPolynomial n R :=
---         RBMap.ofList (l.toList ++ r.toList) simpleCmp
---       exists p'
---       constructor
---       · simp [RBMap.size, RBSet.size] at h_size
---         unfold p'
---         sorry
---       · sorry
-
-lemma find?_some_iff_contains {comparison : α → α → Ordering} [TransCmp comparison]
-  (m : RBMap α β comparison)
-  (a : α) :
-  m.contains a ↔ ∃ b, m.find? a = some b
-:= by
-  unfold RBMap.contains
-  rw [Option.isSome_iff_exists]
-  constructor
-  · intro h
-    rcases h with ⟨⟨a₁, b₁⟩, h_a₁⟩
-    rw [RBMap.findEntry?_some] at h_a₁
-    use b₁
-    rw [RBMap.find?_some]
-    use a₁
-  · rintro ⟨b₁, h⟩
-    rw [RBMap.find?_some] at h
-    rcases h with ⟨a₁, h⟩
-    use ⟨a₁, b₁⟩
-    rw [RBMap.findEntry?_some]
-    aesop
-
-axiom erase_pred_size
-  {size' : ℕ}
-  (m : RBMap α β comparison)
-  (h_size : m.size = size' + 1)
-  (a : α) :
-  m.contains a → (m.erase a).size = size'
-
-axiom erase_incl
-  (m : RBMap α β comparison)
-  (a : α) :
-  (m.erase a).find? a' = b' → m.find? a' = b'
-
-lemma match_insert
-  {size' : ℕ}
-  (M : RBMap α β comparison)
-  (h_size : M.size = size' + 1) :
-  ∃ (k : α) (v : β) (M' : RBMap α β comparison),
-    M'.size = size' ∧ M'.insert k v = M ∧ M'.find? k = none
-:= sorry
-
-/-- Inspired by `Finset.mem_insert` -/
-theorem RBSet.mem_insert [CommSemiring R]
-  {p : RBSet (CMvMonomial n × R) (Ordering.byKey Prod.fst simpleCmp)}
-  {m m' : CMvMonomial n} {c c' : R} :
-    (m, c) ∈ p.insert (m', c') ↔ (m, c) = (m', c') ∨ (m, c) ∈ p
-:= by
-  sorry
-
-theorem RBMap.mem_insert [CommSemiring R]
-  {p : UnlawfulCMvPolynomial n R} {m m' : CMvMonomial n} {c c' : R} :
-    (m, c) ∈ p.insert m' c' ↔ (m, c) = (m', c') ∨ (m, c) ∈ p
-:= by
-  unfold RBMap.insert
-  unfold UnlawfulCMvPolynomial RBMap at p
-  apply RBSet.mem_insert
-
-example [CommSemiring R]
-  (a b : LawfulCMvPolynomial n R)
-  (h : ∀ (x : CMvMonomial n), RBMap.find? a.val x = RBMap.find? b.val x) :
-  ∀ (x : CMvMonomial n) (c : R), a.find? x = some c → b.find? x = some c
-:= by
-  unfold LawfulCMvPolynomial.find?
-  intro x c ha
-  simp [←h, ha]
-
-def CMvPolynomial.monomials [DecidableEq R] [CommSemiring R]
-  (p : CMvPolynomial n R) :
+def monomials [DecidableEq R] (p : CMvPolynomial n R) :
   Finset (CMvMonomial n)
 :=
-  let monomials (lp : LawfulCMvPolynomial n R) : Finset (CMvMonomial n) :=
-    lp.monomials
-  Quotient.lift monomials valid p
+  Quotient.lift LawfulCMvPolynomial.monomials valid p
 where
   valid := by
     intro a b h_eq
-    dsimp
     unfold HasEquiv.Equiv instHasEquivOfSetoid Setoid.r LawfulCMvPolynomial.extEquiv at h_eq
     dsimp at h_eq
     ext x
@@ -225,7 +77,47 @@ where
         rw [←LawfulCMvPolynomial.mem_node]
         exact h_eq
 
-def CMvPolynomial.findD [CommSemiring R]
-  (p : CMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R
-:=
+def findD (p : CMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R :=
   (p.find? m).getD v₀
+
+instance [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
+  add := .add
+  add_assoc := sorry
+  zero := fromLawful (LawfulCMvPolynomial.fromUnlawful ∅)
+  zero_add := sorry
+  add_zero := sorry
+  nsmul c p := (fromLawful (LawfulCMvPolynomial.constant c : LawfulCMvPolynomial n R)).mul p
+  nsmul_zero := sorry
+  nsmul_succ := sorry
+  add_comm := sorry
+  mul := .mul
+  left_distrib := sorry
+  right_distrib := sorry
+  zero_mul := sorry
+  mul_zero := sorry
+  one := fromLawful (LawfulCMvPolynomial.constant 1 : LawfulCMvPolynomial n R)
+  one_mul := sorry
+  mul_one := sorry
+  natCast := sorry
+  natCast_zero := sorry
+  natCast_succ := sorry
+
+end R_CommSemiring
+
+section R_CommRing
+variable {n R} [CommRing R]
+
+def sub [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
+  CMvPolynomial n R
+:=
+  Quotient.mk LawfulCMvPolynomial.extEquiv <| Quotient.lift₂ LawfulCMvPolynomial.sub sorry p₁ p₂
+
+def reduce [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
+  Option (CMvPolynomial n R)
+:= do
+  let p ← Quotient.lift₂ LawfulCMvPolynomial.reduce sorry p₁ p₂
+  return Quotient.mk LawfulCMvPolynomial.extEquiv p
+
+end R_CommRing
+
+end CMvPolynomial

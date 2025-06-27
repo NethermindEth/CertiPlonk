@@ -61,13 +61,13 @@ def extend [BEq R]
   (p : LawfulCMvPolynomial n R) :
   LawfulCMvPolynomial (max n n') R
 :=
-  LawfulCMvPolynomial.fromUnlawful <| p.val.extend n'
+  fromUnlawful <| p.val.extend n'
 
 def add [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  LawfulCMvPolynomial.fromUnlawful <| UnlawfulCMvPolynomial.add p₁.val p₂.val
+  fromUnlawful <| UnlawfulCMvPolynomial.add p₁.val p₂.val
 
 def mul [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  LawfulCMvPolynomial.fromUnlawful <| UnlawfulCMvPolynomial.mul p₁.val p₂.val
+  fromUnlawful <| UnlawfulCMvPolynomial.mul p₁.val p₂.val
 
 def find? (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) : Option R :=
   p.val.find? m
@@ -102,35 +102,9 @@ lemma mem_node
   {a : LawfulCMvPolynomial n R} :
   a.find? x = some c ↔ (x, c) ∈ a.val.val
 := by
-  unfold LawfulCMvPolynomial.find? RBMap.find? RBMap.findEntry? RBSet.findP?
-  constructor
-  · intro h
-    apply RBNode.find?_some_mem (cut := (λ x_1 ↦ CMvMonomial.simpleCmp x x_1.1))
-    simp
-    simp only [Option.map_eq_some', Prod.exists, exists_eq_right] at h
-    obtain ⟨w, h⟩ := h
-    simp_all only [Option.some.injEq, Prod.mk.injEq, and_true]
-    rw [←Option.mem_def] at h
-    apply RBNode.find?_some_eq_eq at h
-    unfold CMvMonomial.simpleCmp compareOfLessAndEq at h
-    simp at h
-    rcases h with ⟨_, h⟩
-    symm; assumption
-  · unfold Membership.mem RBNode.instMembership
-    intro h
-    simp [RBNode.EMem] at h
-    simp
-    use x
-    let p := a.val.2.out.1
-    apply (RBNode.Ordered.find?_some p).2
-    constructor
-    · aesop
-    · unfold CMvMonomial.simpleCmp compareOfLessAndEq
-      simp
-      apply Vector.le_refl
+  unfold find?
+  exact UnlawfulCMvPolynomial.mem_node
 
--- #eval myPolynomial
--- #check RBNode.find
 def extEquiv : Setoid (LawfulCMvPolynomial n R) where
   r a b := ∀ x, a.find? x = b.find? x
   iseqv := by constructor <;> (intros; simp only [*])
@@ -138,35 +112,39 @@ def extEquiv : Setoid (LawfulCMvPolynomial n R) where
 instance : HasEquiv (LawfulCMvPolynomial n R) where
   Equiv := extEquiv
 
-lemma to_list_equiv [DecidableEq R]
-  (a b : LawfulCMvPolynomial n R) :
-  a ≈ b →
-  a.val.toList.toFinset = b.val.toList.toFinset
+theorem find_no_zero
+  : ∀ (p : LawfulCMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0
 := by
-  unfold HasEquiv.Equiv instHasEquiv Setoid.r extEquiv
-  dsimp
-  intro h
-  ext x
-  rw [List.mem_toFinset, List.mem_toFinset]
-  rw [RBMap.mem_toList, RBMap.mem_toList]
-  unfold LawfulCMvPolynomial.find? at h
-  unfold Membership.mem RBNode.instMembership RBNode.EMem
-  dsimp
-  unfold RBMap.find? RBMap.findEntry? RBSet.findP? at h
-  -- let nodeA : RBNode (CMvMonomial n × R) := a.val.val
-  -- let nodeB : RBNode (CMvMonomial n × R) := b.val.val
-  -- have h_nodeA : nodeA = a.val.val := by rfl
-  -- have h_nodeB : nodeB = b.val.val := by rfl
-  -- rw [←h_nodeA] at ⊢ h
-  -- rw [←h_nodeB] at ⊢ h
+  intro p m
+  simp only [ne_eq]
+  intro contra
+  unfold LawfulCMvPolynomial UnlawfulCMvPolynomial.isNoZeroCoef at p
+  rcases p with ⟨p', ne_zero⟩
+  specialize ne_zero m
+  contradiction
+
+lemma fromUnlawful_find_no_zero_iff [BEq R] :
+  ∀ (p : UnlawfulCMvPolynomial n R) (m : CMvMonomial n) (c : R),
+    (fromUnlawful p).find? m = some c ↔ p.find? m = some c ∧ c ≠ 0
+:= by
+  intro p m c
+  -- let prop := (fromUnlawful p).2
   constructor
-  · induction' a.val.val
-    case h.mp.nil => simp
-    case h.mp.node l v r ih₁ ih₂ =>
+  · intro h
+    constructor
+    · unfold fromUnlawful at h
+      simp_all only [Bool.not_eq_true, Bool.decide_eq_false]
+      rw [UnlawfulCMvPolynomial.mem_node]
       simp
-      rcases b.val.val with (_| ⟨_, l₂, v, r₂⟩)
-      · sorry
-      · sorry
+        [ mem_node
+        , RBMap.filter
+        , RBSet.filter
+        , RBSet.foldl
+        ] at h
+      sorry
+    · intro hc
+      rw [hc] at h
+      apply find_no_zero (fromUnlawful p) m h
   · sorry
 
 end R_CommSemiring
@@ -175,16 +153,16 @@ section R_CommRing
 variable {n R} [CommRing R]
 
 def neg [BEq R] (p : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  LawfulCMvPolynomial.fromUnlawful p.val.neg
+  fromUnlawful p.val.neg
 
 def sub [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  LawfulCMvPolynomial.add p₁ p₂.neg
+  add p₁ p₂.neg
 
 def reduce [BEq R] (p d : LawfulCMvPolynomial n R) :
   Option (LawfulCMvPolynomial n R)
 := do
   let up ← UnlawfulCMvPolynomial.reduce p.val d.val
-  pure (LawfulCMvPolynomial.fromUnlawful up)
+  pure (fromUnlawful up)
 
 end R_CommRing
 end LawfulCMvPolynomial

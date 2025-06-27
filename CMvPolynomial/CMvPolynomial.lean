@@ -15,18 +15,15 @@ namespace CMvPolynomial
 section R_CommSemiring
 variable {n R} [CommSemiring R]
 
-def fromLawful (p : LawfulCMvPolynomial n R) : CMvPolynomial n R :=
-  Quotient.mk LawfulCMvPolynomial.extEquiv p
-
 def add [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  fromLawful <| Quotient.lift₂ LawfulCMvPolynomial.add sorry p₁ p₂
+  Quotient.map₂ LawfulCMvPolynomial.add sorry p₁ p₂
 
 def mul [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
-  fromLawful <| Quotient.lift₂ LawfulCMvPolynomial.mul sorry p₁ p₂
+  Quotient.map₂ LawfulCMvPolynomial.mul sorry p₁ p₂
 
 def find? (p : CMvPolynomial n R) (m : CMvMonomial n) : Option R :=
   Quotient.lift LawfulCMvPolynomial.find? valid p m
@@ -83,20 +80,51 @@ def findD (p : CMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R :=
 instance [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
   add := add
   add_assoc := sorry
-  zero := fromLawful (.constant 0)
+  zero := ⟦0⟧
   zero_add := sorry
-  add_zero := sorry
-  nsmul c p :=
-    mul (fromLawful (.constant c : LawfulCMvPolynomial n R)) p
+  add_zero := by
+    unfold_projs
+    intro a
+    simp [add, Quotient.map₂, Quotient.lift₂]
+    let a' : LawfulCMvPolynomial n R := Quotient.out a
+    have mka : a = ⟦a'⟧ := by rw [Quotient.eq_mk_iff_out]; aesop
+    simp [mka]
+    unfold LawfulCMvPolynomial.extEquiv; dsimp
+    intro x
+    unfold
+      LawfulCMvPolynomial.add
+      LawfulCMvPolynomial.constant
+    simp
+    unfold UnlawfulCMvPolynomial.add RBMap.mergeWith RBSet.mergeWith
+    simp [RBSet.foldl_eq_foldl_toList]
+    rw [RBSet.empty_toList]
+    dsimp
+    sorry
+  nsmul c p := mul (⟦.constant c⟧) p
   nsmul_zero := sorry
   nsmul_succ := sorry
-  add_comm := sorry
+  add_comm := by
+    intro a b
+    unfold HAdd.hAdd instHAdd
+    dsimp [add]
+    let a' : LawfulCMvPolynomial n R := Quotient.out a
+    let b' : LawfulCMvPolynomial n R := Quotient.out b
+    have mka : a = ⟦a'⟧ := by rw [Quotient.eq_mk_iff_out]; aesop
+    have mkb : b = ⟦b'⟧ := by rw [Quotient.eq_mk_iff_out]; aesop
+    rw [mka, mkb]
+    rw [Quotient.map₂, Quotient.lift₂, Quotient.lift₂]
+    rw [Quotient.lift_mk, Quotient.lift_mk, Quotient.lift_mk, Quotient.lift_mk]
+    rw [Quotient.eq]
+    unfold LawfulCMvPolynomial.extEquiv; dsimp
+    intro x
+    unfold LawfulCMvPolynomial.add
+    sorry
   mul := mul
   left_distrib := sorry
   right_distrib := sorry
   zero_mul := sorry
   mul_zero := sorry
-  one := fromLawful (.constant 1 : LawfulCMvPolynomial n R)
+  one := ⟦.constant 1⟧
   one_mul := sorry
   mul_one := sorry
   natCast := sorry
@@ -109,13 +137,13 @@ section R_CommRing
 variable {n R} [CommRing R]
 
 def sub [BEq R] (p₁ p₂ : CMvPolynomial n R) : CMvPolynomial n R :=
-  fromLawful <| Quotient.lift₂ LawfulCMvPolynomial.sub sorry p₁ p₂
+  Quotient.map₂ LawfulCMvPolynomial.sub sorry p₁ p₂
 
 def reduce [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
   Option (CMvPolynomial n R)
 := do
   let p ← Quotient.lift₂ LawfulCMvPolynomial.reduce sorry p₁ p₂
-  return fromLawful p
+  return ⟦p⟧
 
 end R_CommRing
 

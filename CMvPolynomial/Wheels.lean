@@ -3,10 +3,11 @@ import Mathlib
 
 open Batteries
 
-lemma RBNode.mem_Finset₀ [DecidableEq α] (n : RBNode (α × β)) :
-  ∀ init : Finset α, x ∈ init → x ∈ n.foldr (init := init) (λ (a, _) s ↦ insert a s)
+lemma RBNode.mem_Finset₀ [DecidableEq α] (t : RBNode (α × β)) :
+  ∀ init : Finset α,
+  x ∈ init → x ∈ t.foldr (init := init) (λ (a, _) s ↦ insert a s)
 := by
-  induction n
+  induction t
   case nil h =>
     intro init h
     simp; assumption
@@ -19,13 +20,15 @@ lemma RBNode.mem_Finset₀ [DecidableEq α] (n : RBNode (α × β)) :
     apply ih₂
     assumption
 
-lemma RBNode.mem_foldr_insert_of_mem [DecidableEq α] (n : RBNode (α × b)) :
+lemma RBNode.mem_foldr_insert_of_mem [DecidableEq α]
+  (t : RBNode (α × b)) :
   ∀ init : Finset α,
-    (a₀, b₀) ∈ n → a₀ ∈ n.foldr (init := init) (λ (a, _) s ↦ insert a s)
+    (a₀, b₀) ∈ t →
+    a₀ ∈ t.foldr (init := init) (λ (a, _) s ↦ insert a s)
 := by
   intro init h
   revert init
-  induction n
+  induction t
   case nil h => contradiction
   case node l v r ih₁ ih₂ =>
     simp
@@ -45,11 +48,13 @@ lemma RBNode.mem_foldr_insert_of_mem [DecidableEq α] (n : RBNode (α × b)) :
       apply ih₂
       assumption
 
-lemma RBNode.mem_of_mem_foldr_insert [DecidableEq α] (n : RBNode (α × b)) :
+lemma RBNode.mem_of_mem_foldr_insert [DecidableEq α]
+  (t : RBNode (α × b)) :
   ∀ init : Finset α,
-    a₀ ∈ n.foldr (λ (a, _) s ↦ insert a s) init → (∃ b₀, (a₀, b₀) ∈ n) ∨ a₀ ∈ init
+    a₀ ∈ t.foldr (λ (a, _) s ↦ insert a s) init →
+    (∃ b₀, (a₀, b₀) ∈ t) ∨ a₀ ∈ init
 := by
-  induction n
+  induction t
   case nil h =>
     intro init h
     simp at h

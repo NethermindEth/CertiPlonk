@@ -22,20 +22,6 @@ instance :
   rw [not_lt] at *
   simp [Nat.le_trans h₂ h₁]
 
-instance [LT α] [DecidableEq α] [∀ (a₁ a₂ : α), Decidable (a₁ < a₂)] :
-  Membership (α × β) (RBMap α β (λ a₁ a₂ ↦ compareOfLessAndEq a₁ a₂))
-where
-  mem map pair := by
-    unfold RBMap at map
-    exact pair ∈ map
-
-instance [LT α] [DecidableEq α] [∀ (a₁ a₂ : α), Decidable (a₁ < a₂)] :
-  Membership α (RBMap α β (λ a₁ a₂ ↦ compareOfLessAndEq a₁ a₂))
-where
-  mem map a := by
-    unfold RBMap at map
-    exact a ∈ RBMap.keysArray map
-
 -- instance isStrictCut {x : CMvMonomial n} [CommSemiring R] :
 --   RBNode.IsStrictCut
 --     (Ordering.byKey Prod.fst simpleCmp)

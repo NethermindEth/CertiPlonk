@@ -10,6 +10,19 @@ open Batteries
 abbrev UnlawfulCMvPolynomial n R [CommSemiring R] :=
   Batteries.RBMap (CMvMonomial n) R CMvMonomial.simpleCmp
 
+-- instance [LT α] [DecidableEq α] [∀ (a₁ a₂ : α), Decidable (a₁ < a₂)] :
+--   Membership (α × β) (RBMap α β (λ a₁ a₂ ↦ compareOfLessAndEq a₁ a₂))
+-- where
+--   mem map pair := by
+--     unfold RBMap at map
+--     exact pair ∈ map
+
+instance [LT α] [DecidableEq α] [∀ (a₁ a₂ : α), Decidable (a₁ < a₂)] :
+  Membership α (RBMap α β (λ a₁ a₂ ↦ compareOfLessAndEq a₁ a₂))
+where
+  mem map a := by
+    unfold RBMap at map
+    exact a ∈ RBMap.keysArray map
 namespace UnlawfulCMvPolynomial
 section R_CommSemiring
 variable {n R} [CommSemiring R]
@@ -29,8 +42,39 @@ def toFinset [DecidableEq R]
 :=
   p.val.foldr (init := .empty) (λ a s ↦ insert a s)
 
+lemma mem_node
+  {a : UnlawfulCMvPolynomial n R} :
+  a.find? x = some c ↔ (x, c) ∈ a.val
+:= by
+  unfold RBMap.find? RBMap.findEntry? RBSet.findP?
+  constructor
+  · intro h
+    apply RBNode.find?_some_mem (cut := (λ x_1 ↦ CMvMonomial.simpleCmp x x_1.1))
+    simp
+    simp only [Option.map_eq_some', Prod.exists, exists_eq_right] at h
+    obtain ⟨w, h⟩ := h
+    simp_all only [Option.some.injEq, Prod.mk.injEq, and_true]
+    rw [←Option.mem_def] at h
+    apply RBNode.find?_some_eq_eq at h
+    unfold CMvMonomial.simpleCmp compareOfLessAndEq at h
+    simp at h
+    rcases h with ⟨_, h⟩
+    symm; assumption
+  · unfold Membership.mem RBNode.instMembership
+    intro h
+    simp [RBNode.EMem] at h
+    simp
+    use x
+    let p := a.2.out.1
+    apply (RBNode.Ordered.find?_some p).2
+    constructor
+    · aesop
+    · unfold CMvMonomial.simpleCmp compareOfLessAndEq
+      simp
+      apply Vector.le_refl
+
 def monomials (p : UnlawfulCMvPolynomial n R) : Finset (CMvMonomial n) :=
-  p.val.foldr (init := .empty) (λ (a, _) s ↦ insert a s)
+  p.foldr (init := .empty) (λ a _ s ↦ insert a s)
 
 lemma mem_monomials_of_mem
   {p : UnlawfulCMvPolynomial n R} :
@@ -51,6 +95,55 @@ lemma mem_of_mem_monomials
   rcases h with ⟨b₀, h⟩ | contra
   · use b₀
   · contradiction
+
+-- #check Finmap.mem_insert
+-- #check RBMap.mem_toList_insert
+-- #check RBMap.mem_toList
+lemma mem_filter_insert_of_mem₀ [BEq R]
+  (t : RBNode (Term n R)):
+  ∀ init : UnlawfulCMvPolynomial n R,
+    init.find? a = some b →
+    RBMap.find?
+      (t.foldl (λ acc (a, b) ↦ bif ! b == 0 then acc.insert a b else acc) init)
+      a
+      = some b
+:= by
+  induction t
+  case nil h =>
+    intro init h
+    simp; assumption
+  case node l v r ih₁ ih₂ =>
+    intro init h
+    simp_all
+    apply ih₂
+    cases v.2 == 0
+    · simp
+      -- rw [RBMap.insert]
+      sorry
+    · simp
+      sorry
+
+lemma mem_filter_insert_of_mem [BEq R]
+  (t : RBNode (Term n R)):
+  ∀ init : UnlawfulCMvPolynomial n R,
+    (a₀, b₀) ∈ t →
+    RBMap.find?
+      (t.foldl (λ acc (a, b) ↦ bif ! b == 0 then acc.insert a b else acc) init)
+      a₀
+      = some b₀
+:= by
+  intro init h
+  revert init
+  induction t
+  case nil h => contradiction
+  case node l v r ih₁ ih₂ =>
+    simp
+    intro init
+    rw [RBNode.mem_node] at h
+    rcases h with (h₁ | h₂ | h₃)
+    · sorry
+    · sorry
+    · sorry
 
 instance [Repr R] : Repr (UnlawfulCMvPolynomial n R) where
   reprPrec p _ :=
@@ -73,6 +166,14 @@ def add [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   RBMap.mergeWith (λ _ c₁ c₂ ↦ c₁ + c₂) p₁ p₂
+
+-- lemma add_comm [BEq R] :
+--   ∀ (p₁ p₂ : UnlawfulCMvPolynomial n R), add p₁ p₂ = add p₂ p₁
+-- := by
+--   intro p₁ p₂
+--   unfold add
+    -- RBMap.mergeWith RBSet.mergeWith RBSet.foldl RBSet.insert
+  -- sorry
 
 def mul₀ [BEq R]
   (t : Term n R)

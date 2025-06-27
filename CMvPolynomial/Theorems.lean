@@ -159,16 +159,7 @@ lemma findFst (a : α) (l : List (α × β)) (a_in : a ∈ l.unzip.1) :
 --       simp [RBNode.cmpLT, *]
 --     · apply ih
 
-theorem find_no_zero [CommSemiring R]
-  : ∀ (p : LawfulCMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0
-:= by
-  intro p m
-  simp only [ne_eq]
-  intro contra
-  unfold LawfulCMvPolynomial UnlawfulCMvPolynomial.isNoZeroCoef at p
-  rcases p with ⟨p', ne_zero⟩
-  specialize ne_zero m
-  contradiction
+
 
 -- theorem find_no_zero [CommSemiring R]
 --   : ∀ (p : CMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0
@@ -219,7 +210,7 @@ def fromLawfulCMvPolynomial [CommSemiring R]
         split at contra
         case h_1 x h_eq =>
           subst contra; rcases h_eq with ⟨h_eq⟩
-          apply find_no_zero p w
+          apply LawfulCMvPolynomial.find_no_zero p w
           assumption
         case h_2 x h_eq => contradiction
     · intro a_ne_0
@@ -309,7 +300,7 @@ noncomputable def toCMvPolynomial [CommSemiring R]
   (p : MvPolynomial (Fin n) R) :
   CMvPolynomial n R
 :=
-  Quotient.mk LawfulCMvPolynomial.extEquiv (toLawfulCMvPolynomial p)
+  ⟦toLawfulCMvPolynomial p⟧
 
 -- theorem polynomial_id₁ {n R} [CommSemiring R] :
 --   ∀ (p : CMvPolynomial n R), toCMvPolynomial (fromCMvPolynomial p) = p

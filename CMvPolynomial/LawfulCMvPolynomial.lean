@@ -15,7 +15,7 @@ def fromUnlawful [BEq R]
   (p : UnlawfulCMvPolynomial n R) :
   LawfulCMvPolynomial n R
 :=
-  { val := p.filter (λ _ c ↦ ¬ c == 0)
+  { val := p.filter (λ _ c ↦ !c == 0)
     property := sorry
   }
 
@@ -112,6 +112,22 @@ def extEquiv : Setoid (LawfulCMvPolynomial n R) where
 instance : HasEquiv (LawfulCMvPolynomial n R) where
   Equiv := extEquiv
 
+lemma from_to_Lawful [BEq R] (p : LawfulCMvPolynomial n R) :
+  fromUnlawful p.val ≈ p
+:= by
+  intro x
+  unfold fromUnlawful
+  cases x_in_p : p.find? x
+  case none =>
+    sorry
+  case some val =>
+    rcases p with ⟨⟨node, _⟩, _⟩
+    rw [mem_node] at x_in_p
+    unfold RBMap.filter RBSet.filter RBSet.foldl
+    dsimp at x_in_p ⊢
+    apply UnlawfulCMvPolynomial.mem_filter_insert_of_mem node
+    assumption
+
 theorem find_no_zero
   : ∀ (p : LawfulCMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0
 := by
@@ -128,12 +144,10 @@ lemma fromUnlawful_find_no_zero_iff [BEq R] :
     (fromUnlawful p).find? m = some c ↔ p.find? m = some c ∧ c ≠ 0
 := by
   intro p m c
-  -- let prop := (fromUnlawful p).2
   constructor
   · intro h
     constructor
     · unfold fromUnlawful at h
-      simp_all only [Bool.not_eq_true, Bool.decide_eq_false]
       rw [UnlawfulCMvPolynomial.mem_node]
       simp
         [ mem_node

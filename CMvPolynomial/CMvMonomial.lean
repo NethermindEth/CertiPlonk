@@ -24,28 +24,18 @@ instance : Repr (CMvMonomial n) where
 
 namespace CMvMonomial
 
-def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
-  if h_le : n' ≤ n then by
-    have : max n n' = n := by
-      rw [sup_eq_left]
-      exact h_le
-    rw [this]
-    exact m
-  else by
-    let diff := n' - n
-    have : max n n' = n + diff := by
-      unfold diff
-      simp only [not_le] at h_le
-      have h_le : n ≤ n' := by
-        rw [le_iff_lt_or_eq]
-        left; exact h_le
-      rw [sup_comm, sup_eq_left.2 h_le]
-      rw [←Nat.add_sub_assoc h_le]
-      simp
-    rw [this]
-    exact m ++ (Vector.replicate diff 0)
+variable {n : ℕ}
 
-def totalDegree (m : CMvMonomial n) : ℕ := m.foldl Nat.add 0
+def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
+  cast (have : n + (n' - n) = n ⊔ n' :=
+          if h : n' ≤ n
+          then by simp [h]
+          else by have := le_of_lt (not_le.1 h)
+                  rw [sup_of_le_right this, Nat.add_sub_cancel' this]
+        this ▸ rfl)
+       (m ++ Vector.replicate (n' - n) 0)
+
+def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
 def one : CMvMonomial n := Vector.replicate n 0
 

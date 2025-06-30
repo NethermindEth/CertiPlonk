@@ -1,7 +1,5 @@
 import CMvPolynomial.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
-import Batteries.Data.RBMap.Alter
-import CMvPolynomial.Instances
 
 open Batteries
 
@@ -369,3 +367,5 @@ where
   map_mul' := sorry
   map_zero' := sorry
   map_add' := sorry
+
+#min_imports

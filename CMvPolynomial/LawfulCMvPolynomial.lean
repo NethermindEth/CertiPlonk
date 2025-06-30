@@ -1,6 +1,4 @@
-import Mathlib.Algebra.Lie.OfAssociative
 import CMvPolynomial.UnlawfulCMvPolynomial
-import Batteries.Data.RBMap.Lemmas
 
 open Batteries
 

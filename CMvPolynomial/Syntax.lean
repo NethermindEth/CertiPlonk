@@ -1,5 +1,4 @@
-import CMvPolynomial.CMvPolynomial
-import Batteries.Data.RBMap.Lemmas
+import CMvPolynomial.LawfulCMvPolynomial
 
 import Lean
 open Lean Batteries

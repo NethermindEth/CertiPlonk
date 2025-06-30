@@ -1,8 +1,4 @@
-import Batteries.Data.RBMap.Lemmas
-import Aesop
-
 import CMvPolynomial.LawfulCMvPolynomial
-import CMvPolynomial.Wheels
 
 open Batteries
 

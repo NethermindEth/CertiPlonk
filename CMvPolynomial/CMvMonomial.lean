@@ -1,8 +1,8 @@
-import Mathlib
-import Mathlib.Algebra.MvPolynomial.Basic
-import Batteries.Classes.Order
-import Batteries.Data.RBMap
+import Batteries.Data.RBMap.Basic
 import CMvPolynomial.Instances
+import Mathlib.Algebra.Order.Group.Nat
+import Mathlib.Algebra.Ring.Defs
+import Mathlib.Data.Nat.Lattice
 
 open Batteries
 

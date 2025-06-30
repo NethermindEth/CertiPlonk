@@ -1,8 +1,7 @@
-import Mathlib.Algebra.Lie.OfAssociative
-import Batteries.Data.RBMap.Lemmas
-import Aesop
 import CMvPolynomial.CMvMonomial
 import CMvPolynomial.Wheels
+import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.Data.Ordering.Lemmas
 
 open Batteries
 

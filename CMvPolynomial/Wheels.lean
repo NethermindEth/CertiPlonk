@@ -1,5 +1,5 @@
-import Batteries.Data.RBMap
-import Mathlib
+import Batteries.Data.RBMap.Lemmas
+import Mathlib.Data.Finset.Insert
 
 open Batteries
 

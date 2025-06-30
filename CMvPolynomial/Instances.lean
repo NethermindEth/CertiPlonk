@@ -1,7 +1,4 @@
-import Mathlib
-import Batteries.Data.RBMap.Lemmas
-
-open Batteries
+import Mathlib.Data.Nat.Basic
 
 instance : Std.Irrefl λ x1 x2 : ℕ ↦ x1 < x2 := ⟨Nat.lt_irrefl⟩
 

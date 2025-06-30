@@ -18,12 +18,11 @@ abbrev UnlawfulCMvPolynomial n R [CommSemiring R] :=
 --     exact pair ∈ map
 
 instance [LT α] [DecidableEq α] [∀ (a₁ a₂ : α), Decidable (a₁ < a₂)] :
-  Membership α (RBMap α β (λ a₁ a₂ ↦ compareOfLessAndEq a₁ a₂))
-where
-  mem map a := by
-    unfold RBMap at map
-    exact a ∈ RBMap.keysArray map
+  Membership α (RBMap α β (λ a₁ a₂ ↦ compareOfLessAndEq a₁ a₂)) where
+  mem map a := a ∈ RBMap.keysArray map
+
 namespace UnlawfulCMvPolynomial
+
 section R_CommSemiring
 variable {n R} [CommSemiring R]
 

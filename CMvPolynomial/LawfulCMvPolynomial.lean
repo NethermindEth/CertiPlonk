@@ -143,7 +143,9 @@ lemma from_to_Lawful₀ [BEq R] [LawfulBEq R] :
       left
       assumption
 
-lemma from_to_Lawful [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
+#printaxioms from_to_Lawful₀
+
+lemma from_to_Unlawful [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
   fromUnlawful p.val ≈ p
 := by
   intro x
@@ -159,14 +161,27 @@ lemma from_to_Lawful [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
       simp
       subst c_zero
       assumption
-    -- rw [mem_node] at x_in_p
     unfold RBMap.filter RBSet.filter RBSet.foldl
     dsimp at x_in_p ⊢
     unfold find?
     dsimp
     rw [from_to_Lawful₀] <;> try apply nonzero_coeff
-    sorry
-
+    unfold LawfulCMvPolynomial.find? at x_in_p
+    simp at x_in_p
+    by_contra find_some
+    rw [←ne_eq, Option.ne_none_iff_exists] at find_some
+    rcases find_some with ⟨val, find_some⟩
+    let find_some := find_some.symm
+    apply UnlawfulCMvPolynomial.mem_of_filter_insert at find_some
+    · rcases find_some with (f₁ | f₂)
+      · have find_x : RBMap.find? ⟨node, wf⟩ x = val := by
+          rw [UnlawfulCMvPolynomial.mem_node]
+          simp [*]
+        rw [find_x] at x_in_p
+        contradiction
+      · contradiction
+    · rw [RBNode.WF_iff] at wf
+      exact wf.1
   case some val =>
     rcases p with ⟨⟨node, wf⟩, node_nozero⟩
     rw [mem_node] at x_in_p

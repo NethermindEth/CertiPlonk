@@ -95,7 +95,7 @@ instance [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
     simp [RBSet.foldl_eq_foldl_toList, UnlawfulCMvPolynomial.empty]
     rw [RBSet.empty_toList]
     dsimp
-    sorry
+    apply LawfulCMvPolynomial.from_to_Unlawful
   nsmul c p := mul (⟦.constant c⟧) p
   nsmul_zero := sorry
   nsmul_succ := sorry

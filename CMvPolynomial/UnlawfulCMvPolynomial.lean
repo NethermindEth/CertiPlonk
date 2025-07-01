@@ -75,6 +75,8 @@ lemma mem_node
       simp
       apply Vector.le_refl
 
+#printaxioms mem_node
+
 def monomials (p : UnlawfulCMvPolynomial n R) : Finset (CMvMonomial n) :=
   p.foldr (init := .empty) (λ a _ s ↦ insert a s)
 
@@ -179,6 +181,48 @@ lemma mem_filter_insert_of_mem [BEq R]
       rw [CMvMonomial.simpleCmp_lt.2 a₀_lt_v1]
       simp
     · apply ih₂ ordered₂ h₃
+
+#printaxioms mem_filter_insert_of_mem
+
+lemma mem_of_filter_insert [BEq R]
+  (t : RBNode (Term n R)):
+  RBNode.Ordered (Ordering.byKey Prod.fst CMvMonomial.simpleCmp) t →
+  ∀ init : UnlawfulCMvPolynomial n R,
+    RBMap.find? (t.foldl (λ acc (a, b) ↦ acc.insert a b) init) a₀ = some b₀ →
+    (a₀, b₀) ∈ t ∨ init.find? a₀ = some b₀
+:= by
+  intro ordered init h
+  revert init
+  induction t
+  case nil h =>
+    intro init in_fold
+    simp at in_fold
+    right; assumption
+  case node l v r ih₁ ih₂ =>
+    simp at *
+    rcases ordered with ⟨o₁, o₂, o₃, o₄⟩
+    intro init find_in_fold
+    specialize
+      ih₂ o₄
+        ((RBNode.foldl (fun acc x => acc.insert x.1 x.2) init l).insert v.1 v.2)
+        find_in_fold
+    rcases ih₂ with (in_r | ih₂)
+    · left; right; right; assumption
+    · by_cases is_val : a₀ = v.1
+      · rw [RBMap.find?_insert_of_eq] at ih₂
+        · simp at ih₂
+          left; left; simp [is_val, ←ih₂]
+        · rw [CMvMonomial.simpleCmp_eq]; assumption
+      · rw [RBMap.find?_insert_of_ne] at ih₂
+        · specialize ih₁ o₃ init ih₂
+          rcases ih₁ with (in_v | ih₁)
+          · left; right; left; assumption
+          · right; assumption
+        · intro contra
+          rw [CMvMonomial.simpleCmp_eq] at contra
+          contradiction
+
+#printaxioms mem_of_filter_insert
 
 instance [Repr R] : Repr (UnlawfulCMvPolynomial n R) where
   reprPrec p _ :=

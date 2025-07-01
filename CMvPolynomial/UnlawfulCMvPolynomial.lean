@@ -29,7 +29,7 @@ def extend
   (n' : ℕ) (p : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial (max n n') R
 :=
-  p.map (λ (m, c) ↦ (m.extend n', c))
+  p.map λ (m, c) ↦ (m.extend n', c)
 
 def isNoZeroCoef (p : UnlawfulCMvPolynomial n R) : Prop :=
   ∀ m, p.find? m ≠ some 0
@@ -38,7 +38,7 @@ def toFinset [DecidableEq R]
   (p : UnlawfulCMvPolynomial n R) :
   Finset (CMvMonomial n × R)
 :=
-  p.val.foldr (init := .empty) (λ a s ↦ insert a s)
+  p.val.foldr (init := .empty) insert
 
 lemma mem_node
   {a : UnlawfulCMvPolynomial n R} :
@@ -72,31 +72,18 @@ lemma mem_node
       apply Vector.le_refl
 
 def monomials (p : UnlawfulCMvPolynomial n R) : Finset (CMvMonomial n) :=
-  p.foldr (init := .empty) (λ a _ s ↦ insert a s)
+  p.foldr (init := .empty) λ a _ s ↦ insert a s
 
 lemma mem_monomials_of_mem
   {p : UnlawfulCMvPolynomial n R} :
   (a₀, b₀) ∈ p.val → a₀ ∈ p.monomials
-:= by
-  unfold UnlawfulCMvPolynomial.monomials
-  intro h
-  apply RBNode.mem_foldr_insert_of_mem (b₀ := b₀)
-  assumption
+:= RBNode.mem_foldr_insert_of_mem (b₀ := b₀) _ _
 
 lemma mem_of_mem_monomials
   {p : UnlawfulCMvPolynomial n R} :
   a₀ ∈ p.monomials → (∃ b₀, (a₀, b₀) ∈ p.val)
-:= by
-  unfold UnlawfulCMvPolynomial.monomials
-  intro h
-  apply RBNode.mem_of_mem_foldr_insert at h
-  rcases h with ⟨b₀, h⟩ | contra
-  · use b₀
-  · contradiction
+:= fun h ↦ (RBNode.mem_of_mem_foldr_insert _ _ h).elim id fun c ↦ by contradiction
 
--- #check Finmap.mem_insert
--- #check RBMap.mem_toList_insert
--- #check RBMap.mem_toList
 lemma mem_filter_insert_of_mem₀ [BEq R]
   (t : RBNode (MonoR n R)):
   ∀ init : UnlawfulCMvPolynomial n R,
@@ -115,10 +102,10 @@ lemma mem_filter_insert_of_mem₀ [BEq R]
     simp_all
     apply ih₂
     cases v.2 == 0
-    · simp
+    · 
       -- rw [RBMap.insert]
       sorry
-    · simp
+    · 
       sorry
 
 lemma mem_filter_insert_of_mem [BEq R]
@@ -156,14 +143,23 @@ instance [Repr R] : Repr (UnlawfulCMvPolynomial n R) where
 -- def myPolynomial₂ : UnlawfulCMvPolynomial 3 ℤ :=
 --   [⟨#m[1, 2, 1], -5⟩, ⟨#m[3, 2, 0], -5⟩].toRBMap CMvMonomial.simpleCmp
 
-def constant [BEq R] (c : R) : UnlawfulCMvPolynomial n R :=
+/--
+  Ref: @Frantisek - Why `BEq`?
+-/
+def constant (c : R) : UnlawfulCMvPolynomial n R :=
   Function.uncurry RBMap.single (MonoR.constant c)
   -- Function.uncurry RBMap.empty.insert (MonoR.constant c)
 
-def add [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
+def zero : UnlawfulCMvPolynomial n R := constant 0
+
+instance : Zero (UnlawfulCMvPolynomial n R) := ⟨zero⟩
+
+def add (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   RBMap.mergeWith (λ _ c₁ c₂ ↦ c₁ + c₂) p₁ p₂
+
+instance : Add (UnlawfulCMvPolynomial n R) := ⟨add⟩
 
 -- lemma add_comm [BEq R] :
 --   ∀ (p₁ p₂ : UnlawfulCMvPolynomial n R), add p₁ p₂ = add p₂ p₁
@@ -173,72 +169,78 @@ def add [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
     -- RBMap.mergeWith RBSet.mergeWith RBSet.foldl RBSet.insert
   -- sorry
 
-def mul₀ [BEq R]
+/--
+  Ref: @Frantisek - Why `BEq`?
+-/
+def mul₀
   (t : MonoR n R)
   (p : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
-  p.map (λ (m, c) ↦ (CMvMonomial.mul t.1 m, t.2 * c))
+  p.map λ (m, c) ↦ (t.1 * m, t.2 * c)
 
-theorem list_nodup (p : UnlawfulCMvPolynomial n R) :
-  p.toList.Nodup
-:= by
-  apply CMvMonomial.list_pairwise_lt_nodup
-  apply RBMap.toList_sorted
+theorem list_nodup {p : UnlawfulCMvPolynomial n R} :
+  p.toList.Nodup := CMvMonomial.list_pairwise_lt_nodup RBMap.toList_sorted
 
-def mul [CommSemiring R] [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
-  UnlawfulCMvPolynomial n R
+/--
+  Ref: @Frantisek - Why `CommSemiring` and `BEq`?
+-/
+def mul (p₁ p₂ : UnlawfulCMvPolynomial n R) : UnlawfulCMvPolynomial n R
 :=
-  let Pairs : Type := {x : CMvMonomial n × R // x ∈ p₁.toList}
-  have : Fintype Pairs :=
-    { elems :=
-      ⟨ Multiset.ofList p₁.toList.attach
-      , by
-          simp
-          rw [List.nodup_attach]
-          apply UnlawfulCMvPolynomial.list_nodup
-      ⟩
-    , complete := by
-        rintro ⟨x, hs⟩
-        simp
-        apply List.mem_attach
-    }
+  -- let Pairs : Type := {x : CMvMonomial n × R // x ∈ p₁.toList}
+  -- have : Fintype Pairs :=
+  --   { elems :=
+  --     ⟨ Multiset.ofList p₁.toList.attach
+  --     , by
+  --         simp
+  --         rw [List.nodup_attach]
+  --         apply UnlawfulCMvPolynomial.list_nodup
+  --     ⟩
+  --   , complete := by
+  --       rintro ⟨x, hs⟩
+  --       simp
+  --       apply List.mem_attach
+  --   }
   let terms : List (UnlawfulCMvPolynomial n R) :=
     p₁.foldl (λ acc m c ↦ UnlawfulCMvPolynomial.mul₀ (m, c) p₂ :: acc) []
   terms.foldl UnlawfulCMvPolynomial.add .empty
   -- Not sure the `AddCommMonoid` instance works
   -- ∑ t : Pairs, UnlawfulCMvPolynomial.mul₀ t p₂
 
-theorem nonemptySome
-  (p : UnlawfulCMvPolynomial n R)
-  (nonempty : p.size > 0) :
-  ∃ m r, p.find? m = some r
-:= by
-  unfold UnlawfulCMvPolynomial at *
-  rcases p with ⟨p⟩
-  cases p with
-    | nil => contradiction
-    | node _ l v r =>
-      rcases v with ⟨m, r⟩
-      exists m, r
-      simp
-        [ RBMap.find?, RBMap.findEntry?, RBSet.findP?, RBNode.find?, CMvMonomial.simpleCmp
-        , compareOfLessAndEq, gt_iff_lt
-        ]
-      split <;> (try simp [Vector.lt_irrefl] at *)
+instance : Mul (UnlawfulCMvPolynomial n R) := ⟨mul⟩
 
+theorem nonemptySome
+  {p : UnlawfulCMvPolynomial n R}
+  (nonempty : 0 < p.size) :
+  ∃ m r, p.find? m = some r
+:= by  
+  unfold UnlawfulCMvPolynomial at *
+  rcases p with ⟨_ | ⟨_, l, ⟨m, r⟩, _⟩⟩ <;> [contradiction; skip]
+  use m, r
+  simp [RBMap.find?_some, RBMap.mem_toList]
+  
 end R_CommSemiring
 
 section R_CommRing
 variable {n R} [CommRing R]
 
-def neg [BEq R] (p : UnlawfulCMvPolynomial n R) : UnlawfulCMvPolynomial n R :=
-  p.map (λ (m, c) ↦ (m, -c))
+/--
+  Ref: @Frantisek - Why `BEq`?
+-/
+def neg (p : UnlawfulCMvPolynomial n R) : UnlawfulCMvPolynomial n R :=
+  p.map λ (m, c) ↦ (m, -c)
 
-def sub [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
+instance : Neg (UnlawfulCMvPolynomial n R) := ⟨neg⟩
+
+/--
+  Ref: @Frantisek - Why `BEq`?
+-/
+def sub (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   UnlawfulCMvPolynomial.add p₁ p₂.neg
+
+instance : Sub (UnlawfulCMvPolynomial n R) := ⟨sub⟩
 
 /-- lt(p) according to the `simpleCmp` order -/
 def leadingTerm? [BEq R] : UnlawfulCMvPolynomial n R → Option (MonoR n R) :=
@@ -255,7 +257,7 @@ def findDivisibleTerm?
   (divisor : CMvMonomial n) :
   Option (MonoR n R)
 :=
-  p.foldl (λ acc m c ↦ if m.divides divisor then (m, c) else acc) none
+  p.foldl (λ acc m c ↦ if m.divides divisor then .some (m, c) else acc) none
 
 def div₀
   (f : UnlawfulCMvPolynomial n R)

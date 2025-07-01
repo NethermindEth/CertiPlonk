@@ -98,7 +98,7 @@ lemma mem_of_mem_monomials
 -- #check RBMap.mem_toList_insert
 -- #check RBMap.mem_toList
 lemma mem_filter_insert_of_mem₀ [BEq R]
-  (t : RBNode (Term n R)):
+  (t : RBNode (MonoR n R)):
   ∀ init : UnlawfulCMvPolynomial n R,
     init.find? a = some b →
     RBMap.find?
@@ -122,7 +122,7 @@ lemma mem_filter_insert_of_mem₀ [BEq R]
       sorry
 
 lemma mem_filter_insert_of_mem [BEq R]
-  (t : RBNode (Term n R)):
+  (t : RBNode (MonoR n R)):
   ∀ init : UnlawfulCMvPolynomial n R,
     (a₀, b₀) ∈ t →
     RBMap.find?
@@ -157,8 +157,8 @@ instance [Repr R] : Repr (UnlawfulCMvPolynomial n R) where
 --   [⟨#m[1, 2, 1], -5⟩, ⟨#m[3, 2, 0], -5⟩].toRBMap CMvMonomial.simpleCmp
 
 def constant [BEq R] (c : R) : UnlawfulCMvPolynomial n R :=
-  Function.uncurry RBMap.single (Term.constant c)
-  -- Function.uncurry RBMap.empty.insert (Term.constant c)
+  Function.uncurry RBMap.single (MonoR.constant c)
+  -- Function.uncurry RBMap.empty.insert (MonoR.constant c)
 
 def add [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
@@ -174,7 +174,7 @@ def add [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   -- sorry
 
 def mul₀ [BEq R]
-  (t : Term n R)
+  (t : MonoR n R)
   (p : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
@@ -241,7 +241,7 @@ def sub [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial.add p₁ p₂.neg
 
 /-- lt(p) according to the `simpleCmp` order -/
-def leadingTerm? [BEq R] : UnlawfulCMvPolynomial n R → Option (Term n R) :=
+def leadingTerm? [BEq R] : UnlawfulCMvPolynomial n R → Option (MonoR n R) :=
   RBMap.max?
 
 /-- lm(p) according to the `simpleCmp` order -/
@@ -253,7 +253,7 @@ def leadingMonomial? [BEq R] :
 def findDivisibleTerm?
   (p : UnlawfulCMvPolynomial n R)
   (divisor : CMvMonomial n) :
-  Option (Term n R)
+  Option (MonoR n R)
 :=
   p.foldl (λ acc m c ↦ if m.divides divisor then (m, c) else acc) none
 

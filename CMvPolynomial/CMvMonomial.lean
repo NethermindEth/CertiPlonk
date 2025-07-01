@@ -61,7 +61,9 @@ instance : Mul (CMvMonomial n) := ⟨mul⟩
 def divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
-instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩ -- This triggers a cast, do not eta.
+instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩ -- Do not eta.
+
+instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
 /--
   Ref: @Andrei @Julian
@@ -138,26 +140,38 @@ lemma CMvMonomial.list_pairwise_lt_nodup {l : List (CMvMonomial n × R)} :
   · aesop (add simp RBNode.cmpLT) (config := {warnOnNonterminal := false})
     exact absurd (left _ _ a) (Vector.lt_irrefl _)
 
-abbrev MonoR n R [CommSemiring R] := CMvMonomial n × R
+def MonoR n R [CommSemiring R] := CMvMonomial n × R
 
 namespace MonoR
 
 instance [DecidableEq R] : DecidableEq (CMvMonomial n × R) :=
   instDecidableEqProd
 
-instance [CommSemiring R] [Repr R] : Repr (MonoR n R) where
+section
+
+variable [CommSemiring R]
+
+instance [Repr R] : Repr (MonoR n R) where
   reprPrec
     | (m, c), _ => repr c ++ " * " ++ repr m
 
-def constant [CommSemiring R] (c : R) : MonoR n R :=
+def constant (c : R) : MonoR n R :=
   (CMvMonomial.one, c)
 
-def divides [CommSemiring R] [HMod R R R] [BEq R]
+def divides [HMod R R R] [BEq R]
   (t₁ : MonoR n R)
   (t₂ : MonoR n R) :
   Bool
 :=
-  t₁.1.divides t₂.1 ∧ t₁.2 % t₂.2 == 0
+  t₁.1 ∣ t₂.1 ∧ t₁.2 % t₂.2 == 0
+
+instance [HMod R R R] [BEq R] : Dvd (MonoR n R) := ⟨fun t₁ t₂ ↦ divides t₁ t₂⟩ -- Do not eta.
+
+instance [HMod R R R] [BEq R] {t₁ t₂ : MonoR n R} : Decidable (t₁ ∣ t₂) := by
+  dsimp [(·∣·)]
+  infer_instance
+
+end
 
 end MonoR
 
@@ -165,7 +179,7 @@ abbrev GrevlexOrderingVector n := Vector ℤ (n + 1)
 
 def orderingVector (m : CMvMonomial n) : GrevlexOrderingVector n :=
   ⟨ #[.ofNat m.totalDegree] ++ m.toArray.reverse.map .negOfNat
-  , by simp [Nat.add_comm]
+  , by simp +arith
   ⟩
 
 def grevlex (m₁ m₂ : CMvMonomial n) : Ordering :=

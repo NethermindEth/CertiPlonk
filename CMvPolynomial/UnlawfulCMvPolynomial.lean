@@ -107,7 +107,7 @@ lemma mem_filter_insert_of_mem₀ [BEq R]
     rcases v with ⟨v₁, v₂⟩; simp_all
     have neq : a.simpleCmp v₁ ≠ Ordering.eq := by
       intro contra
-      rw [CMvMonomial.simpleCmp_eq] at contra
+      rw [CMvMonomial.simpleCmp_iff] at contra
       apply (h v₂).1 contra
       rfl
     rw [RBMap.find?_insert_of_ne _ neq]
@@ -115,6 +115,7 @@ lemma mem_filter_insert_of_mem₀ [BEq R]
 
 lemma mem_filter_insert_of_mem [BEq R]
   (t : RBNode (MonoR n R)):
+  RBNode.Ordered (Ordering.byKey Prod.fst CMvMonomial.simpleCmp) t →
   ∀ init : UnlawfulCMvPolynomial n R,
     (a₀, b₀) ∈ t →
     RBMap.find? (t.foldl (λ acc (a, b) ↦ acc.insert a b) init) a₀ = some b₀
@@ -139,13 +140,16 @@ lemma mem_filter_insert_of_mem [BEq R]
         rcases a₀c_in with ⟨⟨m', c'⟩, x_in_r, h_eq⟩
         specialize all_lt₂ (m', c') x_in_r
         simp [Ordering.byKey, RBNode.cmpLT] at all_lt₂
-        simp at h_eq
+        -- simp at h_eq
         specialize all_lt₂
         subst h₁
         simp_all only [forall_const, Prod.forall]
-        apply Vector.lt_irrefl m' all_lt₂
+        apply Vector.lt_irrefl m'
+        injection h_eq with p₁ p₂
+        subst p₁
+        assumption
       apply RBMap.find?_insert_of_eq
-      rw [CMvMonomial.simpleCmp_eq]
+      simp
     · have a₀_lt_v1 : a₀ < v.1 := by
         specialize all_lt₁ (a₀, b₀) h₂
         simp [Ordering.byKey, RBNode.cmpLT] at all_lt₁
@@ -159,11 +163,12 @@ lemma mem_filter_insert_of_mem [BEq R]
         rcases a₀c_in with ⟨⟨m', c'⟩, x_in_r, h_eq⟩
         specialize all_lt₂ (m', c') x_in_r
         simp [Ordering.byKey, RBNode.cmpLT] at all_lt₂
-        simp at h_eq
+        injection h_eq with p₁ p₂
         specialize all_lt₂
         simp_all only [forall_const, Prod.forall]
         apply Vector.lt_irrefl m'
         trans v.1 <;> assumption
+      rcases v with ⟨v, hv⟩
       rw [RBMap.find?_insert_of_ne]
       apply ih₁
       rw [CMvMonomial.simpleCmp_lt.2 a₀_lt_v1]
@@ -173,7 +178,7 @@ lemma mem_filter_insert_of_mem [BEq R]
 #printaxioms mem_filter_insert_of_mem
 
 lemma mem_of_filter_insert [BEq R]
-  (t : RBNode (Term n R)):
+  (t : RBNode (MonoR n R)):
   RBNode.Ordered (Ordering.byKey Prod.fst CMvMonomial.simpleCmp) t →
   ∀ init : UnlawfulCMvPolynomial n R,
     RBMap.find? (t.foldl (λ acc (a, b) ↦ acc.insert a b) init) a₀ = some b₀ →

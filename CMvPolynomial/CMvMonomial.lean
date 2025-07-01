@@ -37,27 +37,61 @@ def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
 
 def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
+/-
+  Ref: @Andrei @Julian
+
+  What notion of `zero` makes sense; here `0^n` is `Πᵢ X<i>^0 = 1`, as below.
+-/
+
 def one : CMvMonomial n := Vector.replicate n 0
+
+instance : One (CMvMonomial n) := ⟨one⟩
 
 def mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
   Vector.zipWith .add
 
+instance : Mul (CMvMonomial n) := ⟨mul⟩
+
+/-
+  Ref: @Andrei @Julian
+
+  Which `HMul`s do we want? Needs thought.
+-/
+
 def divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
+instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩ -- This triggers a cast, do not eta.
+
+/--
+  Ref: @Andrei @Julian
+
+  I would probably suggest *not* spooning this into `Option`.
+  Two alternatives:
+  - a) return `Vector.zipWith Nat.sub`, and sature silly subterms to zero.
+  - b) return `Vector.zipWith Nat.sub` if m₁ | m₂, _zero_ otherwise.
+  
+  Then we have statements assuming `m₁ | m₂ → P` for most `P` regarding `div`.
+-/
 def div (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) :
   Option (CMvMonomial n)
 :=
   if m₁.divides m₂ then Vector.zipWith Nat.sub m₁ m₂ else none
 
+/--
+  Ref: @Andrei @Julian
+
+  - Depending on the answer to the question wrt. `div` above, we might want `Div` as well.
+  - Furthermore, which other `HDiv`s do we want?
+-/
+instance : HDiv (CMvMonomial n) (CMvMonomial n) (Option (CMvMonomial n)) := ⟨div⟩
+
 abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
   compareOfLessAndEq a₁ a₂
 
-lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ := by
-  unfold simpleCmp
-  rw [compareOfLessAndEq_eq_eq]
-  · apply Vector.le_refl
-  · intro x y; apply Vector.not_le
+@[simp]
+lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ :=
+  compareOfLessAndEq_eq_eq Vector.le_refl Vector.not_le
 
 lemma simpleCmp_lt : simpleCmp a₁ a₂ = .lt ↔ a₁ < a₂ := by
   unfold simpleCmp

@@ -131,44 +131,35 @@ where
   symm := fun _ _ ↦ CMvMonomial.symm
   le_trans := CMvMonomial.le_trans
 
-lemma CMvMonomial.list_pairwise_lt_nodup (l : List (CMvMonomial n × R)) :
-  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup
-:= by
-  intro h
-  induction h with
-  | nil => simp
-  | @cons a l head tail ih =>
-    apply List.Pairwise.cons
-    · intros a' a'_in contra
-      rw [contra] at head
-      specialize head a' a'_in
-      simp [RBNode.cmpLT] at head
-      specialize head
-      simp [Vector.lt_irrefl] at head
-    · apply ih
+lemma CMvMonomial.list_pairwise_lt_nodup {l : List (CMvMonomial n × R)} :
+  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup := by
+  induction' l with hd tl ih
+  · simp
+  · aesop (add simp RBNode.cmpLT) (config := {warnOnNonterminal := false})
+    exact absurd (left _ _ a) (Vector.lt_irrefl _)
 
-abbrev Term n R [CommSemiring R] := CMvMonomial n × R
+abbrev MonoR n R [CommSemiring R] := CMvMonomial n × R
 
-namespace Term
+namespace MonoR
 
 instance [DecidableEq R] : DecidableEq (CMvMonomial n × R) :=
   instDecidableEqProd
 
-instance [CommSemiring R] [Repr R] : Repr (Term n R) where
+instance [CommSemiring R] [Repr R] : Repr (MonoR n R) where
   reprPrec
     | (m, c), _ => repr c ++ " * " ++ repr m
 
-def constant [CommSemiring R] (c : R) : Term n R :=
+def constant [CommSemiring R] (c : R) : MonoR n R :=
   (CMvMonomial.one, c)
 
 def divides [CommSemiring R] [HMod R R R] [BEq R]
-  (t₁ : Term n R)
-  (t₂ : Term n R) :
+  (t₁ : MonoR n R)
+  (t₂ : MonoR n R) :
   Bool
 :=
   t₁.1.divides t₂.1 ∧ t₁.2 % t₂.2 == 0
 
-end Term
+end MonoR
 
 abbrev GrevlexOrderingVector n := Vector ℤ (n + 1)
 

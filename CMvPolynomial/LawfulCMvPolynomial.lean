@@ -45,7 +45,7 @@ def constant [BEq R] [LawfulBEq R]
         by_contra contra
         have ⟨y, contra, _⟩ := RBMap.find?_some_mem_toList contra
         simp at contra
-        unfold Term.constant at contra
+        unfold MonoR.constant at contra
         aesop
     ⟩
 

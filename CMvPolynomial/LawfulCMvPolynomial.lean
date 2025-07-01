@@ -25,7 +25,7 @@ def constant [BEq R] [LawfulBEq R]
   if h : c == 0 then
     ⟨ .empty
     , by
-        unfold UnlawfulCMvPolynomial.isNoZeroCoef
+        unfold UnlawfulCMvPolynomial.isNoZeroCoef UnlawfulCMvPolynomial.empty
         intro m
         cases h : RBMap.empty.find? m
         · simp
@@ -110,21 +110,77 @@ def extEquiv : Setoid (LawfulCMvPolynomial n R) where
 instance : HasEquiv (LawfulCMvPolynomial n R) where
   Equiv := extEquiv
 
-lemma from_to_Lawful [BEq R] (p : LawfulCMvPolynomial n R) :
+lemma from_to_Lawful₀ [BEq R] [LawfulBEq R] :
+  ∀ (node : RBNode (CMvMonomial n × R)) (init : UnlawfulCMvPolynomial n R),
+    (∀ k v, (k, v) ∈ node → v ≠ 0) →
+    node.foldl (fun acc a => bif !a.2 == 0 then RBSet.insert acc a else acc) init
+      = node.foldl (fun acc a => RBSet.insert acc a) init
+:= by
+  intro node
+  let node' := node
+  induction node
+  case nil => intros; rfl
+  case node _ l v r ih₁ ih₂ =>
+    intro init h
+    simp only [RBNode.foldl]
+    rw [ih₁, ih₂]
+    have coeff_nonzero : !v.2 == 0 = true := by
+      simp
+      intro h_eq
+      specialize h v.1 v.2 (by simp)
+      contradiction
+    simp [coeff_nonzero]
+    · intro k v h_in
+      apply h k v
+      simp
+      right
+      right
+      assumption
+    · intro k v h_in
+      apply h k v
+      simp
+      right
+      left
+      assumption
+
+lemma from_to_Lawful [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
   fromUnlawful p.val ≈ p
 := by
   intro x
   unfold fromUnlawful
   cases x_in_p : p.find? x
   case none =>
+    rcases p with ⟨⟨node, wf⟩, node_nozero⟩
+    -- rw [mem_node] at x_in_p
+    unfold RBMap.filter RBSet.filter RBSet.foldl
+    dsimp at x_in_p ⊢
+    unfold find?
+    dsimp
+    rw [from_to_Lawful₀]
+    sorry
     sorry
   case some val =>
-    rcases p with ⟨⟨node, _⟩, _⟩
+    rcases p with ⟨⟨node, wf⟩, node_nozero⟩
     rw [mem_node] at x_in_p
     unfold RBMap.filter RBSet.filter RBSet.foldl
     dsimp at x_in_p ⊢
+    unfold find?
+    dsimp
+    rw [from_to_Lawful₀]
+    rw [RBNode.WF_iff] at wf
+    rcases wf with ⟨ordered, _⟩
+    unfold Ordering.byKey at ordered
     apply UnlawfulCMvPolynomial.mem_filter_insert_of_mem node
     assumption
+    assumption
+    · unfold UnlawfulCMvPolynomial.isNoZeroCoef at node_nozero
+      intro m c mc_in c_zero
+      specialize node_nozero m
+      apply node_nozero
+      rw [UnlawfulCMvPolynomial.mem_node]
+      simp
+      subst c_zero
+      assumption
 
 theorem find_no_zero
   : ∀ (p : LawfulCMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0

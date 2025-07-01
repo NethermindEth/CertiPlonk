@@ -2,6 +2,7 @@ import CMvPolynomial.CMvMonomial
 import CMvPolynomial.Wheels
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.Data.Ordering.Lemmas
+import Mathlib.Data.Finmap
 
 open Batteries
 
@@ -25,6 +26,8 @@ where
 namespace UnlawfulCMvPolynomial
 section R_CommSemiring
 variable {n R} [CommSemiring R]
+
+def empty : UnlawfulCMvPolynomial n R := RBMap.empty
 
 def extend
   (n' : ℕ) (p : UnlawfulCMvPolynomial n R) :
@@ -95,54 +98,82 @@ lemma mem_of_mem_monomials
   · use b₀
   · contradiction
 
--- #check Finmap.mem_insert
--- #check RBMap.mem_toList_insert
--- #check RBMap.mem_toList
 lemma mem_filter_insert_of_mem₀ [BEq R]
   (t : RBNode (Term n R)):
   ∀ init : UnlawfulCMvPolynomial n R,
     init.find? a = some b →
+    (∀ c, (a, c) ∉ t) →
     RBMap.find?
-      (t.foldl (λ acc (a, b) ↦ bif ! b == 0 then acc.insert a b else acc) init)
+      (t.foldl (λ acc (a, b) ↦ acc.insert a b) init)
       a
       = some b
 := by
   induction t
   case nil h =>
-    intro init h
+    intro init h _
     simp; assumption
   case node l v r ih₁ ih₂ =>
-    intro init h
+    intro init h_in h
+    simp at h
+    simp at ih₁ ih₂ ⊢
+    apply ih₂ <;> try assumption
+    rw [RBMap.find?_insert_of_ne]
+    apply ih₁ _ h_in
+    intro c
+    rcases h c with ⟨h₁, h₂, h₃⟩; assumption
+    simp_all only [RBNode.mem_node, not_or, not_false_eq_true]
+    specialize h v.2
+    rcases h with ⟨h₁, h₂, h₃⟩
+    rcases v with ⟨v₁, v₂⟩
     simp_all
-    apply ih₂
-    cases v.2 == 0
-    · simp
-      -- rw [RBMap.insert]
-      sorry
-    · simp
-      sorry
+    intro contra
+    apply h₁
+    rw [←CMvMonomial.simpleCmp_eq]; assumption
+    · intro c
+      exact (h c).2.2
 
 lemma mem_filter_insert_of_mem [BEq R]
   (t : RBNode (Term n R)):
+  RBNode.Ordered (Ordering.byKey Prod.fst CMvMonomial.simpleCmp) t →
   ∀ init : UnlawfulCMvPolynomial n R,
     (a₀, b₀) ∈ t →
     RBMap.find?
-      (t.foldl (λ acc (a, b) ↦ bif ! b == 0 then acc.insert a b else acc) init)
+      (t.foldl (λ acc (a, b) ↦ acc.insert a b) init)
       a₀
       = some b₀
 := by
-  intro init h
+  intro ordered init h
   revert init
   induction t
   case nil h => contradiction
   case node l v r ih₁ ih₂ =>
-    simp
+    simp at ordered; rcases ordered with ⟨all_lt₁, all_lt₂, ordered₁, ordered₂⟩
     intro init
     rw [RBNode.mem_node] at h
     rcases h with (h₁ | h₂ | h₃)
+    · simp only [RBNode.foldl, Bool.cond_not]
+      rw [←h₁]
+      dsimp
+      apply mem_filter_insert_of_mem₀
+      rw [RBMap.find?_insert_of_eq]
+      rw [CMvMonomial.simpleCmp_eq]
+      rw [RBNode.All_def] at all_lt₁ all_lt₂
+      intro c a₀c_in
+      simp [Membership.mem, RBNode.EMem] at a₀c_in
+      rw [RBNode.Any_def] at a₀c_in
+      rcases a₀c_in with ⟨⟨m', c'⟩, x_in_r, h_eq⟩
+      specialize all_lt₂ (m', c') x_in_r
+      simp [Ordering.byKey, RBNode.cmpLT] at all_lt₂
+      simp at h_eq
+      specialize all_lt₂
+      subst h₁
+      simp_all only [forall_const, Prod.forall]
+      obtain ⟨left, right⟩ := h_eq
+      subst left right
+      apply Vector.lt_irrefl a₀ all_lt₂
     · sorry
-    · sorry
-    · sorry
+    · apply ih₂ ordered₂ h₃
+
 
 instance [Repr R] : Repr (UnlawfulCMvPolynomial n R) where
   reprPrec p _ :=

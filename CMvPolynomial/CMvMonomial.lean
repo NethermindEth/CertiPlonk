@@ -63,11 +63,9 @@ def div (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) :
 abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
   compareOfLessAndEq a₁ a₂
 
-lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq → a₁ = a₂ := by
+lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ := by
   unfold simpleCmp
-  intro h
-  rw [←compareOfLessAndEq_eq_eq]
-  · assumption
+  rw [compareOfLessAndEq_eq_eq]
   · apply Vector.le_refl
   · intro x y; apply Vector.not_le
 

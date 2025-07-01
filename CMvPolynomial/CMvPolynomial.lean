@@ -92,7 +92,7 @@ instance [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
       LawfulCMvPolynomial.constant
     simp
     unfold UnlawfulCMvPolynomial.add RBMap.mergeWith RBSet.mergeWith
-    simp [RBSet.foldl_eq_foldl_toList]
+    simp [RBSet.foldl_eq_foldl_toList, UnlawfulCMvPolynomial.empty]
     rw [RBSet.empty_toList]
     dsimp
     sorry

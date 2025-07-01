@@ -90,79 +90,46 @@ abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
   compareOfLessAndEq a₁ a₂
 
 @[simp]
-lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ :=
+lemma simpleCmp_iff : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ :=
   compareOfLessAndEq_eq_eq Vector.le_refl Vector.not_le
 
-lemma simpleCmp_lt : simpleCmp a₁ a₂ = .lt ↔ a₁ < a₂ := by
-  unfold simpleCmp
-  rw [Batteries.compareOfLessAndEq_eq_lt]
+@[simp]
+lemma simpleCmp_lt : simpleCmp a₁ a₂ = .lt ↔ a₁ < a₂ :=
+  Batteries.compareOfLessAndEq_eq_lt
 
-lemma lt_iff_not_gt_and_ne : ∀ (x y : CMvMonomial n),
-  x < y ↔ ¬y < x ∧ x ≠ y
-:= by
-  intro x y
-  constructor
-  · intro h
-    constructor
-    · simp [Vector.le_iff_lt_or_eq, h]
-    · simp
-      intro contra
-      subst contra
-      apply Vector.lt_irrefl x
-      exact h
-  · intro ⟨h₁, h₂⟩
-    rw [Vector.not_lt] at h₁
-    rw [Vector.le_iff_lt_or_eq] at h₁
-    rcases h₁ with hl | hr
-    · exact hl
-    · contradiction
+lemma lt_iff_not_gt_and_ne {x y : CMvMonomial n} :
+  x < y ↔ ¬y < x ∧ x ≠ y := by
+  rw [Vector.not_lt_iff_ge, Vector.le_iff_lt_or_eq]
+  aesop (add simp Vector.lt_irrefl)
 
-lemma symm : ∀ (x y : CMvMonomial n),
-  (simpleCmp x y).swap = simpleCmp y x
-:= by
-  intros x y
-  unfold simpleCmp
-  rw [←compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne lt_iff_not_gt_and_ne]
+lemma symm {x y : CMvMonomial n} : (simpleCmp x y).swap = simpleCmp y x :=
+  (compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne (fun _ _ ↦ lt_iff_not_gt_and_ne)).symm
 
-lemma not_gt : ∀ m₁ m₂ : CMvMonomial n,
-  simpleCmp m₁ m₂ ≠ .gt ↔ m₁ ≤ m₂
-:= by
-  intro m₁ m₂
-  unfold simpleCmp
-  simp
-  rw [compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne lt_iff_not_gt_and_ne]
-  rw [Vector.not_lt]
+@[simp]
+lemma simpleCmp_eq_gt : simpleCmp m₁ m₂ = .gt ↔ m₁ > m₂ :=
+  compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne fun _ _ ↦ lt_iff_not_gt_and_ne
 
-lemma le_trans : ∀ {x y z : CMvMonomial n},
+@[simp]
+lemma not_gt {m₁ m₂ : CMvMonomial n} : simpleCmp m₁ m₂ ≠ .gt ↔ m₁ ≤ m₂ := by simp
+
+lemma le_trans {x y z : CMvMonomial n} :
   simpleCmp x y ≠ Ordering.gt →
   simpleCmp y z ≠ Ordering.gt →
-  simpleCmp x z ≠ Ordering.gt
-:= by
-  intros x y z h_lt₁ h_lt₂
-  have h_lt₁' := (not_gt x y).1 h_lt₁
-  have h_lt₂' := (not_gt y z).1 h_lt₂
-  have h_lt₃ : x ≤ z := by
-    apply Vector.le_trans (ys := y) <;> simp [*]
-  rw [not_gt x z]
-  apply Vector.le_trans (ys := y) <;> simp only [*]
+  simpleCmp x z ≠ Ordering.gt := by simp; exact Vector.le_trans
 
 end CMvMonomial
 
 instance :
-  TransCmp (λ x1 x2 : CMvMonomial n ↦ CMvMonomial.simpleCmp x1 x2)
+  TransCmp fun x1 x2 : CMvMonomial n ↦ CMvMonomial.simpleCmp x1 x2
 where
-  symm := CMvMonomial.symm
+  symm := fun _ _ ↦ CMvMonomial.symm
   le_trans := CMvMonomial.le_trans
 
 instance :
-  TransCmp (λ x1 x2 : (CMvMonomial n × R) ↦ CMvMonomial.simpleCmp x1.1 x2.1)
+  TransCmp fun x1 x2 : (CMvMonomial n × R) ↦ CMvMonomial.simpleCmp x1.1 x2.1
 where
-  symm := by
-    intros
-    apply CMvMonomial.symm
-  le_trans := by
-    intros x y z
-    apply CMvMonomial.le_trans
+  symm := fun _ _ ↦ CMvMonomial.symm
+  le_trans := CMvMonomial.le_trans
 
 lemma CMvMonomial.list_pairwise_lt_nodup (l : List (CMvMonomial n × R)) :
   l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup

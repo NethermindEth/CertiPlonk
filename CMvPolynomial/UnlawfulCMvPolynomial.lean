@@ -192,27 +192,28 @@ lemma mem_of_filter_insert [BEq R]
     simp at in_fold
     right; assumption
   case node l v r ih₁ ih₂ =>
-    simp at *
+    rcases v with ⟨v, hv⟩
+    simp only [RBNode.foldl, RBNode.mem_node]
     rcases ordered with ⟨o₁, o₂, o₃, o₄⟩
     intro init find_in_fold
     specialize
       ih₂ o₄
-        ((RBNode.foldl (fun acc x => acc.insert x.1 x.2) init l).insert v.1 v.2)
+        ((RBNode.foldl (fun acc x => acc.insert x.1 x.2) init l).insert v hv)
         find_in_fold
     rcases ih₂ with (in_r | ih₂)
     · left; right; right; assumption
-    · by_cases is_val : a₀ = v.1
+    · by_cases is_val : a₀ = v
       · rw [RBMap.find?_insert_of_eq] at ih₂
         · simp at ih₂
           left; left; simp [is_val, ←ih₂]
-        · rw [CMvMonomial.simpleCmp_eq]; assumption
+        · rw [CMvMonomial.simpleCmp_iff]; assumption
       · rw [RBMap.find?_insert_of_ne] at ih₂
         · specialize ih₁ o₃ init ih₂
           rcases ih₁ with (in_v | ih₁)
           · left; right; left; assumption
           · right; assumption
         · intro contra
-          rw [CMvMonomial.simpleCmp_eq] at contra
+          rw [CMvMonomial.simpleCmp_iff] at contra
           contradiction
 
 #printaxioms mem_of_filter_insert

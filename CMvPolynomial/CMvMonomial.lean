@@ -69,6 +69,10 @@ lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ := by
   · apply Vector.le_refl
   · intro x y; apply Vector.not_le
 
+lemma simpleCmp_lt : simpleCmp a₁ a₂ = .lt ↔ a₁ < a₂ := by
+  unfold simpleCmp
+  rw [Batteries.compareOfLessAndEq_eq_lt]
+
 lemma lt_iff_not_gt_and_ne : ∀ (x y : CMvMonomial n),
   x < y ↔ ¬y < x ∧ x ≠ y
 := by

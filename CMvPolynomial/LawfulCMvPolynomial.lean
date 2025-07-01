@@ -151,29 +151,7 @@ lemma from_to_Lawful [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
   cases x_in_p : p.find? x
   case none =>
     rcases p with ⟨⟨node, wf⟩, node_nozero⟩
-    -- rw [mem_node] at x_in_p
-    unfold RBMap.filter RBSet.filter RBSet.foldl
-    dsimp at x_in_p ⊢
-    unfold find?
-    dsimp
-    rw [from_to_Lawful₀]
-    sorry
-    sorry
-  case some val =>
-    rcases p with ⟨⟨node, wf⟩, node_nozero⟩
-    rw [mem_node] at x_in_p
-    unfold RBMap.filter RBSet.filter RBSet.foldl
-    dsimp at x_in_p ⊢
-    unfold find?
-    dsimp
-    rw [from_to_Lawful₀]
-    rw [RBNode.WF_iff] at wf
-    rcases wf with ⟨ordered, _⟩
-    unfold Ordering.byKey at ordered
-    apply UnlawfulCMvPolynomial.mem_filter_insert_of_mem node
-    assumption
-    assumption
-    · unfold UnlawfulCMvPolynomial.isNoZeroCoef at node_nozero
+    have nonzero_coeff : ∀ (m : CMvMonomial n) (c : R), (m, c) ∈ node → c ≠ 0 := by
       intro m c mc_in c_zero
       specialize node_nozero m
       apply node_nozero
@@ -181,6 +159,34 @@ lemma from_to_Lawful [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
       simp
       subst c_zero
       assumption
+    -- rw [mem_node] at x_in_p
+    unfold RBMap.filter RBSet.filter RBSet.foldl
+    dsimp at x_in_p ⊢
+    unfold find?
+    dsimp
+    rw [from_to_Lawful₀] <;> try apply nonzero_coeff
+    sorry
+
+  case some val =>
+    rcases p with ⟨⟨node, wf⟩, node_nozero⟩
+    rw [mem_node] at x_in_p
+    unfold RBMap.filter RBSet.filter RBSet.foldl
+    dsimp at x_in_p ⊢
+    unfold find?
+    dsimp
+    have nonzero_coeff : ∀ (m : CMvMonomial n) (c : R), (m, c) ∈ node → c ≠ 0 := by
+      intro m c mc_in c_zero
+      specialize node_nozero m
+      apply node_nozero
+      rw [UnlawfulCMvPolynomial.mem_node]
+      simp
+      subst c_zero
+      assumption
+    rw [from_to_Lawful₀ _ _ nonzero_coeff]
+    rw [RBNode.WF_iff] at wf
+    rcases wf with ⟨ordered, _⟩
+    unfold Ordering.byKey at ordered
+    apply UnlawfulCMvPolynomial.mem_filter_insert_of_mem node <;> assumption
 
 theorem find_no_zero
   : ∀ (p : LawfulCMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0

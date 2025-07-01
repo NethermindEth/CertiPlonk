@@ -1,259 +1,135 @@
+import CMvPolynomial.CMvMonomial
 import CMvPolynomial.UnlawfulCMvPolynomial
 
-open Batteries
+open Std
 
-def LawfulCMvPolynomial n R [CommSemiring R] :=
-  { p : UnlawfulCMvPolynomial n R // p.isNoZeroCoef}
+def LawfulCMvPolynomial (n : ℕ) (R : Type) [Zero R] :=
+  { p : UnlawfulCMvPolynomial n R // p.isNoZeroCoef }
 
-namespace LawfulCMvPolynomial
+variable {n : ℕ} {R : Type} [Zero R]
+
+instance [Zero R] : GetElem (LawfulCMvPolynomial n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
+  ⟨fun lp m h ↦ lp.1[m]'h⟩
+
+instance [Zero R] : GetElem? (LawfulCMvPolynomial n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
+  ⟨fun lp m ↦ lp.1[m]?, fun lp m ↦ lp.1[m]!⟩
+
+@[simp]
+lemma getElem?_eq_val_getElem? {p : LawfulCMvPolynomial n R} {m : CMvMonomial n} :
+  p[m]? = p.1[m]? := rfl
+
+instance [Zero R] : Membership (CMvMonomial n) (LawfulCMvPolynomial n R) :=
+  ⟨fun lp m ↦ m ∈ lp.1⟩
+
+lemma ExtTreeMap.mem_filter {α β : Type} {cmp} [TransCmp cmp]
+                            {f : α → β → Bool} {m : ExtTreeMap α β cmp} {k : α} :
+  k ∈ m.filter f ↔ ∃ (h' : k ∈ m), f (m.getKey k h') m[k] = true := sorry
+
+lemma ExtTreeMap.getElem?_filter {α β : Type} [BEq α] [LawfulBEq α]
+                                 {cmp : α → α → Ordering} [TransCmp cmp] [LawfulEqCmp cmp]
+  {f : α → β → Bool} {k : α} {m : ExtTreeMap α β cmp} :
+  (m.filter f)[k]? = m[k]?.filter (f k) := sorry
+
+omit [Zero R] in
+lemma UnlawfulCMvPolynomial.mem_of_mem_lawful {p : UnlawfulCMvPolynomial n R} {m : CMvMonomial n}
+  (h : m ∈ p) : m ∈ p.1 := h
+
+namespace LawfulCMvPolynomial  
+
+@[simp]
+theorem getElem?_ne_some_zero {p : LawfulCMvPolynomial n R} {m : CMvMonomial n} :
+  p[m]? ≠ some 0 := by simp only [getElem?_eq_val_getElem?, ne_eq]; rcases p; grind
+
+variable [BEq R] [LawfulBEq R]
+
 section R_CommSemiring
-variable {n R} [CommSemiring R]
 
-def fromUnlawful [BEq R]
-  (p : UnlawfulCMvPolynomial n R) :
-  LawfulCMvPolynomial n R
-:=
-  { val := p.filter (λ _ c ↦ !c == 0)
-    property := sorry
+def fromUnlawful (p : UnlawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
+  { 
+    val := p.filter fun _ c ↦ c != 0
+    property _ := by aesop (add simp ExtTreeMap.getElem?_filter)
   }
 
-def constant [BEq R] [LawfulBEq R]
+def constant
   (c : R) :
   LawfulCMvPolynomial n R
 :=
-  -- LawfulCMvPolynomial.fromUnlawful <| .constant c
   if h : c == 0 then
     ⟨ .empty
-    , by
-        unfold UnlawfulCMvPolynomial.isNoZeroCoef UnlawfulCMvPolynomial.empty
-        intro m
-        cases h : RBMap.empty.find? m
-        · simp
-        · rw [RBMap.find?_some] at h
-          aesop
+    , by unfold UnlawfulCMvPolynomial.isNoZeroCoef UnlawfulCMvPolynomial.empty
+         grind
     ⟩
   else
     ⟨ UnlawfulCMvPolynomial.constant c
     , by
-        simp at h
-        unfold
-          UnlawfulCMvPolynomial.isNoZeroCoef
-          UnlawfulCMvPolynomial.constant
-          Function.uncurry
-        dsimp
-        intro m
-        by_contra contra
-        have ⟨y, contra, _⟩ := RBMap.find?_some_mem_toList contra
-        simp at contra
-        unfold MonoR.constant at contra
-        aesop
+        unfold UnlawfulCMvPolynomial.isNoZeroCoef UnlawfulCMvPolynomial.constant
+        intros m
+        simp [
+          h, MonoR.constant, ExtTreeMap.ofList_cons, CMvMonomial.one,
+          ExtTreeMap.getElem?_eq_some_iff
+        ]
+        grind
     ⟩
 
-instance [BEq R] [LawfulBEq R]:
-  OfNat (LawfulCMvPolynomial n R) natural
-where
-  ofNat := LawfulCMvPolynomial.constant natural
+variable [CommSemiring R]
 
-def extend [BEq R]
-  (n' : ℕ)
-  (p : LawfulCMvPolynomial n R) :
-  LawfulCMvPolynomial (max n n') R
-:=
+instance {m : ℕ} : OfNat (LawfulCMvPolynomial n R) m
+where
+  ofNat := LawfulCMvPolynomial.constant n
+
+def extend (n' : ℕ) (p : LawfulCMvPolynomial n R) :
+  LawfulCMvPolynomial (max n n') R :=
   fromUnlawful <| p.val.extend n'
 
-def add [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  fromUnlawful <| UnlawfulCMvPolynomial.add p₁.val p₂.val
+def add (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
+  fromUnlawful <| p₁.val + p₂.val
 
-def mul [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  fromUnlawful <| UnlawfulCMvPolynomial.mul p₁.val p₂.val
+instance : Add (LawfulCMvPolynomial n R) := ⟨add⟩
 
-def find? (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) : Option R :=
-  p.val.find? m
+def mul (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
+  fromUnlawful <| p₁.val * p₂.val
 
-def monomials (p : LawfulCMvPolynomial n R) :
-  Finset (CMvMonomial n)
+instance : Mul (LawfulCMvPolynomial n R) := ⟨mul⟩
+
+abbrev monomials (p : LawfulCMvPolynomial n R) :
+  List (CMvMonomial n)
 :=
-  p.val.monomials
-
-lemma mem_monomials_of_mem
-  {p : LawfulCMvPolynomial n R} :
-  (a₀, b₀) ∈ p.val.val → a₀ ∈ p.monomials
-:= by
-  unfold LawfulCMvPolynomial.monomials
-  intro h
-  apply UnlawfulCMvPolynomial.mem_monomials_of_mem
-  assumption
-
-lemma mem_of_mem_monomials
-  {p : LawfulCMvPolynomial n R} :
-  a₀ ∈ p.monomials → (∃ b₀, (a₀, b₀) ∈ p.val.val)
-:= by
-  unfold LawfulCMvPolynomial.monomials
-  intro h
-  apply UnlawfulCMvPolynomial.mem_of_mem_monomials
-  assumption
-
-def findD (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R :=
-  (p.find? m).getD v₀
-
-lemma mem_node
-  {a : LawfulCMvPolynomial n R} :
-  a.find? x = some c ↔ (x, c) ∈ a.val.val
-:= by
-  unfold find?
-  exact UnlawfulCMvPolynomial.mem_node
-
-def extEquiv : Setoid (LawfulCMvPolynomial n R) where
-  r a b := ∀ x, a.find? x = b.find? x
-  iseqv := by constructor <;> (intros; simp only [*])
-
-instance : HasEquiv (LawfulCMvPolynomial n R) where
-  Equiv := extEquiv
-
-lemma from_to_Lawful₀ [BEq R] [LawfulBEq R] :
-  ∀ (node : RBNode (CMvMonomial n × R)) (init : UnlawfulCMvPolynomial n R),
-    (∀ k v, (k, v) ∈ node → v ≠ 0) →
-    node.foldl (fun acc a => bif !a.2 == 0 then RBSet.insert acc a else acc) init
-      = node.foldl (fun acc a => RBSet.insert acc a) init
-:= by
-  intro node
-  let node' := node
-  induction node
-  case nil => intros; rfl
-  case node _ l v r ih₁ ih₂ =>
-    intro init h
-    simp only [RBNode.foldl]
-    rw [ih₁, ih₂]
-    have coeff_nonzero : !v.2 == 0 = true := by
-      simp
-      intro h_eq
-      specialize h v.1 v.2 (by simp)
-      contradiction
-    simp [coeff_nonzero]
-    · intro k v h_in
-      apply h k v
-      simp
-      right
-      right
-      assumption
-    · intro k v h_in
-      apply h k v
-      simp
-      right
-      left
-      assumption
-
-#printaxioms from_to_Lawful₀
-
-lemma from_to_Unlawful [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
-  fromUnlawful p.val ≈ p
-:= by
-  intro x
-  unfold fromUnlawful
-  cases x_in_p : p.find? x
-  case none =>
-    rcases p with ⟨⟨node, wf⟩, node_nozero⟩
-    have nonzero_coeff : ∀ (m : CMvMonomial n) (c : R), (m, c) ∈ node → c ≠ 0 := by
-      intro m c mc_in c_zero
-      specialize node_nozero m
-      apply node_nozero
-      rw [UnlawfulCMvPolynomial.mem_node]
-      simp
-      subst c_zero
-      assumption
-    unfold RBMap.filter RBSet.filter RBSet.foldl
-    dsimp at x_in_p ⊢
-    unfold find?
-    dsimp
-    rw [from_to_Lawful₀] <;> try apply nonzero_coeff
-    unfold LawfulCMvPolynomial.find? at x_in_p
-    simp at x_in_p
-    by_contra find_some
-    rw [←ne_eq, Option.ne_none_iff_exists] at find_some
-    rcases find_some with ⟨val, find_some⟩
-    let find_some := find_some.symm
-    apply UnlawfulCMvPolynomial.mem_of_filter_insert at find_some
-    · rcases find_some with (f₁ | f₂)
-      · have find_x : RBMap.find? ⟨node, wf⟩ x = val := by
-          rw [UnlawfulCMvPolynomial.mem_node]
-          simp [*]
-        rw [find_x] at x_in_p
-        contradiction
-      · contradiction
-    · rw [RBNode.WF_iff] at wf
-      exact wf.1
-  case some val =>
-    rcases p with ⟨⟨node, wf⟩, node_nozero⟩
-    rw [mem_node] at x_in_p
-    unfold RBMap.filter RBSet.filter RBSet.foldl
-    dsimp at x_in_p ⊢
-    unfold find?
-    dsimp
-    have nonzero_coeff : ∀ (m : CMvMonomial n) (c : R), (m, c) ∈ node → c ≠ 0 := by
-      intro m c mc_in c_zero
-      specialize node_nozero m
-      apply node_nozero
-      rw [UnlawfulCMvPolynomial.mem_node]
-      simp
-      subst c_zero
-      assumption
-    rw [from_to_Lawful₀ _ _ nonzero_coeff]
-    rw [RBNode.WF_iff] at wf
-    rcases wf with ⟨ordered, _⟩
-    unfold Ordering.byKey at ordered
-    apply UnlawfulCMvPolynomial.mem_filter_insert_of_mem node <;> assumption
-
-theorem find_no_zero
-  : ∀ (p : LawfulCMvPolynomial n R) (m : CMvMonomial n), p.find? m ≠ some 0
-:= by
-  intro p m
-  simp only [ne_eq]
-  intro contra
-  unfold LawfulCMvPolynomial UnlawfulCMvPolynomial.isNoZeroCoef at p
-  rcases p with ⟨p', ne_zero⟩
-  specialize ne_zero m
-  contradiction
-
-lemma fromUnlawful_find_no_zero_iff [BEq R] :
-  ∀ (p : UnlawfulCMvPolynomial n R) (m : CMvMonomial n) (c : R),
-    (fromUnlawful p).find? m = some c ↔ p.find? m = some c ∧ c ≠ 0
-:= by
-  intro p m c
-  constructor
-  · intro h
-    constructor
-    · unfold fromUnlawful at h
-      rw [UnlawfulCMvPolynomial.mem_node]
-      simp
-        [ mem_node
-        , RBMap.filter
-        , RBSet.filter
-        , RBSet.foldl
-        ] at h
-      sorry
-    · intro hc
-      rw [hc] at h
-      apply find_no_zero (fromUnlawful p) m h
-  · sorry
+  p.1.monomials
 
 end R_CommSemiring
 
+@[simp]
+lemma from_to_Unlawful {p : LawfulCMvPolynomial n R} :
+  fromUnlawful p.1 = p := by
+  unfold fromUnlawful
+  rcases p with ⟨up, h⟩
+  dsimp; congr
+  refine ExtTreeMap.ext_getElem? fun k ↦ ?p₁
+  rw [ExtTreeMap.getElem?_filter]
+  rcases eq : up[k]? <;> simp; grind
+
 section R_CommRing
-variable {n R} [CommRing R]
 
-def neg [BEq R] (p : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  fromUnlawful p.val.neg
+variable [BEq R] [LawfulBEq R] [CommRing R] 
 
-def sub [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  add p₁ p₂.neg
+def neg (p : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
+  fromUnlawful p.1.neg
 
-def reduce [BEq R] (p d : LawfulCMvPolynomial n R) :
+instance : Neg (LawfulCMvPolynomial n R) := ⟨neg⟩
+
+def sub (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
+  p₁ + (-p₂)
+
+instance : Sub (LawfulCMvPolynomial n R) := ⟨sub⟩
+
+def reduce (p d : LawfulCMvPolynomial n R) :
   Option (LawfulCMvPolynomial n R)
 := do
   let up ← UnlawfulCMvPolynomial.reduce p.val d.val
   pure (fromUnlawful up)
 
 end R_CommRing
+
 end LawfulCMvPolynomial
 
 -- private def p : LawfulCMvPolynomial 2 ℤ where -- 2 * X0^2 * X1^3
@@ -267,10 +143,9 @@ end LawfulCMvPolynomial
 -- #eval! p
 -- #eval! d
 -- #eval! p.reduce d -- some -2 * X0^2 * X1^1
-
 -- -- private def p₁_1 := [⟨#m[2], 1⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
 -- -- private def p₁_2 := [⟨#m[1], 2⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
--- private def i : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[2], 1⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
+
 -- #eval i
 -- private def p₁ : UnlawfulCMvPolynomial 1 ℤ := [⟨#m[1], -2⟩, ⟨#m[0], -1⟩].toRBMap CMvMonomial.simpleCmp
 -- #eval p₁

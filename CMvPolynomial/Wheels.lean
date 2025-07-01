@@ -1,5 +1,6 @@
 import Batteries.Data.RBMap.Lemmas
 import Mathlib.Data.Finset.Insert
+import Mathlib.Data.Finset.Basic
 
 open Batteries
 
@@ -84,3 +85,13 @@ lemma RBNode.mem_of_mem_foldr_insert [DecidableEq α]
           right; right
           assumption
         · right; assumption
+
+lemma distinct_of_inj_nodup {α β : Type*} {l : List α} {f : α → β}
+  (h₁ : Function.Injective f) (h₂ : l.Nodup) :
+  List.Pairwise (fun a b => f a ≠ f b) l := by
+  induction' l with hd tl ih
+  · simp
+  · simp_all
+    intros a' ha' contra
+    have : hd = a' := by aesop
+    aesop

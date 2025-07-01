@@ -7,7 +7,7 @@ import Mathlib.Data.Nat.Lattice
 open Batteries
 
 /-- Monomial in `n` variables. `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂ -/
-abbrev CMvMonomial n := Vector ℕ n
+abbrev CMvMonomial (n : ℕ) : Type := Vector ℕ n
 
 syntax "#m[" withoutPosition(term,*,?) "]" : term
 
@@ -37,12 +37,6 @@ def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
 
 def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
-/-
-  Ref: @Andrei @Julian
-
-  What notion of `zero` makes sense; here `0^n` is `Πᵢ X<i>^0 = 1`, as below.
--/
-
 def one : CMvMonomial n := Vector.replicate n 0
 
 instance : One (CMvMonomial n) := ⟨one⟩
@@ -52,12 +46,6 @@ def mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
 
 instance : Mul (CMvMonomial n) := ⟨mul⟩
 
-/-
-  Ref: @Andrei @Julian
-
-  Which `HMul`s do we want? Needs thought.
--/
-
 def divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
@@ -66,37 +54,27 @@ instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩ -- D
 instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
 /--
-  Ref: @Andrei @Julian
+  The polynomial `m₁ / m₂`.
 
-  I would probably suggest *not* spooning this into `Option`.
-  Two alternatives:
-  - a) return `Vector.zipWith Nat.sub`, and sature silly subterms to zero.
-  - b) return `Vector.zipWith Nat.sub` if m₁ | m₂, _zero_ otherwise.
-  
-  Then we have statements assuming `m₁ | m₂ → P` for most `P` regarding `div`.
+  The result makes sense assuming  `m₁ | m₂`.
 -/
-def div (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) :
-  Option (CMvMonomial n)
-:=
-  if m₁.divides m₂ then Vector.zipWith Nat.sub m₁ m₂ else none
+def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
+  Vector.zipWith Nat.sub m₁ m₂
 
-/--
-  Ref: @Andrei @Julian
+instance : Div (CMvMonomial n) := ⟨div⟩
 
-  - Depending on the answer to the question wrt. `div` above, we might want `Div` as well.
-  - Furthermore, which other `HDiv`s do we want?
--/
-instance : HDiv (CMvMonomial n) (CMvMonomial n) (Option (CMvMonomial n)) := ⟨div⟩
+instance : Ord (CMvMonomial n) := ⟨fun a b ↦ compareOfLessAndEq a b⟩
 
-abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
-  compareOfLessAndEq a₁ a₂
+section
+
+variable {n : ℕ} {a₁ a₂ : CMvMonomial n}
 
 @[simp]
-lemma simpleCmp_iff : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ :=
+lemma simpleCmp_iff : compare a₁ a₂ = .eq ↔ a₁ = a₂ :=
   compareOfLessAndEq_eq_eq Vector.le_refl Vector.not_le
 
 @[simp]
-lemma simpleCmp_lt : simpleCmp a₁ a₂ = .lt ↔ a₁ < a₂ :=
+lemma simpleCmp_lt : compare a₁ a₂ = .lt ↔ a₁ < a₂ :=
   Batteries.compareOfLessAndEq_eq_lt
 
 lemma lt_iff_not_gt_and_ne {x y : CMvMonomial n} :
@@ -104,43 +82,39 @@ lemma lt_iff_not_gt_and_ne {x y : CMvMonomial n} :
   rw [Vector.not_lt_iff_ge, Vector.le_iff_lt_or_eq]
   aesop (add simp Vector.lt_irrefl)
 
-lemma symm {x y : CMvMonomial n} : (simpleCmp x y).swap = simpleCmp y x :=
-  (compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne (fun _ _ ↦ lt_iff_not_gt_and_ne)).symm
+lemma symm {x y : CMvMonomial n} : compare y x = (compare x y).swap :=
+  compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne (fun _ _ ↦ lt_iff_not_gt_and_ne)
 
 @[simp]
-lemma simpleCmp_eq_gt : simpleCmp m₁ m₂ = .gt ↔ m₁ > m₂ :=
+lemma simpleCmp_eq_gt : compare a₁ a₂ = .gt ↔ a₁ > a₂ :=
   compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne fun _ _ ↦ lt_iff_not_gt_and_ne
 
 @[simp]
-lemma not_gt {m₁ m₂ : CMvMonomial n} : simpleCmp m₁ m₂ ≠ .gt ↔ m₁ ≤ m₂ := by simp
+lemma not_gt : compare a₁ a₂ ≠ .gt ↔ a₁ ≤ a₂ := by simp
 
-lemma le_trans {x y z : CMvMonomial n} :
-  simpleCmp x y ≠ Ordering.gt →
-  simpleCmp y z ≠ Ordering.gt →
-  simpleCmp x z ≠ Ordering.gt := by simp; exact Vector.le_trans
+@[simp]
+lemma isLE_simple_cmp : (compare a₁ a₂).isLE = true ↔ a₁ ≤ a₂ := by
+  aesop (add simp Ordering.isLE)
+
+lemma le_trans {c : CMvMonomial n} :
+  compare a b ≠ Ordering.gt →
+  compare b c ≠ Ordering.gt →
+  compare a c ≠ Ordering.gt := by simp; exact Vector.le_trans
+
+end
 
 end CMvMonomial
 
-instance :
-  TransCmp fun x1 x2 : CMvMonomial n ↦ CMvMonomial.simpleCmp x1 x2
-where
-  symm := fun _ _ ↦ CMvMonomial.symm
-  le_trans := CMvMonomial.le_trans
+variable {n : ℕ}
 
-instance :
-  TransCmp fun x1 x2 : (CMvMonomial n × R) ↦ CMvMonomial.simpleCmp x1.1 x2.1
-where
-  symm := fun _ _ ↦ CMvMonomial.symm
-  le_trans := CMvMonomial.le_trans
+instance : Std.TransOrd (CMvMonomial n) where
+  eq_swap := CMvMonomial.symm
+  isLE_trans := by aesop (add safe forward Vector.le_trans)
 
-lemma CMvMonomial.list_pairwise_lt_nodup {l : List (CMvMonomial n × R)} :
-  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup := by
-  induction' l with hd tl ih
-  · simp
-  · aesop (add simp RBNode.cmpLT) (config := {warnOnNonterminal := false})
-    exact absurd (left _ _ a) (Vector.lt_irrefl _)
+instance : Std.LawfulEqOrd (CMvMonomial n) where
+  eq_of_compare h := by simpa using h
 
-def MonoR n R [CommSemiring R] := CMvMonomial n × R
+def MonoR n R := CMvMonomial n × R
 
 namespace MonoR
 

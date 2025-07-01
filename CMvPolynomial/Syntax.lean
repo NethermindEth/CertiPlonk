@@ -1,7 +1,7 @@
 import CMvPolynomial.LawfulCMvPolynomial
-
+import CMvPolynomial.UnlawfulCMvPolynomial
 import Lean
-open Lean Batteries
+open Lean Std
 
 -- declare_syntax_cat polynomial
 
@@ -24,41 +24,39 @@ def X /- [CommSemiring R] [BEq R] [LawfulBEq R] -/ (i : ℕ) :
   LawfulCMvPolynomial (i + 1) ℤ
 :=
   let monomial := Vector.replicate i 0 |>.push 1
-  LawfulCMvPolynomial.fromUnlawful <| RBMap.single monomial 1
+  LawfulCMvPolynomial.fromUnlawful <| ExtTreeMap.ofList [(monomial, (1 : ℤ))]
+
+def align [Zero R] [BEq R] [LawfulBEq R]
+  (p₁ : LawfulCMvPolynomial n₁ R) (p₂ : LawfulCMvPolynomial n₂ R) :
+  LawfulCMvPolynomial (n₁ ⊔ n₂) R × LawfulCMvPolynomial (n₁ ⊔ n₂) R :=
+  letI sup := n₁ ⊔ n₂
+  (
+    cast (by congr 1; grind) (p₁.extend sup),
+    cast (by congr 1; grind) (p₂.extend sup)
+  )
+
+def liftPoly [Zero R] [BEq R] [LawfulBEq R]
+  (f : LawfulCMvPolynomial (n₁ ⊔ n₂) R →
+       LawfulCMvPolynomial (n₁ ⊔ n₂) R →
+       LawfulCMvPolynomial (n₁ ⊔ n₂) R)
+  (p₁ : LawfulCMvPolynomial n₁ R) (p₂ : LawfulCMvPolynomial n₂ R) : LawfulCMvPolynomial (n₁ ⊔ n₂) R :=
+  Function.uncurry f (align p₁ p₂)
 
 instance [CommRing R] [BEq R] [LawfulBEq R] :
   HAdd
     (LawfulCMvPolynomial n₁ R)
     (LawfulCMvPolynomial n₂ R)
-    (LawfulCMvPolynomial (max n₁ n₂) R)
+    (LawfulCMvPolynomial (n₁ ⊔ n₂) R)
 where
-  hAdd p₁ p₂ := by
-    have : ∀ a b : ℕ, a ⊔ (a ⊔ b) = a ⊔ b := by
-      intro a b
-      rw [←sup_assoc]
-      rw [sup_eq_right.2 (le_refl a)]
-    have p₁ := p₁.extend (max n₁ n₂)
-    have p₂ := p₂.extend (max n₁ n₂)
-    rw [this] at p₁
-    rw [sup_comm n₁ n₂, this, sup_comm] at p₂
-    exact p₁.add p₂
+  hAdd p₁ p₂ := liftPoly (·+·) p₁ p₂
 
 instance [CommRing R] [BEq R] [LawfulBEq R] :
   HSub
     (LawfulCMvPolynomial n₁ R)
     (LawfulCMvPolynomial n₂ R)
-    (LawfulCMvPolynomial (max n₁ n₂) R)
+    (LawfulCMvPolynomial (n₁ ⊔ n₂) R)
 where
-  hSub p₁ p₂ := by
-    have : ∀ a b : ℕ, a ⊔ (a ⊔ b) = a ⊔ b := by
-      intro a b
-      rw [←sup_assoc]
-      rw [sup_eq_right.2 (le_refl a)]
-    have p₁ := p₁.extend (max n₁ n₂)
-    have p₂ := p₂.extend (max n₁ n₂)
-    rw [this] at p₁
-    rw [sup_comm n₁ n₂, this, sup_comm] at p₂
-    exact p₁.sub p₂
+  hSub p₁ p₂ := liftPoly (·-·) p₁ p₂
 
 instance [CommRing R] [BEq R] [LawfulBEq R] :
   HMul
@@ -66,16 +64,7 @@ instance [CommRing R] [BEq R] [LawfulBEq R] :
     (LawfulCMvPolynomial n₂ R)
     (LawfulCMvPolynomial (max n₁ n₂) R)
 where
-  hMul p₁ p₂ := by
-    have : ∀ a b : ℕ, a ⊔ (a ⊔ b) = a ⊔ b := by
-      intro a b
-      rw [←sup_assoc]
-      rw [sup_eq_right.2 (le_refl a)]
-    have p₁ := p₁.extend (max n₁ n₂)
-    have p₂ := p₂.extend (max n₁ n₂)
-    rw [this] at p₁
-    rw [sup_comm n₁ n₂, this, sup_comm] at p₂
-    exact p₁.mul p₂
+  hMul p₁ p₂ := liftPoly (·*·) p₁ p₂
 
 instance [CommRing R] [BEq R] [LawfulBEq R] :
   HPow
@@ -85,18 +74,15 @@ instance [CommRing R] [BEq R] [LawfulBEq R] :
 where
   hPow p₁ exp := exp.iterate p₁.mul 1
 
-def polyCoe [CommRing R] [BEq R] (p : LawfulCMvPolynomial n R) :
-  (LawfulCMvPolynomial n.succ R)
-:= by
-  let p' := p.extend n.succ
-  rw [sup_eq_right.2 (Nat.le_succ n)] at p'
-  exact p'
+def polyCoe [CommRing R] [BEq R] [LawfulBEq R] (p : LawfulCMvPolynomial n R) :
+  (LawfulCMvPolynomial n.succ R) := cast (by simp) (p.extend n.succ)
 
-instance [CommRing R] [BEq R] :
+instance [CommRing R] [BEq R] [LawfulBEq R]:
   Coe (LawfulCMvPolynomial n R) (LawfulCMvPolynomial n.succ R)
 where
   coe := polyCoe
 
+/-
 #eval (0 : LawfulCMvPolynomial 0 ℤ)
 #eval (0 : LawfulCMvPolynomial 5 ℤ)
 #eval! (2 : LawfulCMvPolynomial 0 ℤ)
@@ -126,3 +112,6 @@ def x' : LawfulCMvPolynomial 1 ℤ :=
 
 #eval! i'.reduce t'
 #eval! i'.sub (x'.mul t')
+-/
+
+#min_imports

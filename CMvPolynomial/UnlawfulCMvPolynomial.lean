@@ -24,7 +24,7 @@ instance [LT α] [DecidableEq α] [∀ (a₁ a₂ : α), Decidable (a₁ < a₂)
 namespace UnlawfulCMvPolynomial
 
 section R_CommSemiring
-variable {n R} [CommSemiring R]
+variable {n : ℕ} {R} [CommSemiring R]
 
 def empty : UnlawfulCMvPolynomial n R := RBMap.empty
 
@@ -240,7 +240,17 @@ def constant (c : R) : UnlawfulCMvPolynomial n R :=
 
 def zero : UnlawfulCMvPolynomial n R := constant 0
 
-instance : Zero (UnlawfulCMvPolynomial n R) := ⟨zero⟩
+/--
+  Ref: @Andrei @Julian - Thoughts?
+  
+  - wrt. `AddCommMonoid`
+-/
+example : zero (n := n) ≠ UnlawfulCMvPolynomial.empty (R := R) := by
+  intros contra
+  injection contra with b
+  simp at b
+
+instance : Zero (UnlawfulCMvPolynomial n R) := ⟨empty⟩
 
 def add (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
@@ -249,16 +259,45 @@ def add (p₁ p₂ : UnlawfulCMvPolynomial n R) :
 
 instance : Add (UnlawfulCMvPolynomial n R) := ⟨add⟩
 
--- lemma add_comm [BEq R] :
---   ∀ (p₁ p₂ : UnlawfulCMvPolynomial n R), add p₁ p₂ = add p₂ p₁
--- := by
---   intro p₁ p₂
---   unfold add
-    -- RBMap.mergeWith RBSet.mergeWith RBSet.foldl RBSet.insert
-  -- sorry
+/--
+  Merging with a commutative `mergeFn` makes the entire operation commutative.
+
+  - We only need it commutativity assuming `k ∈ t₁ ∧ k ∈ t₂`, so this is too strong.
+-/
+lemma mergeWith_comm_of_comm {α : Type u} {β : Type v}
+                             {cmp : α → α → Ordering}
+                             {mergeFn : α → β → β → β}
+                             {t₁ t₂ : RBMap α β cmp}
+                             (h : ∀ k a b, mergeFn k a b = mergeFn k b a) :
+  RBMap.mergeWith mergeFn t₁ t₂ = RBMap.mergeWith mergeFn t₂ t₁ := sorry
+
+lemma add_comm {p₁ p₂ : UnlawfulCMvPolynomial n R} : p₁ + p₂ = p₂ + p₁ :=
+  mergeWith_comm_of_comm fun _ ↦ AddCommMagma.add_comm
 
 /--
-  Ref: @Frantisek - Why `BEq`?
+  Merging with an associative `mergeFn` makes the entire operation associative.
+
+  - We only need associativity assuming `k ∈ t₁ ∧ k ∈ t₂ ∧ k ∈ t₃`, so this is too strong.
+-/
+lemma mergeWith_assoc_of_assoc {α : Type u} {β : Type v}
+                               {cmp : α → α → Ordering}
+                               {mergeFn : α → β → β → β}
+                               {t₁ t₂ t₃ : RBMap α β cmp}
+                               (h : ∀ k a b c, mergeFn k (mergeFn k a b) c =
+                                               mergeFn k a (mergeFn k b c)) :
+  RBMap.mergeWith mergeFn (RBMap.mergeWith mergeFn t₁ t₂) t₃ =
+  RBMap.mergeWith mergeFn t₁ (RBMap.mergeWith mergeFn t₂ t₃) := sorry
+
+example {R : Type} [CommSemiring R] {a b c : R} : a + b + c = a + (b + c) := by
+  exact add_assoc a b c
+
+lemma add_assoc {p₁ p₂ p₃ : UnlawfulCMvPolynomial n R} : p₁ + p₂ + p₃ = p₁ + (p₂ + p₃) :=
+  mergeWith_assoc_of_assoc fun _ ↦ _root_.add_assoc  
+
+lemma zero_add {p : UnlawfulCMvPolynomial n R} : 0 + p = p := sorry
+
+/--
+  Ref: @Frantisek - Why `BEq`? -- FIX
 -/
 def mul₀
   (t : MonoR n R)
@@ -271,29 +310,49 @@ theorem list_nodup {p : UnlawfulCMvPolynomial n R} :
   p.toList.Nodup := CMvMonomial.list_pairwise_lt_nodup RBMap.toList_sorted
 
 /--
+  Ref: @Andrei @Julian
+  
+  I think we want this.
+
+  From which `AddCommMonoid` is just `inferInstance`.
+-/
+-- instance : CommRing (UnlawfulCMvPolynomial n R) := sorry
+
+instance : AddZeroClass (UnlawfulCMvPolynomial n R) where
+  add_zero := by aesop
+  zero_add := fun _ ↦ zero_add
+
+instance : AddSemigroup (UnlawfulCMvPolynomial n R) where
+  add_assoc := fun _ _ _ ↦ add_assoc
+
+instance : AddMonoid (UnlawfulCMvPolynomial n R) where
+  nsmul n p := if n == 0 then .empty else p.map λ (m, c) ↦ (m, n * c)
+  nsmul_succ := sorry
+
+instance :
+  AddCommMonoid (UnlawfulCMvPolynomial n R) where
+  add_comm := fun _ _ ↦ add_comm
+/--
   Ref: @Frantisek - Why `CommSemiring` and `BEq`?
 -/
 def mul (p₁ p₂ : UnlawfulCMvPolynomial n R) : UnlawfulCMvPolynomial n R
 :=
-  -- let Pairs : Type := {x : CMvMonomial n × R // x ∈ p₁.toList}
+  -- letI Pairs : Type := {x : CMvMonomial n × R // x ∈ p₁.toList}
   -- have : Fintype Pairs :=
-  --   { elems :=
-  --     ⟨ Multiset.ofList p₁.toList.attach
-  --     , by
-  --         simp
-  --         rw [List.nodup_attach]
-  --         apply UnlawfulCMvPolynomial.list_nodup
-  --     ⟩
-  --   , complete := by
-  --       rintro ⟨x, hs⟩
-  --       simp
-  --       apply List.mem_attach
-  --   }
+  --   ⟨⟨Multiset.ofList p₁.toList.attach,
+  --     by aesop (add simp UnlawfulCMvPolynomial.list_nodup)⟩,
+  --     by aesop
+  --   ⟩
+    
   let terms : List (UnlawfulCMvPolynomial n R) :=
     p₁.foldl (λ acc m c ↦ UnlawfulCMvPolynomial.mul₀ (m, c) p₂ :: acc) []
   terms.foldl UnlawfulCMvPolynomial.add .empty
   -- Not sure the `AddCommMonoid` instance works
-  -- ∑ t : Pairs, UnlawfulCMvPolynomial.mul₀ t p₂
+  
+  -- -- Ref: @Andrei - What is wrong with this?
+  -- ∑ t : Pairs, UnlawfulCMvPolynomial.mul₀ t.1 p₂
+
+variable {p₁ p₂ : UnlawfulCMvPolynomial 3 ℚ}
 
 instance : Mul (UnlawfulCMvPolynomial n R) := ⟨mul⟩
 
@@ -354,25 +413,6 @@ def div₀
   (r : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R × UnlawfulCMvPolynomial n R
 := sorry
-
--- instance [CommRing R] [BEq R] :
---   AddCommMonoid (UnlawfulCMvPolynomial n R)
--- where
---   add := UnlawfulCMvPolynomial.add
---   add_assoc := sorry
---   zero := .empty
---   zero_add := sorry
---   add_zero := by aesop
---   nsmul n p := if n == 0 then .empty else p.map λ (m, c) ↦ (m, n * c)
---   nsmul_zero := by aesop
---   nsmul_succ := by
---     simp
---     intro n ⟨x₁, x₂⟩
---     induction' n with n' ih
---     · simp
---       sorry
---     · sorry
---   add_comm := sorry
 
 def reduce [BEq R] (p d : UnlawfulCMvPolynomial n R) :
   Option (UnlawfulCMvPolynomial n R)

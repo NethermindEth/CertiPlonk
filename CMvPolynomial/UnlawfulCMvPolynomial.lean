@@ -247,18 +247,6 @@ def add [CommSemiring R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
 instance [CommSemiring R] : Add (UnlawfulCMvPolynomial n R) := ⟨add⟩
 
 /--
-  Merging with a commutative `mergeFn` makes the entire operation commutative.
-
-  - We only need it commutativity assuming `k ∈ t₁ ∧ k ∈ t₂`, so this is too strong.
--/
-lemma mergeWith_comm_of_comm {α : Type u} {β : Type v}
-                             {cmp : α → α → Ordering}
-                             {mergeFn : α → β → β → β}
-                             {t₁ t₂ : RBMap α β cmp}
-                             (h : ∀ k a b, mergeFn k a b = mergeFn k b a) :
-  RBMap.mergeWith mergeFn t₁ t₂ = RBMap.mergeWith mergeFn t₂ t₁ := sorry
-
-/--
   Ref: @Frantisek - Why `BEq`? -- FIX
 -/
 def mul₀

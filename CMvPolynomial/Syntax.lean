@@ -97,6 +97,7 @@ instance [CommRing R] [BEq R] :
 where
   coe := polyCoe
 
+/-
 #eval (0 : LawfulCMvPolynomial 0 ℤ)
 #eval (0 : LawfulCMvPolynomial 5 ℤ)
 #eval! (2 : LawfulCMvPolynomial 0 ℤ)
@@ -126,3 +127,4 @@ def x' : LawfulCMvPolynomial 1 ℤ :=
 
 #eval! i'.reduce t'
 #eval! i'.sub (x'.mul t')
+-/

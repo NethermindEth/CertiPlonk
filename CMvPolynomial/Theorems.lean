@@ -255,7 +255,7 @@ noncomputable def toLawfulCMvPolynomial [CommSemiring R]
           simp only [RBMap.mkRBSet_eq, List.foldr_cons, RBMap.find?_insert] at *
           split
           case cons.isTrue h_cmp =>
-            apply CMvMonomial.simpleCmp_eq.1 at h_cmp
+            rw [CMvMonomial.simpleCmp_iff] at h_cmp
             simp_all only [ne_eq, Option.some.injEq, m']
             intro a
             apply h_in
@@ -277,7 +277,7 @@ noncomputable def toLawfulCMvPolynomial [CommSemiring R]
           rcases h_out with ⟨h_out₁, h_out₂⟩
           split
           case cons.intro.isTrue h_cmp =>
-            apply CMvMonomial.simpleCmp_eq.1 at h_cmp
+            rw [CMvMonomial.simpleCmp_iff] at h_cmp
             subst h_cmp
             have head_eq : m' = head := by
               simp only [monomial_id₂, m']

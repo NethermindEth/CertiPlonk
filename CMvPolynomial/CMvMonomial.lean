@@ -1,4 +1,4 @@
-import Batteries.Data.RBMap.Basic
+import Std.Data.HashMap
 import CMvPolynomial.Instances
 import Mathlib.Algebra.Order.Group.Nat
 import Mathlib.Algebra.Ring.Defs
@@ -8,6 +8,9 @@ open Batteries
 
 /-- Monomial in `n` variables. `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂ -/
 abbrev CMvMonomial n := Vector ℕ n
+
+instance : Hashable (CMvMonomial n) where
+  hash p := Hashable.hash p.1
 
 syntax "#m[" withoutPosition(term,*,?) "]" : term
 
@@ -121,14 +124,14 @@ where
   symm := fun _ _ ↦ CMvMonomial.symm
   le_trans := CMvMonomial.le_trans
 
-lemma CMvMonomial.list_pairwise_lt_nodup {l : List (CMvMonomial n × R)} :
-  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup := by
-  induction' l with hd tl ih
-  · simp
-  · aesop (add simp RBNode.cmpLT) (config := {warnOnNonterminal := false})
-    exact absurd (left _ _ a) (Vector.lt_irrefl _)
+-- lemma CMvMonomial.list_pairwise_lt_nodup {l : List (CMvMonomial n × R)} :
+--   l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup := by
+--   induction' l with hd tl ih
+--   · simp
+--   · aesop (add simp RBNode.cmpLT) (config := {warnOnNonterminal := false})
+--     exact absurd (left _ _ a) (Vector.lt_irrefl _)
 
-def MonoR n R [CommSemiring R] := CMvMonomial n × R
+def MonoR n R := CMvMonomial n × R
 
 namespace MonoR
 

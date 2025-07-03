@@ -114,6 +114,8 @@ theorem polynomial_id₂ [CommSemiring R] {p : MvPolynomial (Fin n) R} :
   · have : ∀ x ∈ s, toCMvMonomial x ≠ toCMvMonomial m := by aesop
     grind  
 
+-- TODO: use RingEquiv
+
 noncomputable def polyEquiv [CommSemiring R] :
   Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
@@ -135,13 +137,11 @@ where
   map_zero' := sorry
   map_add' := sorry
 
--- noncomputable def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
---   RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
--- where
---   toFun := toCMvPolynomial
---   map_one' := sorry
---   map_mul' := sorry
---   map_zero' := sorry
---   map_add' := sorry
-
-end CPoly
+noncomputable def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
+  RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
+where
+  toFun := toCMvPolynomial
+  map_one' := sorry
+  map_mul' := sorry
+  map_zero' := sorry
+  map_add' := sorry

@@ -2,10 +2,7 @@
 -- Import modules here that should be built as part of the library.
 import CMvPolynomial.CMvMonomial
 import CMvPolynomial.CMvPolynomial
-import CMvPolynomial.Instances
-import CMvPolynomial.LawfulCMvPolynomial
-import CMvPolynomial.Syntax
-import CMvPolynomial.Tests
-import CMvPolynomial.Theorems
-import CMvPolynomial.UnlawfulCMvPolynomial
+import CMvPolynomial.Lawful
+import CMvPolynomial.MvPolyEquiv
+import CMvPolynomial.Unlawful
 import CMvPolynomial.Wheels

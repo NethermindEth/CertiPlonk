@@ -1,12 +1,14 @@
-import Batteries.Data.RBMap.Basic
-import CMvPolynomial.Instances
-import Mathlib.Algebra.Order.Group.Nat
 import Mathlib.Algebra.Ring.Defs
 import Mathlib.Data.Nat.Lattice
+import Mathlib.Data.Finsupp.Defs
+import Std.Classes.Ord.Vector
 
-open Batteries
+namespace CPoly
 
-/-- Monomial in `n` variables. `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂ -/
+/--
+  Monomial in `n` variables.
+  - `#v[e₀, e₁, e₂]` denotes X₀^e₀ * X₁^e₁ * X₂^e₂
+-/
 abbrev CMvMonomial (n : ℕ) : Type := Vector ℕ n
 
 syntax "#m[" withoutPosition(term,*,?) "]" : term
@@ -15,7 +17,7 @@ open Lean in
 macro_rules
   | `(#m[ $elems,* ]) => `(#v[ $elems,* ])
 
-instance : Repr (CMvMonomial n) where
+instance {n : ℕ} : Repr (CMvMonomial n) where
   reprPrec m _ :=
     let indexed := (Array.range m.size).zip m.1
     let toFormat : Std.ToFormat (ℕ × ℕ) :=
@@ -33,7 +35,7 @@ def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
           else by have := le_of_lt (not_le.1 h)
                   rw [sup_of_le_right this, Nat.add_sub_cancel' this]
         this ▸ rfl)
-       (m ++ Vector.replicate (n' - n) 0)
+       (m.append (Vector.replicate (n' - n) 0))
 
 def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
@@ -63,80 +65,52 @@ def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
 
 instance : Div (CMvMonomial n) := ⟨div⟩
 
-instance : Ord (CMvMonomial n) := ⟨fun a b ↦ compareOfLessAndEq a b⟩
+instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
-section
+def toFinsupp (m : CPoly.CMvMonomial n) : Fin n →₀ ℕ :=
+  ⟨{i : Fin n | m[i] ≠ 0}, m.get, by aesop⟩
 
-variable {n : ℕ} {a₁ a₂ : CMvMonomial n}
+def ofFinsupp (m : Fin n →₀ ℕ) : CPoly.CMvMonomial n := Vector.ofFn m
 
-@[simp]
-lemma simpleCmp_iff : compare a₁ a₂ = .eq ↔ a₁ = a₂ :=
-  compareOfLessAndEq_eq_eq Vector.le_refl Vector.not_le
+@[grind=, simp]
+theorem ofFinsupp_toFinsupp {m : CMvMonomial n} : ofFinsupp m.toFinsupp = m := by
+  ext i hi; aesop (add simp CMvMonomial.ofFinsupp)
 
-@[simp]
-lemma simpleCmp_lt : compare a₁ a₂ = .lt ↔ a₁ < a₂ :=
-  Batteries.compareOfLessAndEq_eq_lt
+@[grind=, simp]
+theorem toFinsupp_ofFinsupp {m : Fin n →₀ ℕ} : (ofFinsupp m).toFinsupp = m := by
+  ext i; aesop (add simp [CMvMonomial.toFinsupp, CMvMonomial.ofFinsupp, Vector.get])
 
-lemma lt_iff_not_gt_and_ne {x y : CMvMonomial n} :
-  x < y ↔ ¬y < x ∧ x ≠ y := by
-  rw [Vector.not_lt_iff_ge, Vector.le_iff_lt_or_eq]
-  aesop (add simp Vector.lt_irrefl)
+lemma injective_ofFinsupp : Function.Injective (ofFinsupp (n := n)) := 
+  Function.HasLeftInverse.injective ⟨toFinsupp, fun _ ↦ toFinsupp_ofFinsupp⟩   
 
-lemma symm {x y : CMvMonomial n} : compare y x = (compare x y).swap :=
-  compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne (fun _ _ ↦ lt_iff_not_gt_and_ne)
-
-@[simp]
-lemma simpleCmp_eq_gt : compare a₁ a₂ = .gt ↔ a₁ > a₂ :=
-  compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne fun _ _ ↦ lt_iff_not_gt_and_ne
-
-@[simp]
-lemma not_gt : compare a₁ a₂ ≠ .gt ↔ a₁ ≤ a₂ := by simp
-
-@[simp]
-lemma isLE_simple_cmp : (compare a₁ a₂).isLE = true ↔ a₁ ≤ a₂ := by
-  aesop (add simp Ordering.isLE)
-
-lemma le_trans {c : CMvMonomial n} :
-  compare a b ≠ Ordering.gt →
-  compare b c ≠ Ordering.gt →
-  compare a c ≠ Ordering.gt := by simp; exact Vector.le_trans
-
-end
+def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
+  toFun := toFinsupp
+  invFun := ofFinsupp
+  left_inv := fun _ ↦ ofFinsupp_toFinsupp
+  right_inv := fun _ ↦ toFinsupp_ofFinsupp
 
 end CMvMonomial
 
-variable {n : ℕ}
-
-instance : Std.TransOrd (CMvMonomial n) where
-  eq_swap := CMvMonomial.symm
-  isLE_trans := by aesop (add safe forward Vector.le_trans)
-
-instance : Std.LawfulEqOrd (CMvMonomial n) where
-  eq_of_compare h := by simpa using h
-
-def MonoR n R := CMvMonomial n × R
+abbrev MonoR (n : ℕ) (R : Type) := CMvMonomial n × R
 
 namespace MonoR
+
+variable {n : ℕ} {R : Type}
 
 instance [DecidableEq R] : DecidableEq (CMvMonomial n × R) :=
   instDecidableEqProd
 
 section
 
-variable [CommSemiring R]
-
 instance [Repr R] : Repr (MonoR n R) where
   reprPrec
     | (m, c), _ => repr c ++ " * " ++ repr m
 
-def constant (c : R) : MonoR n R :=
-  (CMvMonomial.one, c)
+def C (c : R) : MonoR n R := (CMvMonomial.one, c)
 
-def divides [HMod R R R] [BEq R]
-  (t₁ : MonoR n R)
-  (t₂ : MonoR n R) :
-  Bool
-:=
+variable [CommSemiring R]
+
+def divides [HMod R R R] [BEq R] (t₁ t₂ : MonoR n R) : Bool :=
   t₁.1 ∣ t₂.1 ∧ t₁.2 % t₂.2 == 0
 
 instance [HMod R R R] [BEq R] : Dvd (MonoR n R) := ⟨fun t₁ t₂ ↦ divides t₁ t₂⟩ -- Do not eta.
@@ -149,13 +123,10 @@ end
 
 end MonoR
 
-abbrev GrevlexOrderingVector n := Vector ℤ (n + 1)
+end CPoly
 
-def orderingVector (m : CMvMonomial n) : GrevlexOrderingVector n :=
-  ⟨ #[.ofNat m.totalDegree] ++ m.toArray.reverse.map .negOfNat
-  , by simp +arith
-  ⟩
+@[reducible]
+alias Finsupp.ofCMvMonomial := CPoly.CMvMonomial.toFinsupp
 
-def grevlex (m₁ m₂ : CMvMonomial n) : Ordering :=
-  compare m₁.totalDegree m₂.totalDegree |>.then
-    (compareOfLessAndEq m₂ m₁)
+@[reducible]
+alias Finsupp.toCMvMonomial := CPoly.CMvMonomial.ofFinsupp

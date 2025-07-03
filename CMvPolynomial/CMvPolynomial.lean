@@ -1,8 +1,10 @@
-import CMvPolynomial.LawfulCMvPolynomial
+import CMvPolynomial.Lawful
+
+namespace CPoly
 
 open Std
 
-abbrev CMvPolynomial (n : ℕ) R [Zero R] : Type := LawfulCMvPolynomial n R
+abbrev CMvPolynomial (n : ℕ) R [Zero R] : Type := Lawful n R
 
 variable {R : Type}
 
@@ -22,6 +24,4 @@ theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
 
 end CMvPolynomial
 
-namespace CMvPolynomial
-
-end CMvPolynomial
+end CPoly

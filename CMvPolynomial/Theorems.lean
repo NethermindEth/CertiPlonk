@@ -330,6 +330,8 @@ noncomputable def toCMvPolynomial [CommSemiring R]
 --   congr
 --   sorry
 
+-- TODO: use RingEquiv
+
 noncomputable def polyEquiv [CommSemiring R] :
   Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
@@ -367,5 +369,3 @@ where
   map_mul' := sorry
   map_zero' := sorry
   map_add' := sorry
-
-#min_imports

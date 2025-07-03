@@ -246,6 +246,52 @@ def add [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
 :=
   RBMap.mergeWith (λ _ c₁ c₂ ↦ c₁ + c₂) p₁ p₂
 
+def addTerm (p : UnlawfulCMvPolynomial n R) (term : Term n R) :
+  UnlawfulCMvPolynomial n R
+:=
+  RBSet.insert p
+    (match RBSet.find? p term with
+      | some term₁ => (term.1, term₁.2 + term.2)
+      | none => term
+    )
+
+lemma find_addTerm
+  (p : UnlawfulCMvPolynomial n R)
+  (m : CMvMonomial n)
+  (c : R) :
+  (p.addTerm (m, c)).findD m 0 = p.findD m 0 + c
+:= by
+  sorry
+
+lemma add_find_of_find_add_helper [BEq R]
+  (t : RBNode (Term n R))
+  (p : UnlawfulCMvPolynomial n R) :
+  (m, cₜ) ∈ t →
+  p.find? m = cₚ? →
+  c = RBMap.findD (t.foldl addTerm p) m 0 →
+  cₜ + cₚ?.getD 0 = c
+:= by
+  intro m_in_t m_in_p find_in_foldl
+  induction t
+  case nil => simp_all
+  case node _ l v r ih₁ ih₂ =>
+    simp [RBMap.findD] at find_in_foldl
+    sorry
+
+lemma add_find_of_find_add [BEq R]
+  (p₁ p₂ : UnlawfulCMvPolynomial n R) :
+  (p₁.add p₂).findD m 0 = c →
+  p₁.findD m 0 + p₂.findD m 0 = c
+:= by
+  unfold add RBMap.mergeWith RBSet.mergeWith RBSet.foldl
+  simp
+  intro h
+  unfold RBMap.findD Option.getD
+  -- intro h
+  sorry
+  -- rcases h_find : RBMap.find? (p₁.add p₂) m with ⟨c⟩
+  -- ·
+
 -- lemma add_comm [BEq R] :
 --   ∀ (p₁ p₂ : UnlawfulCMvPolynomial n R), add p₁ p₂ = add p₂ p₁
 -- := by

@@ -24,29 +24,14 @@ def constant [BEq R] [LawfulBEq R]
   -- LawfulCMvPolynomial.fromUnlawful <| .constant c
   if h : c == 0 then
     ⟨ .empty
-    , by
-        unfold UnlawfulCMvPolynomial.isNoZeroCoef UnlawfulCMvPolynomial.empty
-        intro m
-        cases h : RBMap.empty.find? m
-        · simp
-        · rw [RBMap.find?_some] at h
-          aesop
+    , by unfold UnlawfulCMvPolynomial.isNoZeroCoef UnlawfulCMvPolynomial.empty
+         aesop (add simp RBMap.find?_some)
     ⟩
   else
     ⟨ UnlawfulCMvPolynomial.constant c
     , by
-        simp at h
-        unfold
-          UnlawfulCMvPolynomial.isNoZeroCoef
-          UnlawfulCMvPolynomial.constant
-          Function.uncurry
-        dsimp
-        intro m
-        by_contra contra
-        have ⟨y, contra, _⟩ := RBMap.find?_some_mem_toList contra
-        simp at contra
-        unfold MonoR.constant at contra
-        aesop
+        unfold UnlawfulCMvPolynomial.isNoZeroCoef UnlawfulCMvPolynomial.constant
+        aesop (add simp MonoR.constant) (add safe forward RBMap.find?_some_mem_toList)
     ⟩
 
 instance [BEq R] [LawfulBEq R]:
@@ -99,9 +84,7 @@ def findD (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R :=
 lemma mem_node
   {a : LawfulCMvPolynomial n R} :
   a.find? x = some c ↔ (x, c) ∈ a.val.val
-:= by
-  unfold find?
-  exact UnlawfulCMvPolynomial.mem_node
+:= UnlawfulCMvPolynomial.mem_node
 
 def extEquiv : Setoid (LawfulCMvPolynomial n R) where
   r a b := ∀ x, a.find? x = b.find? x
@@ -123,25 +106,8 @@ lemma from_to_Lawful₀ [BEq R] [LawfulBEq R] :
   case node _ l v r ih₁ ih₂ =>
     intro init h
     simp only [RBNode.foldl]
-    rw [ih₁, ih₂]
-    have coeff_nonzero : !v.2 == 0 = true := by
-      simp
-      intro h_eq
-      specialize h v.1 v.2 (by simp)
-      contradiction
-    simp [coeff_nonzero]
-    · intro k v h_in
-      apply h k v
-      simp
-      right
-      right
-      assumption
-    · intro k v h_in
-      apply h k v
-      simp
-      right
-      left
-      assumption
+    rw [ih₁, ih₂] <;> clear ih₁ ih₂ <;>
+    [simp [show !v.2 == 0 = true by aesop]; aesop; aesop]
 
 #printaxioms from_to_Lawful₀
 

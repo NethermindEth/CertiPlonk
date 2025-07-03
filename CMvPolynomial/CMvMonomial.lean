@@ -54,27 +54,14 @@ instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩ -- D
 instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
 /--
-  Ref: @Andrei @Julian
+  The polynomial `m₁ / m₂`.
 
-  I would probably suggest *not* spooning this into `Option`.
-  Two alternatives:
-  - a) return `Vector.zipWith Nat.sub`, and sature silly subterms to zero.
-  - b) return `Vector.zipWith Nat.sub` if m₁ | m₂, _one_ otherwise.
-  
-  Then we have statements assuming `m₁ | m₂ → P` for most `P` regarding `div`.
+  The result makes sense assuming  `m₁ | m₂`.
 -/
-def div (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) :
-  Option (CMvMonomial n)
-:=
-  if m₁ ∣ m₂ then Vector.zipWith Nat.sub m₁ m₂ else none -- FIX THIS
+def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
+  Vector.zipWith Nat.sub m₁ m₂
 
-/--
-  Ref: @Andrei @Julian
-
-  - Depending on the answer to the question wrt. `div` above, we might want `Div` as well.
-  - Furthermore, which other `HDiv`s do we want?
--/
-instance : HDiv (CMvMonomial n) (CMvMonomial n) (Option (CMvMonomial n)) := ⟨div⟩ -- FIX
+instance : Div (CMvMonomial n) := ⟨div⟩
 
 abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
   compareOfLessAndEq a₁ a₂
@@ -128,7 +115,7 @@ lemma CMvMonomial.list_pairwise_lt_nodup {l : List (CMvMonomial n × R)} :
   · aesop (add simp RBNode.cmpLT) (config := {warnOnNonterminal := false})
     exact absurd (left _ _ a) (Vector.lt_irrefl _)
 
-def MonoR n R [CommSemiring R] := CMvMonomial n × R
+def MonoR n R := CMvMonomial n × R
 
 namespace MonoR
 

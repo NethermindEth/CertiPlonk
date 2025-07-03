@@ -49,8 +49,12 @@ def extend [BEq R]
 def add [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   fromUnlawful <| UnlawfulCMvPolynomial.add p₁.val p₂.val
 
+instance [BEq R] : Add (LawfulCMvPolynomial n R) := ⟨add⟩
+
 def mul [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   fromUnlawful <| UnlawfulCMvPolynomial.mul p₁.val p₂.val
+
+instance [BEq R] : Mul (LawfulCMvPolynomial n R) := ⟨mul⟩
 
 def find? (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) : Option R :=
   p.val.find? m
@@ -63,20 +67,12 @@ def monomials (p : LawfulCMvPolynomial n R) :
 lemma mem_monomials_of_mem
   {p : LawfulCMvPolynomial n R} :
   (a₀, b₀) ∈ p.val.val → a₀ ∈ p.monomials
-:= by
-  unfold LawfulCMvPolynomial.monomials
-  intro h
-  apply UnlawfulCMvPolynomial.mem_monomials_of_mem
-  assumption
+:= UnlawfulCMvPolynomial.mem_monomials_of_mem
 
 lemma mem_of_mem_monomials
   {p : LawfulCMvPolynomial n R} :
   a₀ ∈ p.monomials → (∃ b₀, (a₀, b₀) ∈ p.val.val)
-:= by
-  unfold LawfulCMvPolynomial.monomials
-  intro h
-  apply UnlawfulCMvPolynomial.mem_of_mem_monomials
-  assumption
+:= UnlawfulCMvPolynomial.mem_of_mem_monomials
 
 def findD (p : LawfulCMvPolynomial n R) (m : CMvMonomial n) (v₀ : R) : R :=
   (p.find? m).getD v₀
@@ -210,8 +206,12 @@ variable {n R} [CommRing R]
 def neg [BEq R] (p : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   fromUnlawful p.val.neg
 
+instance [BEq R] : Neg (LawfulCMvPolynomial n R) := ⟨neg⟩
+
 def sub [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  add p₁ p₂.neg
+  p₁ + (-p₂)
+
+instance [BEq R] : Sub (LawfulCMvPolynomial n R) := ⟨sub⟩
 
 def reduce [BEq R] (p d : LawfulCMvPolynomial n R) :
   Option (LawfulCMvPolynomial n R)

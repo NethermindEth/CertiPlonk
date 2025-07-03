@@ -47,12 +47,12 @@ def extend [BEq R]
   fromUnlawful <| p.val.extend n'
 
 def add [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  fromUnlawful <| UnlawfulCMvPolynomial.add p₁.val p₂.val
+  fromUnlawful <| p₁.val + p₂.val
 
 instance [BEq R] : Add (LawfulCMvPolynomial n R) := ⟨add⟩
 
 def mul [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
-  fromUnlawful <| UnlawfulCMvPolynomial.mul p₁.val p₂.val
+  fromUnlawful <| p₁.val * p₂.val
 
 instance [BEq R] : Mul (LawfulCMvPolynomial n R) := ⟨mul⟩
 

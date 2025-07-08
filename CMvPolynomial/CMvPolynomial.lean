@@ -1,10 +1,12 @@
 import CMvPolynomial.LawfulCMvPolynomial
+import CMvPolynomial.Syntax
 
 open Std
 
 abbrev CMvPolynomial (n : ℕ) R [Zero R] : Type := LawfulCMvPolynomial n R
 
 variable {R : Type}
+
 
 namespace CMvPolynomial
 

@@ -71,7 +71,7 @@ def zero [BEq R] [Zero R] : UnlawfulCMvPolynomial n R := constant 0
 
 instance : Zero (UnlawfulCMvPolynomial n R) := ⟨empty⟩
 
-def add [CommSemiring R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
+def add (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   ExtTreeMap.mergeWith (λ _ c₁ c₂ ↦ c₁ + c₂) p₁ p₂
@@ -98,8 +98,23 @@ def mul₀
 theorem list_nodup {p : UnlawfulCMvPolynomial n R} :
   p.toList.Nodup := sorry -- TODO: Look at this.
 
-def mul [CommSemiring R] (p₁ p₂ : UnlawfulCMvPolynomial n R) : UnlawfulCMvPolynomial n R
-:=  
+def mul [CommSemiring R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
+  UnlawfulCMvPolynomial n R
+:=
+  let Pairs : Type := {x : CMvMonomial n × R // x ∈ p₁.toList}
+  have : Fintype Pairs :=
+    { elems :=
+      ⟨ Multiset.ofList p₁.toList.attach
+      , by
+          simp
+          rw [List.nodup_attach]
+          apply UnlawfulCMvPolynomial.list_nodup
+      ⟩
+    , complete := by
+        rintro ⟨x, hs⟩
+        simp
+        apply List.mem_attach
+    }
   let terms : List (UnlawfulCMvPolynomial n R) :=
     p₁.foldl (λ acc m c ↦ UnlawfulCMvPolynomial.mul₀ (m, c) p₂ :: acc) []
   terms.foldl UnlawfulCMvPolynomial.add .empty
@@ -157,14 +172,62 @@ def div₀
   UnlawfulCMvPolynomial n R × UnlawfulCMvPolynomial n R
 := sorry
 
-def reduce [BEq R] (p d : UnlawfulCMvPolynomial n R) :
-  Option (UnlawfulCMvPolynomial n R)
-:= do
-  let lm_d : CMvMonomial n ← d.leadingMonomial?
-  let t ← p.findDivisibleTerm? lm_d
-  let m : CMvMonomial n := t.1.div lm_d
-  let termQuotient : UnlawfulCMvPolynomial n R := ExtTreeMap.ofList [(m, t.2)]
-  p - termQuotient * d
+-- instance [CommRing R] [BEq R] :
+--   AddCommMonoid (UnlawfulCMvPolynomial n R)
+-- where
+--   add := UnlawfulCMvPolynomial.add
+--   add_assoc := sorry
+--   zero := .empty
+--   zero_add := sorry
+--   add_zero := by aesop
+--   nsmul n p := if n == 0 then .empty else p.map λ (m, c) ↦ (m, n * c)
+--   nsmul_zero := by aesop
+--   nsmul_succ := by
+--     simp
+--     intro n ⟨x₁, x₂⟩
+--     induction' n with n' ih
+--     · simp
+--       sorry
+--     · sorry
+--   add_comm := sorry
+
+-- def reduce [BEq R] (p d : UnlawfulCMvPolynomial n R) :
+--   Option (UnlawfulCMvPolynomial n R)
+-- := do
+--   let lm_d ← d.leadingMonomial?
+--   let t ← p.findDivisibleTerm? lm_d
+--   let m ← t.1.div lm_d
+--   let termQuotient : UnlawfulCMvPolynomial n R := RBMap.single m t.2
+--   pure <| p.sub (UnlawfulCMvPolynomial.mul termQuotient d)
+
+def reduce [BEq R]
+  (p : UnlawfulCMvPolynomial n R)
+  (l : List (R × UnlawfulCMvPolynomial n R)) :
+  UnlawfulCMvPolynomial n R
+:=
+  l.foldl
+    (init := p)
+    (λ acc (cᵢ, pᵢ) ↦ acc.sub <| (UnlawfulCMvPolynomial.constant cᵢ).mul pᵢ)
+
+def Reduces [BEq R]
+  (p : UnlawfulCMvPolynomial n R)
+  (l : List (R × UnlawfulCMvPolynomial n R))
+  (q : UnlawfulCMvPolynomial n R) :
+  Prop
+:=
+  -- (p.reduce l).toList = q.toList
+  (p.reduce l).toList.length = 1
+  -- [] = ([] : List (R × UnlawfulCMvPolynomial n R))
+
+instance [BEq R]
+  {p : UnlawfulCMvPolynomial n R}
+  {l : List (R × UnlawfulCMvPolynomial n R)}
+  {q : UnlawfulCMvPolynomial n R} :
+  Decidable (Reduces p l q)
+:= by
+  dsimp [Reduces, reduce]
+  infer_instance
+  -- sorry
 
 end R_CommRing
 

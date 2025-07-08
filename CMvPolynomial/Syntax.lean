@@ -110,7 +110,7 @@ def t' : LawfulCMvPolynomial 1 ℤ :=
 def x' : LawfulCMvPolynomial 1 ℤ :=
   1 * X 0 ^ 1
 
-#eval! i'.reduce t'
+-- #eval! i'.reduce t'
 #eval! i'.sub (x'.mul t')
 -/
 

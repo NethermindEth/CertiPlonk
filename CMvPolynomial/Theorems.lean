@@ -131,17 +131,24 @@ noncomputable instance : CommSemiring (CMvPolynomial n R) := Equiv.commSemiring 
 noncomputable def homomorphism₁ :
   RingHom (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
-  toFun := fromCMvPolynomial
-  map_one' := sorry
+  toEquiv := polyEquiv
   map_mul' := sorry
-  map_zero' := sorry
   map_add' := sorry
 
-noncomputable def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
-  RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
-where
-  toFun := toCMvPolynomial
-  map_one' := sorry
-  map_mul' := sorry
-  map_zero' := sorry
-  map_add' := sorry
+-- noncomputable def homomorphism₁ [BEq R] [CommSemiring R] [LawfulBEq R] :
+--   RingHom (CMvPolynomial n R) (MvPolynomial (Fin n) R)
+-- where
+--   toFun := fromCMvPolynomial
+--   map_one' := sorry
+--   map_mul' := sorry
+--   map_zero' := sorry
+--   map_add' := sorry
+
+-- noncomputable def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
+--   RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
+-- where
+--   toFun := toCMvPolynomial
+--   map_one' := sorry
+--   map_mul' := sorry
+--   map_zero' := sorry
+--   map_add' := sorry

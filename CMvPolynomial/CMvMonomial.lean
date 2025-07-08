@@ -24,166 +24,137 @@ instance : Repr (CMvMonomial n) where
 
 namespace CMvMonomial
 
-def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
-  if h_le : n' ≤ n then by
-    have : max n n' = n := by
-      rw [sup_eq_left]
-      exact h_le
-    rw [this]
-    exact m
-  else by
-    let diff := n' - n
-    have : max n n' = n + diff := by
-      unfold diff
-      simp only [not_le] at h_le
-      have h_le : n ≤ n' := by
-        rw [le_iff_lt_or_eq]
-        left; exact h_le
-      rw [sup_comm, sup_eq_left.2 h_le]
-      rw [←Nat.add_sub_assoc h_le]
-      simp
-    rw [this]
-    exact m ++ (Vector.replicate diff 0)
+variable {n : ℕ}
 
-def totalDegree (m : CMvMonomial n) : ℕ := m.foldl Nat.add 0
+def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
+  cast (have : n + (n' - n) = n ⊔ n' :=
+          if h : n' ≤ n
+          then by simp [h]
+          else by have := le_of_lt (not_le.1 h)
+                  rw [sup_of_le_right this, Nat.add_sub_cancel' this]
+        this ▸ rfl)
+       (m ++ Vector.replicate (n' - n) 0)
+
+def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
 def one : CMvMonomial n := Vector.replicate n 0
+
+instance : One (CMvMonomial n) := ⟨one⟩
 
 def mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
   Vector.zipWith .add
 
+instance : Mul (CMvMonomial n) := ⟨mul⟩
+
 def divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
-def div (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) :
-  Option (CMvMonomial n)
-:=
-  if m₁.divides m₂ then Vector.zipWith Nat.sub m₁ m₂ else none
+instance : Dvd (CMvMonomial n) := ⟨fun m₁ m₂ ↦ divides m₁ m₂⟩ -- Do not eta.
+
+instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
+
+/--
+  The polynomial `m₁ / m₂`.
+
+  The result makes sense assuming  `m₁ | m₂`.
+-/
+def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
+  Vector.zipWith Nat.sub m₁ m₂
+
+instance : Div (CMvMonomial n) := ⟨div⟩
 
 abbrev simpleCmp (a₁ a₂ : CMvMonomial n) : Ordering :=
   compareOfLessAndEq a₁ a₂
 
-lemma simpleCmp_eq : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ := by
-  unfold simpleCmp
-  rw [compareOfLessAndEq_eq_eq]
-  · apply Vector.le_refl
-  · intro x y; apply Vector.not_le
+@[simp]
+lemma simpleCmp_iff : simpleCmp a₁ a₂ = .eq ↔ a₁ = a₂ :=
+  compareOfLessAndEq_eq_eq Vector.le_refl Vector.not_le
 
-lemma simpleCmp_lt : simpleCmp a₁ a₂ = .lt ↔ a₁ < a₂ := by
-  unfold simpleCmp
-  rw [Batteries.compareOfLessAndEq_eq_lt]
+@[simp]
+lemma simpleCmp_lt : simpleCmp a₁ a₂ = .lt ↔ a₁ < a₂ :=
+  Batteries.compareOfLessAndEq_eq_lt
 
-lemma lt_iff_not_gt_and_ne : ∀ (x y : CMvMonomial n),
-  x < y ↔ ¬y < x ∧ x ≠ y
-:= by
-  intro x y
-  constructor
-  · intro h
-    constructor
-    · simp [Vector.le_iff_lt_or_eq, h]
-    · simp
-      intro contra
-      subst contra
-      apply Vector.lt_irrefl x
-      exact h
-  · intro ⟨h₁, h₂⟩
-    rw [Vector.not_lt] at h₁
-    rw [Vector.le_iff_lt_or_eq] at h₁
-    rcases h₁ with hl | hr
-    · exact hl
-    · contradiction
+lemma lt_iff_not_gt_and_ne {x y : CMvMonomial n} :
+  x < y ↔ ¬y < x ∧ x ≠ y := by
+  rw [Vector.not_lt_iff_ge, Vector.le_iff_lt_or_eq]
+  aesop (add simp Vector.lt_irrefl)
 
-lemma symm : ∀ (x y : CMvMonomial n),
-  (simpleCmp x y).swap = simpleCmp y x
-:= by
-  intros x y
-  unfold simpleCmp
-  rw [←compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne lt_iff_not_gt_and_ne]
+lemma symm {x y : CMvMonomial n} : (simpleCmp x y).swap = simpleCmp y x :=
+  (compareOfLessAndEq_eq_swap_of_lt_iff_not_gt_and_ne (fun _ _ ↦ lt_iff_not_gt_and_ne)).symm
 
-lemma not_gt : ∀ m₁ m₂ : CMvMonomial n,
-  simpleCmp m₁ m₂ ≠ .gt ↔ m₁ ≤ m₂
-:= by
-  intro m₁ m₂
-  unfold simpleCmp
-  simp
-  rw [compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne lt_iff_not_gt_and_ne]
-  rw [Vector.not_lt]
+@[simp]
+lemma simpleCmp_eq_gt : simpleCmp m₁ m₂ = .gt ↔ m₁ > m₂ :=
+  compareOfLessAndEq_eq_gt_of_lt_iff_not_gt_and_ne fun _ _ ↦ lt_iff_not_gt_and_ne
 
-lemma le_trans : ∀ {x y z : CMvMonomial n},
+@[simp]
+lemma not_gt {m₁ m₂ : CMvMonomial n} : simpleCmp m₁ m₂ ≠ .gt ↔ m₁ ≤ m₂ := by simp
+
+lemma le_trans {x y z : CMvMonomial n} :
   simpleCmp x y ≠ Ordering.gt →
   simpleCmp y z ≠ Ordering.gt →
-  simpleCmp x z ≠ Ordering.gt
-:= by
-  intros x y z h_lt₁ h_lt₂
-  have h_lt₁' := (not_gt x y).1 h_lt₁
-  have h_lt₂' := (not_gt y z).1 h_lt₂
-  have h_lt₃ : x ≤ z := by
-    apply Vector.le_trans (ys := y) <;> simp [*]
-  rw [not_gt x z]
-  apply Vector.le_trans (ys := y) <;> simp only [*]
+  simpleCmp x z ≠ Ordering.gt := by simp; exact Vector.le_trans
 
 end CMvMonomial
 
 instance :
-  TransCmp (λ x1 x2 : CMvMonomial n ↦ CMvMonomial.simpleCmp x1 x2)
+  TransCmp fun x1 x2 : CMvMonomial n ↦ CMvMonomial.simpleCmp x1 x2
 where
-  symm := CMvMonomial.symm
+  symm := fun _ _ ↦ CMvMonomial.symm
   le_trans := CMvMonomial.le_trans
 
 instance :
-  TransCmp (λ x1 x2 : (CMvMonomial n × R) ↦ CMvMonomial.simpleCmp x1.1 x2.1)
+  TransCmp fun x1 x2 : (CMvMonomial n × R) ↦ CMvMonomial.simpleCmp x1.1 x2.1
 where
-  symm := by
-    intros
-    apply CMvMonomial.symm
-  le_trans := by
-    intros x y z
-    apply CMvMonomial.le_trans
+  symm := fun _ _ ↦ CMvMonomial.symm
+  le_trans := CMvMonomial.le_trans
 
-lemma CMvMonomial.list_pairwise_lt_nodup (l : List (CMvMonomial n × R)) :
-  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup
-:= by
-  intro h
-  induction h with
-  | nil => simp
-  | @cons a l head tail ih =>
-    apply List.Pairwise.cons
-    · intros a' a'_in contra
-      rw [contra] at head
-      specialize head a' a'_in
-      simp [RBNode.cmpLT] at head
-      specialize head
-      simp [Vector.lt_irrefl] at head
-    · apply ih
+lemma CMvMonomial.list_pairwise_lt_nodup {l : List (CMvMonomial n × R)} :
+  l.Pairwise (RBNode.cmpLT (CMvMonomial.simpleCmp ·.1 ·.1)) → l.Nodup := by
+  induction' l with hd tl ih
+  · simp
+  · aesop (add simp RBNode.cmpLT) (config := {warnOnNonterminal := false})
+    exact absurd (left _ _ a) (Vector.lt_irrefl _)
 
-abbrev Term n R [CommSemiring R] := CMvMonomial n × R
+def MonoR n R := CMvMonomial n × R
 
-namespace Term
+namespace MonoR
 
 instance [DecidableEq R] : DecidableEq (CMvMonomial n × R) :=
   instDecidableEqProd
 
-instance [CommSemiring R] [Repr R] : Repr (Term n R) where
+section
+
+variable [CommSemiring R]
+
+instance [Repr R] : Repr (MonoR n R) where
   reprPrec
     | (m, c), _ => repr c ++ " * " ++ repr m
 
-def constant [CommSemiring R] (c : R) : Term n R :=
+def constant (c : R) : MonoR n R :=
   (CMvMonomial.one, c)
 
-def divides [CommSemiring R] [HMod R R R] [BEq R]
-  (t₁ : Term n R)
-  (t₂ : Term n R) :
+def divides [HMod R R R] [BEq R]
+  (t₁ : MonoR n R)
+  (t₂ : MonoR n R) :
   Bool
 :=
-  t₁.1.divides t₂.1 ∧ t₁.2 % t₂.2 == 0
+  t₁.1 ∣ t₂.1 ∧ t₁.2 % t₂.2 == 0
 
-end Term
+instance [HMod R R R] [BEq R] : Dvd (MonoR n R) := ⟨fun t₁ t₂ ↦ divides t₁ t₂⟩ -- Do not eta.
+
+instance [HMod R R R] [BEq R] {t₁ t₂ : MonoR n R} : Decidable (t₁ ∣ t₂) := by
+  dsimp [(·∣·)]
+  infer_instance
+
+end
+
+end MonoR
 
 abbrev GrevlexOrderingVector n := Vector ℤ (n + 1)
 
 def orderingVector (m : CMvMonomial n) : GrevlexOrderingVector n :=
   ⟨ #[.ofNat m.totalDegree] ++ m.toArray.reverse.map .negOfNat
-  , by simp [Nat.add_comm]
+  , by simp +arith
   ⟩
 
 def grevlex (m₁ m₂ : CMvMonomial n) : Ordering :=

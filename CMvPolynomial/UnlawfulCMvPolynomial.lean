@@ -101,7 +101,7 @@ lemma mem_of_mem_monomials
   · contradiction
 
 lemma mem_filter_insert_of_mem₀ [BEq R]
-  (t : RBNode (Term n R)):
+  (t : RBNode (MonoR n R)):
   ∀ init : UnlawfulCMvPolynomial n R,
     init.find? a = some b →
     (∀ c, (a, c) ∉ t) →
@@ -118,14 +118,14 @@ lemma mem_filter_insert_of_mem₀ [BEq R]
     rcases v with ⟨v₁, v₂⟩; simp_all
     have neq : a.simpleCmp v₁ ≠ Ordering.eq := by
       intro contra
-      rw [CMvMonomial.simpleCmp_eq] at contra
+      rw [CMvMonomial.simpleCmp_iff] at contra
       apply (h v₂).1 contra
       rfl
     rw [RBMap.find?_insert_of_ne _ neq]
     apply ih₁ _ h_in
 
 lemma mem_filter_insert_of_mem [BEq R]
-  (t : RBNode (Term n R)):
+  (t : RBNode (MonoR n R)):
   RBNode.Ordered (Ordering.byKey Prod.fst CMvMonomial.simpleCmp) t →
   ∀ init : UnlawfulCMvPolynomial n R,
     (a₀, b₀) ∈ t →
@@ -151,13 +151,16 @@ lemma mem_filter_insert_of_mem [BEq R]
         rcases a₀c_in with ⟨⟨m', c'⟩, x_in_r, h_eq⟩
         specialize all_lt₂ (m', c') x_in_r
         simp [Ordering.byKey, RBNode.cmpLT] at all_lt₂
-        simp at h_eq
+        -- simp at h_eq
         specialize all_lt₂
         subst h₁
         simp_all only [forall_const, Prod.forall]
-        apply Vector.lt_irrefl m' all_lt₂
+        apply Vector.lt_irrefl m'
+        injection h_eq with p₁ p₂
+        subst p₁
+        assumption
       apply RBMap.find?_insert_of_eq
-      rw [CMvMonomial.simpleCmp_eq]
+      simp
     · have a₀_lt_v1 : a₀ < v.1 := by
         specialize all_lt₁ (a₀, b₀) h₂
         simp [Ordering.byKey, RBNode.cmpLT] at all_lt₁
@@ -171,11 +174,12 @@ lemma mem_filter_insert_of_mem [BEq R]
         rcases a₀c_in with ⟨⟨m', c'⟩, x_in_r, h_eq⟩
         specialize all_lt₂ (m', c') x_in_r
         simp [Ordering.byKey, RBNode.cmpLT] at all_lt₂
-        simp at h_eq
+        injection h_eq with p₁ p₂
         specialize all_lt₂
         simp_all only [forall_const, Prod.forall]
         apply Vector.lt_irrefl m'
         trans v.1 <;> assumption
+      rcases v with ⟨v, hv⟩
       rw [RBMap.find?_insert_of_ne]
       apply ih₁
       rw [CMvMonomial.simpleCmp_lt.2 a₀_lt_v1]
@@ -185,7 +189,7 @@ lemma mem_filter_insert_of_mem [BEq R]
 #printaxioms mem_filter_insert_of_mem
 
 lemma mem_of_filter_insert [BEq R]
-  (t : RBNode (Term n R)):
+  (t : RBNode (MonoR n R)):
   RBNode.Ordered (Ordering.byKey Prod.fst CMvMonomial.simpleCmp) t →
   ∀ init : UnlawfulCMvPolynomial n R,
     RBMap.find? (t.foldl (λ acc (a, b) ↦ acc.insert a b) init) a₀ = some b₀ →
@@ -199,27 +203,28 @@ lemma mem_of_filter_insert [BEq R]
     simp at in_fold
     right; assumption
   case node l v r ih₁ ih₂ =>
-    simp at *
+    rcases v with ⟨v, hv⟩
+    simp only [RBNode.foldl, RBNode.mem_node]
     rcases ordered with ⟨o₁, o₂, o₃, o₄⟩
     intro init find_in_fold
     specialize
       ih₂ o₄
-        ((RBNode.foldl (fun acc x => acc.insert x.1 x.2) init l).insert v.1 v.2)
+        ((RBNode.foldl (fun acc x => acc.insert x.1 x.2) init l).insert v hv)
         find_in_fold
     rcases ih₂ with (in_r | ih₂)
     · left; right; right; assumption
-    · by_cases is_val : a₀ = v.1
+    · by_cases is_val : a₀ = v
       · rw [RBMap.find?_insert_of_eq] at ih₂
         · simp at ih₂
           left; left; simp [is_val, ←ih₂]
-        · rw [CMvMonomial.simpleCmp_eq]; assumption
+        · rw [CMvMonomial.simpleCmp_iff]; assumption
       · rw [RBMap.find?_insert_of_ne] at ih₂
         · specialize ih₁ o₃ init ih₂
           rcases ih₁ with (in_v | ih₁)
           · left; right; left; assumption
           · right; assumption
         · intro contra
-          rw [CMvMonomial.simpleCmp_eq] at contra
+          rw [CMvMonomial.simpleCmp_iff] at contra
           contradiction
 
 #printaxioms mem_of_filter_insert
@@ -238,15 +243,15 @@ instance [Repr R] : Repr (UnlawfulCMvPolynomial n R) where
 --   [⟨#m[1, 2, 1], -5⟩, ⟨#m[3, 2, 0], -5⟩].toRBMap CMvMonomial.simpleCmp
 
 def constant [BEq R] (c : R) : UnlawfulCMvPolynomial n R :=
-  Function.uncurry RBMap.single (Term.constant c)
-  -- Function.uncurry RBMap.empty.insert (Term.constant c)
+  Function.uncurry RBMap.single (MonoR.constant c)
+  -- Function.uncurry RBMap.empty.insert (MonoR.constant c)
 
 def add (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
   RBMap.mergeWith (λ _ c₁ c₂ ↦ c₁ + c₂) p₁ p₂
 
-def addTerm (p : UnlawfulCMvPolynomial n R) (term : Term n R) :
+def addTerm (p : UnlawfulCMvPolynomial n R) (term : MonoR n R) :
   UnlawfulCMvPolynomial n R
 :=
   RBSet.insert p
@@ -264,7 +269,7 @@ lemma find_addTerm
   sorry
 
 lemma add_find_of_find_add_helper [BEq R]
-  (t : RBNode (Term n R))
+  (t : RBNode (MonoR n R))
   (p : UnlawfulCMvPolynomial n R) :
   (m, cₜ) ∈ t →
   p.find? m = cₚ? →
@@ -301,7 +306,7 @@ lemma add_find_of_find_add [BEq R]
   -- sorry
 
 def mul₀
-  (t : Term n R)
+  (t : MonoR n R)
   (p : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial n R
 :=
@@ -368,7 +373,7 @@ def sub [BEq R] (p₁ p₂ : UnlawfulCMvPolynomial n R) :
   UnlawfulCMvPolynomial.add p₁ p₂.neg
 
 /-- lt(p) according to the `simpleCmp` order -/
-def leadingTerm? [BEq R] : UnlawfulCMvPolynomial n R → Option (Term n R) :=
+def leadingTerm? [BEq R] : UnlawfulCMvPolynomial n R → Option (MonoR n R) :=
   RBMap.max?
 
 /-- lm(p) according to the `simpleCmp` order -/
@@ -380,9 +385,9 @@ def leadingMonomial? [BEq R] :
 def findDivisibleTerm?
   (p : UnlawfulCMvPolynomial n R)
   (divisor : CMvMonomial n) :
-  Option (Term n R)
+  Option (MonoR n R)
 :=
-  p.foldl (λ acc m c ↦ if m.divides divisor then (m, c) else acc) none
+  p.foldl (λ acc m c ↦ if m.divides divisor then .some (m, c) else acc) none
 
 def div₀
   (f : UnlawfulCMvPolynomial n R)

@@ -63,6 +63,18 @@ def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
 
 instance : Div (CMvMonomial n) := ⟨div⟩
 
+instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
+
+/--
+  The polynomial `m₁ / m₂`.
+
+  The result makes sense assuming  `m₁ | m₂`.
+-/
+def div (m₁ m₂ : CMvMonomial n) : CMvMonomial n :=
+  Vector.zipWith Nat.sub m₁ m₂
+
+instance : Div (CMvMonomial n) := ⟨div⟩
+
 instance : Ord (CMvMonomial n) := ⟨fun a b ↦ compareOfLessAndEq a b⟩
 
 section

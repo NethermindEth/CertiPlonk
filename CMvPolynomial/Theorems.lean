@@ -335,37 +335,32 @@ noncomputable def toCMvPolynomial [CommSemiring R]
 noncomputable def polyEquiv [CommSemiring R] :
   Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
-  toFun := sorry -- fromCMvPolynomial
-  invFun := sorry -- toCMvPolynomial
+  toFun := fromCMvPolynomial
+  invFun := toCMvPolynomial
   left_inv := by sorry
-    -- unfold Function.LeftInverse
-    -- intro x
-    -- rcases x with ⟨x⟩
-    -- apply Quotient.sound
-    -- simp only [HasEquiv.Equiv]
-    -- intros m
-    -- let q := Quot.mk (⇑extEquiv) x
-    -- have hq : Quot.mk (⇑extEquiv) x = q := by rfl
-    -- -- rw [hq]
-    -- unfold fromCMvPolynomial fromLawfulCMvPolynomial toLawfulCMvPolynomial
-    -- simp
-    -- simp [Finset.toList]
   right_inv := sorry
 
-noncomputable def homomorphism₁ [BEq R] [CommSemiring R] [LawfulBEq R] :
-  RingHom (CMvPolynomial n R) (MvPolynomial (Fin n) R)
+noncomputable def polyRingEquiv [CommSemiring R] [BEq R]:
+  RingEquiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
-  toFun := fromCMvPolynomial
-  map_one' := sorry
+  toEquiv := polyEquiv
   map_mul' := sorry
-  map_zero' := sorry
   map_add' := sorry
 
-noncomputable def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
-  RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
-where
-  toFun := toCMvPolynomial
-  map_one' := sorry
-  map_mul' := sorry
-  map_zero' := sorry
-  map_add' := sorry
+-- noncomputable def homomorphism₁ [BEq R] [CommSemiring R] [LawfulBEq R] :
+--   RingHom (CMvPolynomial n R) (MvPolynomial (Fin n) R)
+-- where
+--   toFun := fromCMvPolynomial
+--   map_one' := sorry
+--   map_mul' := sorry
+--   map_zero' := sorry
+--   map_add' := sorry
+
+-- noncomputable def homomorphism₂ [BEq R] [CommSemiring R] [LawfulBEq R] :
+--   RingHom (MvPolynomial (Fin n) R) (CMvPolynomial n R)
+-- where
+--   toFun := toCMvPolynomial
+--   map_one' := sorry
+--   map_mul' := sorry
+--   map_zero' := sorry
+--   map_add' := sorry

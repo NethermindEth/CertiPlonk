@@ -124,5 +124,8 @@ def t' : LawfulCMvPolynomial 1 ℤ :=
 def x' : LawfulCMvPolynomial 1 ℤ :=
   1 * X 0 ^ 1
 
-#eval! i'.reduce t'
+-- #eval! i'.reduce t'
 #eval! i'.sub (x'.mul t')
+
+#eval! LawfulCMvPolynomial.NZConst (X 2 : LawfulCMvPolynomial 3 ℤ)
+#eval! LawfulCMvPolynomial.NZConst (4 : LawfulCMvPolynomial 3 ℤ)

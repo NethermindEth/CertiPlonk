@@ -1,10 +1,12 @@
 import CMvPolynomial.LawfulCMvPolynomial
+import CMvPolynomial.Syntax
 
 open Batteries
 
 @[reducible]
 def CMvPolynomial (n : ℕ) R [CommSemiring R] : Type :=
   Quotient (@LawfulCMvPolynomial.extEquiv n R _)
+
 
 namespace CMvPolynomial
 
@@ -16,10 +18,16 @@ def add [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
 :=
   Quotient.map₂ LawfulCMvPolynomial.add sorry p₁ p₂
 
+instance [BEq R] : Add (CMvPolynomial n R) where
+  add := add
+
 def mul [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
   CMvPolynomial n R
 :=
   Quotient.map₂ LawfulCMvPolynomial.mul sorry p₁ p₂
+
+instance [BEq R] : Mul (CMvPolynomial n R) where
+  mul := mul
 
 def find? (p : CMvPolynomial n R) (m : CMvMonomial n) : Option R :=
   Quotient.lift LawfulCMvPolynomial.find? valid p m
@@ -127,6 +135,16 @@ instance [BEq R] [LawfulBEq R] : NonAssocSemiring (CMvPolynomial n R) where
   natCast_zero := sorry
   natCast_succ := sorry
 
+def NZConst (p : CMvPolynomial n R) : Prop :=
+  Quotient.lift LawfulCMvPolynomial.NZConst sorry p
+
+instance {p : CMvPolynomial n R} : Decidable (NZConst p) := by
+  dsimp [NZConst]
+  infer_instance
+
+#eval! NZConst ⟦(X 2 : LawfulCMvPolynomial 3 ℤ)⟧
+#eval! NZConst ⟦(2 : LawfulCMvPolynomial 3 ℤ)⟧
+
 end R_CommSemiring
 
 section R_CommRing
@@ -135,11 +153,11 @@ variable {n R} [CommRing R]
 def sub [BEq R] (p₁ p₂ : CMvPolynomial n R) : CMvPolynomial n R :=
   Quotient.map₂ LawfulCMvPolynomial.sub sorry p₁ p₂
 
-def reduce [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
-  Option (CMvPolynomial n R)
-:= do
-  let p ← Quotient.lift₂ LawfulCMvPolynomial.reduce sorry p₁ p₂
-  return ⟦p⟧
+-- def reduce [BEq R] (p₁ : CMvPolynomial n R) (p₂ : CMvPolynomial n R) :
+--   Option (CMvPolynomial n R)
+-- := do
+--   let p ← Quotient.lift₂ LawfulCMvPolynomial.reduce sorry p₁ p₂
+--   return ⟦p⟧
 
 end R_CommRing
 

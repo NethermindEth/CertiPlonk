@@ -236,6 +236,13 @@ lemma fromUnlawful_find_no_zero_iff [BEq R] :
       apply find_no_zero (fromUnlawful p) m h
   · sorry
 
+def NZConst (p : LawfulCMvPolynomial n R) : Prop :=
+  p.val.size = 1 ∧ p.val.contains CMvMonomial.one
+
+instance {p : LawfulCMvPolynomial n R} : Decidable (NZConst p) := by
+  dsimp [NZConst]
+  infer_instance
+
 end R_CommSemiring
 
 section R_CommRing
@@ -247,11 +254,37 @@ def neg [BEq R] (p : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
 def sub [BEq R] (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
   add p₁ p₂.neg
 
-def reduce [BEq R] (p d : LawfulCMvPolynomial n R) :
-  Option (LawfulCMvPolynomial n R)
-:= do
-  let up ← UnlawfulCMvPolynomial.reduce p.val d.val
-  pure (fromUnlawful up)
+-- def reduce [BEq R] (p d : LawfulCMvPolynomial n R) :
+--   Option (LawfulCMvPolynomial n R)
+-- := do
+--   let up ← UnlawfulCMvPolynomial.reduce p.val d.val
+--   pure (fromUnlawful up)
+
+def reduce [BEq R]
+  (p : LawfulCMvPolynomial n R)
+  (l : List (R × LawfulCMvPolynomial n R)) :
+  LawfulCMvPolynomial n R
+:=
+  let l' := l.map λ (c, p) ↦ (c, p.val)
+  fromUnlawful <| UnlawfulCMvPolynomial.reduce p.val l'
+
+def Reduces [BEq R]
+  (p : LawfulCMvPolynomial n R)
+  (l : List (R × LawfulCMvPolynomial n R))
+  (q : LawfulCMvPolynomial n R) :
+  Prop
+:=
+  p.reduce l = q
+
+instance [BEq R]
+  {p : LawfulCMvPolynomial n R}
+  {l : List (R × LawfulCMvPolynomial n R)}
+  {q : LawfulCMvPolynomial n R} :
+  Decidable (Reduces p l q)
+:= by
+  dsimp [Reduces, reduce, UnlawfulCMvPolynomial.reduce]
+  -- infer_instance
+  sorry
 
 end R_CommRing
 end LawfulCMvPolynomial

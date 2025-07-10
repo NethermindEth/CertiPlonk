@@ -7,8 +7,6 @@ import Mathlib.Data.Finmap
 
 open Std
 
-universe u
-
 /-- Polynomial in `n` variables with coefficients in `R`. -/
 abbrev UnlawfulCMvPolynomial (n : ℕ) (R : Type) : Type :=
   Std.ExtTreeMap (CMvMonomial n) R
@@ -133,18 +131,16 @@ def Reduces [BEq R]
   (q : UnlawfulCMvPolynomial n R) :
   Prop := p.reduce l = q
 
-instance [DecidableEq R] : DecidableEq (UnlawfulCMvPolynomial n R) := fun x y ↦
-  let x' := x.toList
-  let y' := y.toList
-  if x' = y' then Decidable.isTrue sorry else Decidable.isFalse sorry  
+instance instDecidableEq [DecidableEq R] : DecidableEq (UnlawfulCMvPolynomial n R) := fun x y ↦
+  if h : x.toList = y.toList
+  then Decidable.isTrue (ExtTreeMap.ext_toList (h ▸ List.perm_rfl))
+  else Decidable.isFalse (by grind)
 
-instance [BEq R]
+instance [BEq R] [DecidableEq R]
   {p : UnlawfulCMvPolynomial n R}
   {l : List (R × UnlawfulCMvPolynomial n R)}
   {q : UnlawfulCMvPolynomial n R} :
-  Decidable (Reduces p l q) := by
-  dsimp [Reduces]
-  sorry
+  Decidable (Reduces p l q) := by dsimp [Reduces]; infer_instance
 
 end R_CommRing
 

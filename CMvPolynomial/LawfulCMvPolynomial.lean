@@ -129,42 +129,34 @@ def sub (p₁ p₂ : LawfulCMvPolynomial n R) : LawfulCMvPolynomial n R :=
 
 instance : Sub (LawfulCMvPolynomial n R) := ⟨sub⟩
 
-def reduce (p d : LawfulCMvPolynomial n R) :
-  Option (LawfulCMvPolynomial n R)
-:= do
-  let up ← UnlawfulCMvPolynomial.reduce p.val d.val
-  pure (fromUnlawful up)
--- def reduce [BEq R] (p d : LawfulCMvPolynomial n R) :
---   Option (LawfulCMvPolynomial n R)
--- := do
---   let up ← UnlawfulCMvPolynomial.reduce p.val d.val
---   pure (fromUnlawful up)
-
-def reduce [BEq R]
+def reduce [BEq R] [LawfulBEq R]
   (p : LawfulCMvPolynomial n R)
   (l : List (R × LawfulCMvPolynomial n R)) :
   LawfulCMvPolynomial n R
 :=
-  let l' := l.map λ (c, p) ↦ (c, p.val)
-  fromUnlawful <| UnlawfulCMvPolynomial.reduce p.val l'
+  fromUnlawful <| UnlawfulCMvPolynomial.reduce p.val <| l.map λ (c, p) ↦ (c, p.val)
 
-def Reduces [BEq R]
+def Reduces [BEq R] [LawfulBEq R]
   (p : LawfulCMvPolynomial n R)
   (l : List (R × LawfulCMvPolynomial n R))
   (q : LawfulCMvPolynomial n R) :
-  Prop
-:=
-  p.reduce l = q
+  Prop := p.reduce l = q
 
-instance [BEq R]
+instance instDecidableEq [DecidableEq R] : DecidableEq (LawfulCMvPolynomial n R) := fun x y ↦
+  if h : x.1.toList = y.1.toList
+  then Decidable.isTrue (by have := ExtTreeMap.ext_toList (t₁ := x.1) (t₂ := y.1)
+                            simp_rw [Subtype.val_inj] at this
+                            grind)
+  else Decidable.isFalse (by grind)
+
+instance [BEq R] [LawfulBEq R] [DecidableEq R]
   {p : LawfulCMvPolynomial n R}
   {l : List (R × LawfulCMvPolynomial n R)}
   {q : LawfulCMvPolynomial n R} :
   Decidable (Reduces p l q)
 := by
-  dsimp [Reduces, reduce, UnlawfulCMvPolynomial.reduce]
-  -- infer_instance
-  sorry
+  dsimp [Reduces]
+  infer_instance
 
 end R_CommRing
 

@@ -118,7 +118,7 @@ instance : Std.TransOrd (CMvMonomial n) where
 instance : Std.LawfulEqOrd (CMvMonomial n) where
   eq_of_compare h := by simpa using h
 
-def MonoR n R := CMvMonomial n × R
+abbrev MonoR (n : ℕ) (R : Type) := CMvMonomial n × R
 
 namespace MonoR
 

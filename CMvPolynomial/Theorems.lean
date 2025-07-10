@@ -1,5 +1,6 @@
 import CMvPolynomial.CMvPolynomial
 import Mathlib.Algebra.MvPolynomial.Basic
+import Mathlib.Algebra.Equiv.TransferInstance
 
 open Std
 

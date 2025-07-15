@@ -4,7 +4,7 @@ namespace CPoly
 
 open Std
 
-abbrev CMvPolynomial (n : ℕ) R [Zero R] : Type := Lawful n R
+abbrev CMvPolynomial (n : ℕ) (R : Type) [Zero R] : Type := Lawful n R
 
 variable {R : Type}
 

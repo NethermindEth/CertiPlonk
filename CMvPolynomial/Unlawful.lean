@@ -1,12 +1,64 @@
 import CMvPolynomial.CMvMonomial
 import Mathlib.Algebra.Lie.OfAssociative
 import Std.Data.ExtTreeMap.Lemmas
+import Std.Classes.Ord.Basic
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
 namespace CPoly
 
+variable {n : ℕ}
+
+namespace Grevlex
+
+def cmp (a b : CMvMonomial n) : Ordering :=
+  compare a.totalDegree b.totalDegree |>.then (compareOfLessAndEq b a)
+
+variable {a b : CMvMonomial n}
+
+end Grevlex
+
+instance (priority := high) : Ord (CMvMonomial n) := ⟨Grevlex.cmp⟩
+
+attribute [local grind] Vector.lt_trans
+-- attribute [local grind] Vector.lt_asymm
+-- attribute [local grind] Vector.lt_irrefl
+-- attribute [local grind] Ordering.eq_then
+attribute [local grind] Ordering.then
+-- attribute [local grind] compare
+-- attribute [local grind] compareOfLessAndEq
+
+set_option maxHeartbeats 0 in
+instance (priority := high) : PartialOrder (CMvMonomial n) where
+  le a b := Grevlex.cmp a b ≠ .gt
+  le_refl {a} := by aesop (add simp [Grevlex.cmp, compareOfLessAndEq])
+  le_trans {a b c} h₁ h₂ := by simp_all [Grevlex.cmp, compare, compareOfLessAndEq]
+                               grind (splits := 10)
+  lt_iff_le_not_ge := _
+  le_antisymm := _
+
 open Std
+
+instance : LawfulEqCmp (α := CMvMonomial n) compare where
+  compare_self := sorry
+  eq_of_compare := sorry
+
+instance : TransCmp (α := CMvMonomial n) compare where
+  eq_swap {a b} := by
+    unfold_projs; unfold Grevlex.cmp
+    simp [compare, compareOfLessAndEq]
+    aesop?
+    grind
+    unfold_projs at h h_2
+    have := @List.lt_antisymm
+
+    grind
+    linarith
+
+    sorry
+    
+    
+  isLE_trans {a b c} := sorry
 
 /--
   Polynomial in `n` variables with coefficients in `R`.
@@ -16,7 +68,7 @@ abbrev Unlawful (n : ℕ) (R : Type) : Type :=
 
 namespace Unlawful
 
-variable {n : ℕ} {R : Type}
+variable {R : Type}
 
 def extend (n' : ℕ) (p : Unlawful n R) : Unlawful (n ⊔ n') R :=
   .ofList (p.keys.map (CMvMonomial.extend n') |>.zip p.values)

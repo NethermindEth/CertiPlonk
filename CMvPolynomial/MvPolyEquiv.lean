@@ -13,7 +13,7 @@ section
 
 variable {n : ℕ} {R : Type} [CommSemiring R]
 
-def fromCMvPolynomial (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=  
+def fromCMvPolynomial (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
   let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
@@ -33,7 +33,7 @@ def fromCMvPolynomial (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
       grind
   Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
 
-noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n R := 
+noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n R :=
   let ⟨s, f, _⟩ := p
   let unlawful := Std.ExtTreeMap.ofList <| s.toList.map fun m ↦ (CMvMonomial.ofFinsupp m, f m)
   ⟨
@@ -67,7 +67,7 @@ theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
   case mem => simp; grind
   case distinct =>
     simp only [Std.compare_eq_iff_eq, List.pairwise_map]
-    exact distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)  
+    exact distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
 
 @[grind=, simp]
 theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
@@ -89,7 +89,7 @@ theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
       simp only [Std.compare_eq_iff_eq, List.pairwise_map]
       exact distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
   · have : ∀ x ∈ s, CMvMonomial.ofFinsupp x ≠ CMvMonomial.ofFinsupp m := by aesop
-    grind  
+    grind
 
 noncomputable def polyEquiv : Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
@@ -104,3 +104,10 @@ end CPoly
 
 noncomputable instance {n : ℕ} {R : Type} [CommSemiring R] :
   CommSemiring (CPoly.CMvPolynomial n R) := Equiv.commSemiring CPoly.polyEquiv
+
+noncomputable def polyRingEquiv {R : Type} [CommSemiring R] :
+  RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R)
+where
+  toEquiv := CPoly.polyEquiv
+  map_mul' := by intros; unfold_projs; simp
+  map_add' := by intros; unfold_projs; simp

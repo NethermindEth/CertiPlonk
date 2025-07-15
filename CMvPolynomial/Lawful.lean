@@ -1,4 +1,5 @@
 import CMvPolynomial.Unlawful
+import CMvPolynomial.Wheels
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
@@ -23,18 +24,6 @@ lemma getElem?_eq_val_getElem? {p : Lawful n R} {m : CMvMonomial n} :
 
 instance : Membership (CMvMonomial n) (Lawful n R) :=
   ⟨fun lp m ↦ m ∈ lp.1⟩
-
-/-
-  Something like this might be needed for `.getElem?_filter`.
--/
--- lemma ExtTreeMap.mem_filter {α β : Type} {cmp} [TransCmp cmp]
---                             {f : α → β → Bool} {m : ExtTreeMap α β cmp} {k : α} :
---   k ∈ m.filter f ↔ ∃ (h' : k ∈ m), f (m.getKey k h') m[k] = true := sorry
-
-lemma ExtTreeMap.getElem?_filter {α β : Type} [BEq α] [LawfulBEq α]
-                                 {cmp : α → α → Ordering} [TransCmp cmp] [LawfulEqCmp cmp]
-  {f : α → β → Bool} {k : α} {m : ExtTreeMap α β cmp} :
-  (m.filter f)[k]? = m[k]?.filter (f k) := sorry
 
 omit [Zero R] in
 lemma Unlawful.mem_of_mem_lawful {p : Unlawful n R} {m : CMvMonomial n}

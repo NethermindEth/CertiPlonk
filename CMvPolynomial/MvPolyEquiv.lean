@@ -1,7 +1,7 @@
 import CMvPolynomial.CMvPolynomial
-import Mathlib.Algebra.MvPolynomial.Basic
-import Mathlib.Algebra.Equiv.TransferInstance
 import CMvPolynomial.Wheels
+import Mathlib.Algebra.Equiv.TransferInstance
+import Mathlib.Algebra.MvPolynomial.Basic
 
 section
 

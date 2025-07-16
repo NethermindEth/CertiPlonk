@@ -100,8 +100,6 @@ where
 
 end
 
-end CPoly
-
 noncomputable instance {n : ℕ} {R : Type} [CommSemiring R] :
   CommSemiring (CPoly.CMvPolynomial n R) := Equiv.commSemiring CPoly.polyEquiv
 
@@ -111,3 +109,5 @@ where
   toEquiv := CPoly.polyEquiv
   map_mul' := by intros; unfold_projs; simp
   map_add' := by intros; unfold_projs; simp
+
+end CPoly

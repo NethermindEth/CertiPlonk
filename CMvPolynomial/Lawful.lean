@@ -169,6 +169,11 @@ def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.su
 
 instance : Coe (Lawful n R) (Lawful (n + 1) R) := ⟨polyCoe⟩
 
+instance : DecidableEq (Lawful n R) := fun ⟨a, _⟩ ⟨b, _⟩ ↦
+  if h : a = b
+  then isTrue (by grind)
+  else isFalse (by grind)
+
 end
 
 end

@@ -2,6 +2,7 @@ import CMvPolynomial.CMvPolynomial
 import CMvPolynomial.Wheels
 import Mathlib.Algebra.Equiv.TransferInstance
 import Mathlib.Algebra.MvPolynomial.Basic
+import Mathlib.RingTheory.Nullstellensatz
 
 section
 
@@ -98,11 +99,12 @@ where
   left_inv := fun _ ↦ toCMvPolynomial_fromCMvPolynomial
   right_inv := fun _ ↦ fromCMvPolynomial_toCMvPolynomial
 
+lemma injective_fromCMvPolynomial : Function.Injective (fromCMvPolynomial (R := R) (n := n)) :=
+  Function.HasLeftInverse.injective ⟨toCMvPolynomial, by simp [Function.LeftInverse]⟩
+
 end
 
-end CPoly
-
-noncomputable instance {n : ℕ} {R : Type} [CommSemiring R] :
+noncomputable instance {R : Type} [CommSemiring R] :
   CommSemiring (CPoly.CMvPolynomial n R) := Equiv.commSemiring CPoly.polyEquiv
 
 noncomputable def polyRingEquiv {R : Type} [CommSemiring R] :
@@ -111,3 +113,14 @@ where
   toEquiv := CPoly.polyEquiv
   map_mul' := by intros; unfold_projs; simp
   map_add' := by intros; unfold_projs; simp
+
+protected def castMeBabyOneMoreTime {R : Type} [BEq R] [LawfulBEq R] [Field R] {n : ℕ}
+  (l : List (R × CMvPolynomial n R)) : Set (MvPolynomial (Fin n) R) :=
+  l.map Prod.snd |>.toFinset.map ⟨fromCMvPolynomial, injective_fromCMvPolynomial⟩
+
+theorem zeroLocus_span_empty {R : Type} [BEq R] [LawfulBEq R] [Field R] {n : ℕ}
+  {p₁ p₂ : CMvPolynomial n R} {l : List (R × CMvPolynomial n R)}
+  (h₁ : Lawful.Reduces p₁ p₂ l) (h₂ : Lawful.NZConst p₂) :
+  MvPolynomial.zeroLocus (k := R) (Ideal.span (CPoly.castMeBabyOneMoreTime l)) = ∅ := sorry
+
+end CPoly

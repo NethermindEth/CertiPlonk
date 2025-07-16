@@ -67,10 +67,10 @@ instance : Div (CMvMonomial n) := ⟨div⟩
 
 instance {m₁ m₂ : CMvMonomial n} : Decidable (m₁ ∣ m₂) := by dsimp [(·∣·)]; infer_instance
 
-def toFinsupp (m : CPoly.CMvMonomial n) : Fin n →₀ ℕ :=
+def toFinsupp (m : CMvMonomial n) : Fin n →₀ ℕ :=
   ⟨{i : Fin n | m[i] ≠ 0}, m.get, by aesop⟩
 
-def ofFinsupp (m : Fin n →₀ ℕ) : CPoly.CMvMonomial n := Vector.ofFn m
+def ofFinsupp (m : Fin n →₀ ℕ) : CMvMonomial n := Vector.ofFn m
 
 @[grind=, simp]
 theorem ofFinsupp_toFinsupp {m : CMvMonomial n} : ofFinsupp m.toFinsupp = m := by

@@ -98,16 +98,16 @@ where
   left_inv := fun _ ↦ toCMvPolynomial_fromCMvPolynomial
   right_inv := fun _ ↦ fromCMvPolynomial_toCMvPolynomial
 
-end
-
-noncomputable instance {n : ℕ} {R : Type} [CommSemiring R] :
+noncomputable instance :
   CommSemiring (CPoly.CMvPolynomial n R) := Equiv.commSemiring CPoly.polyEquiv
 
-noncomputable def polyRingEquiv {R : Type} [CommSemiring R] :
+noncomputable def polyRingEquiv :
   RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
   toEquiv := CPoly.polyEquiv
   map_mul' := by intros; unfold_projs; simp
   map_add' := by intros; unfold_projs; simp
+
+end
 
 end CPoly

@@ -118,9 +118,19 @@ protected def castL {R : Type} [BEq R] [LawfulBEq R] [Field R] {n : ℕ}
   (l : List (R × CMvPolynomial n R)) : Set (MvPolynomial (Fin n) R) :=
   l.map Prod.snd |>.toFinset.map ⟨fromCMvPolynomial, injective_fromCMvPolynomial⟩
 
+@[simp]
+lemma mem_castL_iff {R : Type} [BEq R] [LawfulBEq R] [Field R] {n : ℕ} {x : Fin n → R}
+  {l : List (R × CMvPolynomial n R)} :
+  (∀ p ∈ CPoly.castL l, p.eval x = 0) ↔
+  ∀ p ∈ l.map Prod.snd, (fromCMvPolynomial p).eval x = 0 := by
+  aesop (add simp CPoly.castL)
+
 theorem zeroLocus_span_empty {R : Type} [BEq R] [LawfulBEq R] [Field R] {n : ℕ}
   {p₁ p₂ : CMvPolynomial n R} {l : List (R × CMvPolynomial n R)}
   (h₁ : Lawful.Reduces p₁ p₂ l) (h₂ : Lawful.NZConst p₂) :
-  MvPolynomial.zeroLocus (k := R) (Ideal.span (CPoly.castL l)) = ∅ := sorry
+  MvPolynomial.zeroLocus (k := R) (Ideal.span ({fromCMvPolynomial p₂} ∪ CPoly.castL l)) = ∅ := by
+  rw [MvPolynomial.zeroLocus_span]
+  ext x; refine ⟨fun h ↦ False.elim ?_, by rintro ⟨⟩⟩
+  sorry
 
 end CPoly

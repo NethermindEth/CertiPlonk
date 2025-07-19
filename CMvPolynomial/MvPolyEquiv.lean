@@ -2,7 +2,9 @@ import CMvPolynomial.CMvPolynomial
 import CMvPolynomial.Wheels
 import Mathlib.Algebra.Equiv.TransferInstance
 import Mathlib.Algebra.MvPolynomial.Basic
+import Mathlib
 
+-- import Std.Data.DTreeMap
 section
 
 open Std
@@ -11,9 +13,9 @@ namespace CPoly
 
 section
 
-variable {n : ℕ} {R : Type} [CommSemiring R]
+variable {n : ℕ} {R : Type} [csR : CommSemiring R]
 
-def fromCMvPolynomial (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
+def fromCMvPolynomial [BEq R] [LawfulBEq R] (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
   let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
@@ -25,7 +27,7 @@ def fromCMvPolynomial (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
                                   ext x hx
                                   apply congr_fun (a := ⟨x, hx⟩) at h₄
                                   aesop (add simp Vector.get)
-      simp [CMvMonomial.ofFinsupp_toFinsupp, show m ∈ p.1 from h₂] at contra
+      simp [CMvMonomial.ofFinsupp_toFinsupp] at contra
       exact absurd (show (p.1)[m]? = .some 0 by grind)
                    Lawful.getElem?_ne_some_zero
     · suffices ∃ m ∈ p.1, CMvMonomial.toFinsupp m = a by aesop
@@ -57,11 +59,11 @@ noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n
   ⟩
 
 @[grind=, simp]
-theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
+theorem toCMvPolynomial_fromCMvPolynomial [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} :
   toCMvPolynomial (fromCMvPolynomial p) = p := by
   dsimp [fromCMvPolynomial, toCMvPolynomial, toCMvPolynomial, fromCMvPolynomial]
   ext m; simp only [CMvPolynomial.coeff]; congr 1
-  by_cases eq : m ∈ p.1 <;> simp [eq]
+  by_cases eq : m ∈ p <;> simp [eq]
   rw [ExtTreeMap.getElem_ofList_of_mem (k := m) (k_eq := by simp)
                                        (mem := ?mem) (distinct := ?distinct)]
   case mem => simp; grind
@@ -70,10 +72,10 @@ theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
     exact distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
 
 @[grind=, simp]
-theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
+theorem fromCMvPolynomial_toCMvPolynomial [BEq R] [LawfulBEq R] {p : MvPolynomial (Fin n) R} :
   fromCMvPolynomial (toCMvPolynomial p) = p := by
   dsimp [fromCMvPolynomial, toCMvPolynomial, toCMvPolynomial, fromCMvPolynomial]
-  ext m; simp [MvPolynomial.coeff]
+  ext m; simp [MvPolynomial.coeff]; rw [←Lawful.getElem?_eq_val_getElem?]
   rcases p with ⟨s, f, hf⟩
   simp only [Finsupp.coe_mk]
   generalize eq : (ExtTreeMap.ofList _ _) = p
@@ -91,23 +93,99 @@ theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
   · have : ∀ x ∈ s, CMvMonomial.ofFinsupp x ≠ CMvMonomial.ofFinsupp m := by aesop
     grind
 
-noncomputable def polyEquiv : Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
+noncomputable def polyEquiv [BEq R] [LawfulBEq R]:
+  Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
   toFun := fromCMvPolynomial
   invFun := toCMvPolynomial
   left_inv := fun _ ↦ toCMvPolynomial_fromCMvPolynomial
   right_inv := fun _ ↦ fromCMvPolynomial_toCMvPolynomial
 
-end
+#check ExtTreeMap.mergeWith
+#check ExtDTreeMap.Const.mergeWith
+#check DTreeMap.Const.mergeWith
+#check Std.DTreeMap.Internal.Impl.Const.mergeWith
+#check Std.DTreeMap.Internal.Impl.Const.mergeWith!
+#check Std.DTreeMap.Internal.Impl.foldl
+#check Std.DTreeMap.Internal.Impl.insertMany
+-- #check ExtTreeMap.getElem
+-- variable (cmp : α → α → Ordering) [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] (m : Std.ExtTreeMap α β cmp)
+-- variable (k : α)
 
-noncomputable instance {n : ℕ} {R : Type} [CommSemiring R] :
-  CommSemiring (CPoly.CMvPolynomial n R) := Equiv.commSemiring CPoly.polyEquiv
+#check Lawful.from_to_Unlawful
+#check ExtTreeMap.getElem?_filter
 
-noncomputable def polyRingEquiv {R : Type} [CommSemiring R] :
+lemma Unlawful.mem_add {m : CMvMonomial n} {p₁ p₂ : Unlawful n R} :
+  m ∈ p₁ + p₂ ↔ m ∈ p₁ ∨ m ∈ p₂ := by
+  simp [(·+·), Add.add, Unlawful.add]
+  grind
+
+lemma zero_add [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : 0 + p = p := by
+  ext m
+  unfold CMvPolynomial.coeff
+  congr 1
+  simp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful]
+  rw [ExtTreeMap.getElem?_filter]
+  by_cases eq : m ∈ p <;> simp [eq, (·+·), Unlawful.add] <;> grind
+
+lemma add_zero [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : p + 0 = p := by
+  ext m
+  unfold CMvPolynomial.coeff
+  congr 1
+  simp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful]
+  rw [ExtTreeMap.getElem?_filter]
+  by_cases eq : m ∈ p <;> simp [eq, (·+·), Unlawful.add] <;> grind
+
+instance {n : ℕ} [BEq R] [LawfulBEq R] :
+  CommSemiring (CPoly.CMvPolynomial n R)
+where
+  add := Lawful.add
+  add_assoc := sorry
+  zero := 0
+  zero_add := fun _ ↦ zero_add
+  add_zero := fun _ ↦ add_zero
+  nsmul n p := sorry
+  nsmul_zero := sorry
+  nsmul_succ := sorry
+  add_comm := sorry
+  mul := Lawful.mul
+  left_distrib := sorry
+  right_distrib := sorry
+  zero_mul := sorry
+  mul_zero := sorry
+  mul_assoc := sorry
+  one := 1
+  one_mul := sorry
+  mul_one := sorry
+  natCast := sorry
+  natCast_zero := sorry
+  natCast_succ := sorry
+  npow := sorry
+  npow_zero := sorry
+  npow_succ := sorry
+  mul_comm := sorry
+
+
+/-
+We needed a `Zero` instance for the coefficients' type in `CommSemiring` because
+`Lawful.add` requires it.
+-/
+
+-- def polyRingHom [BEq R] [LawfulBEq R] :
+--   RingHom (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R) where
+--     toFun := fromCMvPolynomial
+--     map_one' := sorry
+--     map_mul' := sorry
+--     map_zero' := sorry
+--     map_add' := sorry
+
+noncomputable def polyRingEquiv [BEq R] [LawfulBEq R] :
   RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
   toEquiv := CPoly.polyEquiv
-  map_mul' := by intros; unfold_projs; simp
-  map_add' := by intros; unfold_projs; simp
+  map_mul' := sorry
+  map_add' := sorry
+
+end
 
 end CPoly

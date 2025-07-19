@@ -106,6 +106,7 @@ instance [Repr R] : Repr (MonoR n R) where
   reprPrec
     | (m, c), _ => repr c ++ " * " ++ repr m
 
+@[grind=]
 def C (c : R) : MonoR n R := (CMvMonomial.one, c)
 
 variable [CommSemiring R]

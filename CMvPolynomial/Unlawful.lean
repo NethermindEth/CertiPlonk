@@ -30,7 +30,7 @@ abbrev monomials (p : Unlawful n R) : List (CMvMonomial n) :=
   p.keys
 
 @[simp]
-lemma mem_monomials {m : CMvMonomial n} {up : Unlawful n R} : 
+lemma mem_monomials {m : CMvMonomial n} {up : Unlawful n R} :
   m ∈ up.monomials ↔ m ∈ up := ExtTreeMap.mem_keys
 
 instance [Repr R] : Repr (Unlawful n R) where
@@ -100,6 +100,22 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Unlawful n R) := fun x y
 instance [BEq R] [LawfulBEq R] [CommRing R]
   {p q : Unlawful n R} {l : List (R × Unlawful n R)} :
   Decidable (Reduces p q l) := by dsimp [Reduces]; infer_instance
+
+lemma mergeWith₀ (m₁ m₂ : Unlawful n R) (h₁ : k ∈ m₁) (h₂ : k ∈ m₂) :
+  (m₁.mergeWith f m₂)[k]? = .some (f k m₁[k] m₂[k])
+:= sorry
+
+lemma mergeWith₁ (m₁ m₂ : Unlawful n R) (h₁ : k ∈ m₁) (h₂ : k ∉ m₂) :
+  (m₁.mergeWith f m₂)[k]? = m₁[k]?
+:= sorry
+
+lemma mergeWith₂ (m₁ m₂ : Unlawful n R) (h₁ : k ∉ m₁) (h₂ : k ∈ m₂) :
+  (m₁.mergeWith f m₂)[k]? = m₂[k]?
+:= sorry
+
+lemma mergeWith₃ (m₁ m₂ : Unlawful n R) (h₁ : k ∉ m₁) (h₂ : k ∉ m₂) :
+  (m₁.mergeWith f m₂)[k]? = .none
+:= sorry
 
 end Unlawful
 

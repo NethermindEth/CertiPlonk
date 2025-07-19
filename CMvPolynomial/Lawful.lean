@@ -29,7 +29,7 @@ omit [Zero R] in
 lemma Unlawful.mem_of_mem_lawful {p : Unlawful n R} {m : CMvMonomial n}
   (h : m ∈ p) : m ∈ p.1 := h
 
-namespace Lawful  
+namespace Lawful
 
 @[simp]
 theorem getElem?_ne_some_zero {p : Lawful n R} {m : CMvMonomial n} :
@@ -38,7 +38,7 @@ theorem getElem?_ne_some_zero {p : Lawful n R} {m : CMvMonomial n} :
 variable [BEq R] [LawfulBEq R]
 
 def fromUnlawful (p : Unlawful n R) : Lawful n R :=
-  { 
+  {
     val := p.filter fun _ c ↦ c != 0
     property _ := by aesop (add simp ExtTreeMap.getElem?_filter)
   }
@@ -59,7 +59,7 @@ section
 
 variable [CommSemiring R]
 
-instance {m : ℕ} : OfNat (Lawful n R) m := ⟨C n⟩
+instance {m : ℕ} : OfNat (Lawful n R) m := ⟨C m⟩
 
 def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=
   fromUnlawful <| p.val.extend n'
@@ -97,7 +97,7 @@ lemma from_to_Unlawful {p : Lawful n R} : fromUnlawful p.1 = p := by
 
 section
 
-variable [BEq R] [LawfulBEq R] [CommRing R] 
+variable [BEq R] [LawfulBEq R] [CommRing R]
 
 def neg (p : Lawful n R) : Lawful n R :=
   fromUnlawful p.1.neg
@@ -133,7 +133,7 @@ section
 
 variable {n₁ n₂ : ℕ}
 
-def align [Zero R]
+def align
   (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
   Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
   letI sup := n₁ ⊔ n₂
@@ -142,7 +142,7 @@ def align [Zero R]
     cast (by congr 1; grind) (p₂.extend sup)
   )
 
-def liftPoly [Zero R]
+def liftPoly
   (f : Lawful (n₁ ⊔ n₂) R →
        Lawful (n₁ ⊔ n₂) R →
        Lawful (n₁ ⊔ n₂) R)

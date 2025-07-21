@@ -13,7 +13,7 @@ namespace CPoly
 
 section
 
-variable {n : ℕ} {R : Type} [csR : CommSemiring R]
+variable {n : ℕ} {R : Type} [commSemiringR : CommSemiring R]
 
 def fromCMvPolynomial [BEq R] [LawfulBEq R] (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
   let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
@@ -101,98 +101,39 @@ where
   left_inv := fun _ ↦ toCMvPolynomial_fromCMvPolynomial
   right_inv := fun _ ↦ fromCMvPolynomial_toCMvPolynomial
 
-#check ExtTreeMap.mergeWith
-#check ExtDTreeMap.Const.mergeWith
-#check DTreeMap.Const.mergeWith
-#check Std.DTreeMap.Internal.Impl.Const.mergeWith
-#check Std.DTreeMap.Internal.Impl.Const.mergeWith!
-#check Std.DTreeMap.Internal.Impl.foldl
-#check Std.DTreeMap.Internal.Impl.insertMany
--- #check ExtTreeMap.getElem
--- variable (cmp : α → α → Ordering) [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] (m : Std.ExtTreeMap α β cmp)
--- variable (k : α)
-
-#check Unlawful.mergeWith₀
-#check Lawful.from_to_Unlawful
-#check ExtTreeMap.getElem?_filter
-
 def zero_add [BEq R] [LawfulBEq R] :
   ∀ (a : CMvPolynomial n R), Lawful.add 0 a = a
 := by
   intro a
-  ext m
-  unfold CMvPolynomial.coeff Lawful.add -- HAdd.hAdd
-  unfold_projs
-  unfold Unlawful.add Lawful.fromUnlawful
-  simp only
-  have bla :=
-    @ExtTreeMap.getElem?_filter
-      (CMvMonomial n)
-      R
-      _
-      _
-      compare
-      _
-      _
-      (fun x c => c != 0)
-      m
-      (ExtTreeMap.mergeWith
-        (fun x c₁ c₂ => c₁ + c₂)
-        (Lawful.C (@Nat.cast R csR.toNatCast 0 : R)).1 a.1
-      )
-  unfold_projs at bla ⊢
-  rw [bla]
-  have zero_map_empty : ∀ m₀ : CMvMonomial n, m₀ ∉ (Lawful.C (0 : R)).1 := by
+  ext monomial
+  unfold CMvPolynomial.coeff Lawful.add
+  simp only [HAdd.hAdd, Add.add, Unlawful.add, Lawful.fromUnlawful]
+  rw [ExtTreeMap.getElem?_filter]
+  have zero_map_empty : ∀ m₀ : CMvMonomial n, m₀ ∉ (0 : CMvPolynomial n R) := by
     intro m₀
-    unfold Lawful.C Unlawful.C
+    unfold_projs
+    simp [Lawful.C, Unlawful.C]
     unfold_projs
     simp
-  specialize zero_map_empty m
-  have bal : (@Nat.cast R csR.toNatCast 0 : R) = Zero.zero := by
-    simp only [Nat.cast_zero]
-    unfold_projs
-    rfl
-  by_cases m_in_a : m ∈ (a.1 : Unlawful n R)
-  · have :=
-      @Unlawful.mergeWith₂
-        n
-        R
-        m
-        (fun x c₁ c₂ => Add.add c₁ c₂)
-        (@Subtype.val (Unlawful n R) (fun p => p.isNoZeroCoef) (Lawful.C ↑0) : Unlawful n R)
-        a.1
-        zero_map_empty
-        m_in_a
-    unfold_projs at this ⊢
-    rw [bal, this]
-    have no_0 := a.2
-    match blue : ExtTreeMap.get? a.1 m with
-    | .none => simp
+  specialize zero_map_empty monomial
+  by_cases m_in_a : monomial ∈ (a.1 : Unlawful n R)
+  · rw [Unlawful.mergeWith₂ _ _ zero_map_empty m_in_a]
+    have a_no_0_coeff := a.2
+    match a_get_monomial : ExtTreeMap.get? a.1 monomial with
+    | .none => aesop
     | .some v =>
       by_cases v_is_0 : v = Zero.zero
-      · rw [v_is_0] at blue
-        unfold Unlawful.isNoZeroCoef at no_0
+      · rw [v_is_0] at a_get_monomial
+        unfold Unlawful.isNoZeroCoef at a_no_0_coeff
         exfalso
-        apply no_0 m
-        exact blue
-      · rw [Option.filter_some]
+        apply a_no_0_coeff monomial a_get_monomial
+      · simp [←ExtTreeMap.get?_eq_getElem?]
+        rw [a_get_monomial, Option.filter_some]
+        unfold_projs
         simp [v_is_0]
-  · have :=
-      @Unlawful.mergeWith₃
-        n
-        R
-        m
-        (fun x c₁ c₂ => Add.add c₁ c₂)
-        (@Subtype.val (Unlawful n R) (fun p => p.isNoZeroCoef) (Lawful.C ↑0) : Unlawful n R)
-        a.1
-        zero_map_empty
-        m_in_a
-    unfold_projs at this ⊢
-    rw [bal, this]
-    simp only [Option.filter_none, Option.getD_none, ExtTreeMap.get?_eq_getElem?]
-    have blue := Std.ExtTreeMap.getElem?_eq_none m_in_a
-    unfold_projs at blue ⊢
-    rw [blue]
+  · rw [Unlawful.mergeWith₃ _ _ zero_map_empty m_in_a]
+    simp only [Option.filter_none, Option.getD_none]
+    rw [Std.ExtTreeMap.getElem?_eq_none m_in_a]
     simp
 
 def add_zero [BEq R] [LawfulBEq R] : ∀ (a : CMvPolynomial n R), Lawful.add a 0 = a := by

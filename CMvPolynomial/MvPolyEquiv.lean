@@ -129,9 +129,23 @@ where
   zero := 0
   zero_add := fun _ ↦ zero_add
   add_zero := fun _ ↦ add_zero
-  nsmul n p := sorry
-  nsmul_zero := sorry
-  nsmul_succ := sorry
+  nsmul n p := List.foldl (.+.) 0 (List.replicate n p)
+  nsmul_zero := by simp
+  nsmul_succ := by
+    intros m x
+    generalize y_def : (0 : CMvPolynomial n R) = y; clear y_def; revert y
+    induction m with
+    | zero => simp
+    | succ n ih =>
+      intro y
+      rw
+        [
+          List.replicate_succ,
+          List.foldl_cons,
+          ih,
+          List.replicate_succ,
+          List.foldl_cons
+        ]
   add_comm := sorry
   mul := Lawful.mul
   left_distrib := sorry
@@ -142,7 +156,7 @@ where
   one := 1
   one_mul := sorry
   mul_one := sorry
-  natCast := sorry
+  natCast := fun n => Lawful.C n
   natCast_zero := sorry
   natCast_succ := sorry
   npow := sorry

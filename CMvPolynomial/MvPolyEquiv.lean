@@ -116,7 +116,7 @@ attribute [grind =] Option.filter_eq_some_iff
 lemma zero_add [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : 0 + p = p := by
   dsimp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful, Unlawful.add]
   grind
-  
+
 lemma add_zero [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : p + 0 = p := by
   dsimp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful, Unlawful.add]
   grind
@@ -138,14 +138,8 @@ where
     | zero => simp
     | succ n ih =>
       intro y
-      rw
-        [
-          List.replicate_succ,
-          List.foldl_cons,
-          ih,
-          List.replicate_succ,
-          List.foldl_cons
-        ]
+      specialize ih (y + x)
+      grind
   add_comm := sorry
   mul := Lawful.mul
   left_distrib := sorry
@@ -154,7 +148,12 @@ where
   mul_zero := sorry
   mul_assoc := sorry
   one := 1
-  one_mul := sorry
+  one_mul := by
+    intros a
+    dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
+
+
+    sorry
   mul_one := sorry
   natCast := fun n => Lawful.C n
   natCast_zero := sorry

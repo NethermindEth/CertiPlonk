@@ -20,18 +20,9 @@ def fromCMvPolynomial [BEq R] [LawfulBEq R] (p : CMvPolynomial n R) : MvPolynomi
   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
     dsimp [toFun, support]
-    refine ⟨fun h contra ↦ ?p₁, fun h ↦ ?p₂⟩
-    · obtain ⟨m, ⟨h₁, rfl⟩⟩ : ∃ m : CMvMonomial n, m ∈ p ∧ CMvMonomial.toFinsupp m = a := by aesop
-      obtain ⟨m', ⟨h₂, h₃⟩⟩ : ∃ a ∈ p, CMvMonomial.toFinsupp a = CMvMonomial.toFinsupp m := by aesop
-      obtain ⟨rfl⟩ : m = m' := by injection h₃ with _ h₄
-                                  ext x hx
-                                  apply congr_fun (a := ⟨x, hx⟩) at h₄
-                                  aesop (add simp Vector.get)
-      simp [CMvMonomial.ofFinsupp_toFinsupp] at contra
-      exact absurd (show (p.1)[m]? = .some 0 by grind)
-                   Lawful.getElem?_ne_some_zero
-    · suffices ∃ m ∈ p.1, CMvMonomial.toFinsupp m = a by aesop
-      use CMvMonomial.ofFinsupp a
+    refine ⟨fun _ _ ↦ ?p₁, fun _ ↦ ?p₂⟩
+    · grind
+    · suffices ∃ m ∈ p, CMvMonomial.toFinsupp m = a by grind
       grind
   Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
 
@@ -75,7 +66,7 @@ theorem toCMvPolynomial_fromCMvPolynomial [BEq R] [LawfulBEq R] {p : CMvPolynomi
 theorem fromCMvPolynomial_toCMvPolynomial [BEq R] [LawfulBEq R] {p : MvPolynomial (Fin n) R} :
   fromCMvPolynomial (toCMvPolynomial p) = p := by
   dsimp [fromCMvPolynomial, toCMvPolynomial, toCMvPolynomial, fromCMvPolynomial]
-  ext m; simp [MvPolynomial.coeff]; rw [←Lawful.getElem?_eq_val_getElem?]
+  ext m; simp [MvPolynomial.coeff]
   rcases p with ⟨s, f, hf⟩
   simp only [Finsupp.coe_mk]
   generalize eq : (ExtTreeMap.ofList _ _) = p
@@ -120,21 +111,15 @@ lemma Unlawful.mem_add {m : CMvMonomial n} {p₁ p₂ : Unlawful n R} :
   simp [(·+·), Add.add, Unlawful.add]
   grind
 
-lemma zero_add [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : 0 + p = p := by
-  ext m
-  unfold CMvPolynomial.coeff
-  congr 1
-  simp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful]
-  rw [ExtTreeMap.getElem?_filter]
-  by_cases eq : m ∈ p <;> simp [eq, (·+·), Unlawful.add] <;> grind
+attribute [grind =] Option.filter_eq_some_iff
 
+lemma zero_add [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : 0 + p = p := by
+  dsimp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful, Unlawful.add]
+  grind
+  
 lemma add_zero [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : p + 0 = p := by
-  ext m
-  unfold CMvPolynomial.coeff
-  congr 1
-  simp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful]
-  rw [ExtTreeMap.getElem?_filter]
-  by_cases eq : m ∈ p <;> simp [eq, (·+·), Unlawful.add] <;> grind
+  dsimp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful, Unlawful.add]
+  grind
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R)

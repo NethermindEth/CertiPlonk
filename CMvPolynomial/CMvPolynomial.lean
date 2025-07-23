@@ -13,7 +13,9 @@ namespace CMvPolynomial
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : CMvPolynomial n R) : R :=
   p.1[m]?.getD 0
 
-@[ext]
+attribute [grind=] coeff.eq_def
+
+@[ext, grind ext]
 theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
   (h : ∀ m, coeff m p = coeff m q) : p = q := by
   unfold coeff at h

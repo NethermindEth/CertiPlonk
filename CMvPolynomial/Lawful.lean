@@ -29,7 +29,7 @@ namespace Lawful
 variable {p : Lawful n R} {m x : CMvMonomial n}
 
 @[simp, grind _=_]
-lemma getElem?_eq_val_getElem? : p.1[m]? = p[m]? := rfl
+lemma getElem?_eq_val_getElem? : p[m]? = p.1[m]? := rfl
 
 @[simp, grind _=_]
 lemma mem_iff_cast : x ∈ p.1 ↔ x ∈ p := by rfl
@@ -42,11 +42,6 @@ lemma mem_iff : x ∈ p ↔ ∃ v, v ≠ 0 ∧ p[x]? = .some v := by
 @[simp]
 theorem getElem?_ne_some_zero : p[m]? ≠ some 0 := by
   rcases p; grind
-
-@[simp]
-theorem getElem?_cast : p.1[m]? = p[m]? := by
-  simp only [getElem?_eq_val_getElem?]
-  
 
 variable [BEq R] [LawfulBEq R]
 

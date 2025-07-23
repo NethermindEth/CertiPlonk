@@ -47,6 +47,7 @@ grind_pattern mergeWith₃ => (Std.ExtTreeMap.mergeWith f m₁ m₂)[k]?
 lemma mergeWith_of_comm (h : ∀ {x}, Std.Commutative (f x)) :
   m₁.mergeWith f m₂ = m₂.mergeWith f m₁ := by sorry
 
+@[grind =]
 lemma getElem?_filter {α β : Type} [BEq α] [LawfulBEq α]
                       {cmp : α → α → Ordering} [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
   {f : α → β → Bool} {k : α} {m : Std.ExtTreeMap α β cmp} :

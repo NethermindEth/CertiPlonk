@@ -54,7 +54,7 @@ variable [BEq R] [LawfulBEq R]
 
 instance : OfNat (Unlawful n R) 0 := ⟨C 0⟩
 
-instance [NatCast R] : OfNat (Unlawful n R) m := ⟨C m⟩
+instance [NatCast R] [NeZero m] : OfNat (Unlawful n R) m := ⟨C m⟩
 
 @[simp, grind]
 lemma C_zero : C (n := n) (0 : R) = 0 := rfl
@@ -97,6 +97,13 @@ def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
 
 def mul₀ [Mul R] (t : MonoR n R) (p : Unlawful n R) : Unlawful n R :=
   ExtTreeMap.ofList (p.toList.map fun (k, v) ↦ (t.1*k, t.2*v))
+
+attribute [grind=] ExtTreeMap.ofList_eq_empty_iff List.map_eq_nil_iff ExtTreeMap.toList_eq_nil_iff
+
+@[simp, grind=]
+lemma mul₀_zero [Zero R] [BEq R] [LawfulBEq R] [Mul R] {t : MonoR n R} : mul₀ t 0 = 0 := by
+  unfold mul₀
+  grind
 
 def mul [CommSemiring R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.toList.map p₂.mul₀ |>.sum

@@ -39,7 +39,7 @@ lemma mergeWith₂ (h₁ : k ∉ m₁) (h₂ : k ∈ m₂) :
 lemma mergeWith₃ (h₁ : k ∉ m₁) (h₂ : k ∉ m₂) :
   (m₁.mergeWith f m₂)[k]? = .none := sorry
 
-@[simp]
+@[simp, grind=]
 lemma filter_empty {α β : Type} {f : α → β → Bool} {cmp : α → α → Ordering} : Std.ExtTreeMap.filter f (∅ : Std.ExtTreeMap α β cmp) = ∅ := by
   sorry
 

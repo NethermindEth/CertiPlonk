@@ -121,6 +121,8 @@ lemma add_zero [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : p + 0 = p := by
   dsimp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful, Unlawful.add]
   grind
 
+attribute [grind=] Option.some_inj
+
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R)
 where
@@ -137,17 +139,16 @@ where
   zero := 0
   zero_add := fun _ ↦ zero_add
   add_zero := fun _ ↦ add_zero
-  nsmul n p := List.foldl (.+.) 0 (List.replicate n p)
+  nsmul n p := List.foldl (.+.) 0 (List.replicate n p) -- `(List.replicate n p).sum` might be better
+                                                       -- there's things like `List.sum_replciate`
+                                                       -- admittedly this wants a monoid which we're
+                                                       -- in the process of defining, eh...
   nsmul_zero := by simp
-  nsmul_succ := by
-    intros m x
-    generalize y_def : (0 : CMvPolynomial n R) = y; clear y_def; revert y
-    induction m with
+  nsmul_succ {m x} := by
+    generalize (0 : CMvPolynomial n R) = y
+    induction m generalizing y with
     | zero => simp
-    | succ n ih =>
-      intro y
-      specialize ih (y + x)
-      grind
+    | succ n ih => specialize ih (y + x); grind
   add_comm := by
     intros p q
     unfold_projs
@@ -155,12 +156,8 @@ where
     unfold_projs
     unfold Unlawful.add
     congr 1
-    ext m a
-    by_cases h : m ∈ p.1 <;> by_cases h' : m ∈ q.1
-    · rw [ExtTreeMap.mergeWith₀ h h', ExtTreeMap.mergeWith₀ h' h, Option.some.injEq, Option.some.injEq, add_comm]
-    · rw [ExtTreeMap.mergeWith₁ h h', ExtTreeMap.mergeWith₂ h' h]
-    · rw [ExtTreeMap.mergeWith₂ h h', ExtTreeMap.mergeWith₁ h' h]
-    · rw [ExtTreeMap.mergeWith₃ h h', ExtTreeMap.mergeWith₃ h' h]
+    ext1 m -- dont extensionality-ise too much, no lemmas for = some, but lemmas for [x]?
+    grind -- attribute [grind=] Option.some_inj
   mul := Lawful.mul
   left_distrib := sorry
   right_distrib := sorry
@@ -170,14 +167,7 @@ where
     unfold Lawful.mul
     unfold_projs
     unfold Unlawful.mul
-    have : @ExtTreeMap.toList (CMvMonomial n) R compare _ (Lawful.C Zero.zero).1 = [] := by
-      unfold Lawful.C Unlawful.C
-      unfold_projs
-      simp only [↓reduceIte, ExtDTreeMap.empty_eq_emptyc, ExtTreeMap.toList_eq_nil_iff]
-      rfl
-    rw [this]
-    simp only [List.map_nil, List.sum_nil, Unlawful.zero_eq_zero, Lawful.C_zero, Lawful.fromUnlawful]
-    grind
+    grind -- `fromUnlawful_zero`, `grind_pattern zero_eq_empty`
   mul_zero := by
     intros p
     unfold_projs
@@ -185,10 +175,7 @@ where
     unfold_projs
     unfold Unlawful.mul Unlawful.mul₀
     have : @ExtTreeMap.toList (CMvMonomial n) R compare _ (Lawful.C Zero.zero).1 = [] := by
-      unfold Lawful.C Unlawful.C
-      unfold_projs
-      simp only [↓reduceIte, ExtDTreeMap.empty_eq_emptyc, ExtTreeMap.toList_eq_nil_iff]
-      rfl
+      grind
     rw [this]
     simp only [List.map_nil, ExtTreeMap.ofList_nil, List.map_const', ExtTreeMap.length_toList,
       Unlawful.zero_eq_zero, Lawful.C_zero]

@@ -24,6 +24,14 @@ theorem ext {n : ℕ} [Zero R] (p q : CMvPolynomial n R)
   apply ExtTreeMap.ext_getElem?
   grind
 
+attribute [grind=] Option.some_inj
+
+@[simp, grind=]
+lemma fromUnlawful_zero {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] :
+  Lawful.fromUnlawful 0 = (0 : Lawful n R) := by
+  unfold Lawful.fromUnlawful
+  grind
+
 end CMvPolynomial
 
 end CPoly

@@ -13,7 +13,7 @@ def Lawful (n : ℕ) (R : Type) [Zero R] :=
 variable {n : ℕ} {R : Type} [Zero R]
 
 @[grind=]
-instance : EmptyCollection (Lawful n R) := ⟨∅, by grind⟩
+instance instEmptyCol : EmptyCollection (Lawful n R) := ⟨∅, by grind⟩
 
 instance : GetElem (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
   ⟨fun lp m h ↦ lp.1[m]'h⟩
@@ -54,11 +54,11 @@ def fromUnlawful (p : Unlawful n R) : Lawful n R :=
 def C (c : R) : Lawful n R :=
   ⟨Unlawful.C c, by grind⟩
 
-instance : OfNat (Lawful n R) 0 := ⟨C 0⟩
+instance instOfNat_zero : OfNat (Lawful n R) 0 := ⟨C 0⟩
 
 lemma zero_def : Zero.zero (α := Lawful n R) = C 0 := rfl
 
-instance {m : ℕ} [NatCast R] : OfNat (Lawful n R) m := ⟨C m⟩
+instance instOfNat {m : ℕ} [NeZero m] [NatCast R] : OfNat (Lawful n R) m := ⟨C m⟩
 
 @[simp, grind]
 lemma C_zero : C (n := n) (0 : R) = 0 := rfl
@@ -69,6 +69,9 @@ lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
+
+-- Not sure why `zero_eq_empty` dislikes `grind` annotation of the form `(∅ : Unlawful n R)`.
+grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R) 
 
 @[simp, grind]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind

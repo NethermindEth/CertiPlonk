@@ -125,7 +125,15 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R)
 where
   add := Lawful.add
-  add_assoc := sorry
+  add_assoc := by
+    intros p q r
+    unfold_projs
+    unfold Lawful.add
+    unfold_projs
+    unfold Unlawful.add
+    congr 1
+    ext m a
+    by_cases h : m ∈ p.1 <;> by_cases h' : m ∈ q.1 <;> by_cases h'' : m ∈ r.1 <;> sorry
   zero := 0
   zero_add := fun _ ↦ zero_add
   add_zero := fun _ ↦ add_zero
@@ -140,27 +148,80 @@ where
       intro y
       specialize ih (y + x)
       grind
-  add_comm := sorry
+  add_comm := by
+    intros p q
+    unfold_projs
+    unfold Lawful.add
+    unfold_projs
+    unfold Unlawful.add
+    congr 1
+    ext m a
+    by_cases h : m ∈ p.1 <;> by_cases h' : m ∈ q.1
+    · rw [ExtTreeMap.mergeWith₀ h h', ExtTreeMap.mergeWith₀ h' h, Option.some.injEq, Option.some.injEq, add_comm]
+    · rw [ExtTreeMap.mergeWith₁ h h', ExtTreeMap.mergeWith₂ h' h]
+    · rw [ExtTreeMap.mergeWith₂ h h', ExtTreeMap.mergeWith₁ h' h]
+    · rw [ExtTreeMap.mergeWith₃ h h', ExtTreeMap.mergeWith₃ h' h]
   mul := Lawful.mul
   left_distrib := sorry
   right_distrib := sorry
-  zero_mul := sorry
-  mul_zero := sorry
+  zero_mul := by
+    intros p
+    unfold_projs
+    unfold Lawful.mul
+    unfold_projs
+    unfold Unlawful.mul
+    have : @ExtTreeMap.toList (CMvMonomial n) R compare _ (Lawful.C Zero.zero).1 = [] := by
+      unfold Lawful.C Unlawful.C
+      unfold_projs
+      simp only [↓reduceIte, ExtDTreeMap.empty_eq_emptyc, ExtTreeMap.toList_eq_nil_iff]
+      rfl
+    rw [this]
+    simp only [List.map_nil, List.sum_nil, Unlawful.zero_eq_zero, Lawful.C_zero, Lawful.fromUnlawful]
+    grind
+  mul_zero := by
+    intros p
+    unfold_projs
+    unfold Lawful.mul
+    unfold_projs
+    unfold Unlawful.mul Unlawful.mul₀
+    have : @ExtTreeMap.toList (CMvMonomial n) R compare _ (Lawful.C Zero.zero).1 = [] := by
+      unfold Lawful.C Unlawful.C
+      unfold_projs
+      simp only [↓reduceIte, ExtDTreeMap.empty_eq_emptyc, ExtTreeMap.toList_eq_nil_iff]
+      rfl
+    rw [this]
+    simp only [List.map_nil, ExtTreeMap.ofList_nil, List.map_const', ExtTreeMap.length_toList,
+      Unlawful.zero_eq_zero, Lawful.C_zero]
+    unfold_projs
+    unfold Lawful.C Unlawful.C Lawful.fromUnlawful
+    unfold_projs
+    simp only [Unlawful.zero_eq_zero, ExtTreeMap.empty_eq_emptyc, ↓reduceIte,
+      ExtDTreeMap.empty_eq_emptyc]
+    have {n : ℕ} : @List.sum (Unlawful n R) Unlawful.instAdd Zero.ofOfNat0 (List.replicate (ExtTreeMap.size p.1) ∅) = ∅ := by sorry
+    simp only [this, ExtTreeMap.filter_empty]
+    rfl
   mul_assoc := sorry
   one := 1
   one_mul := by
     intros a
     dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
 
-
     sorry
   mul_one := sorry
   natCast := fun n => Lawful.C n
-  natCast_zero := sorry
+  natCast_zero := by
+    unfold Lawful.C Unlawful.C
+    unfold_projs
+    simp only [Nat.cast_zero, Unlawful.zero_eq_zero, ↓reduceIte, ExtDTreeMap.empty_eq_emptyc,
+      Lawful.C_zero]
+    unfold_projs
+    unfold Lawful.C Unlawful.C
+    unfold_projs
+    simp
   natCast_succ := sorry
-  npow := sorry
-  npow_zero := sorry
-  npow_succ := sorry
+  npow := Lawful.npow
+  npow_zero := by intros x; rfl
+  npow_succ := by intros e p; rfl
   mul_comm := sorry
 
 

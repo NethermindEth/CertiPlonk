@@ -102,6 +102,12 @@ def mul (p₁ p₂ : Lawful n R) : Lawful n R :=
 
 instance : Mul (Lawful n R) := ⟨mul⟩
 
+def npow : ℕ → Lawful n R → Lawful n R
+| .zero  , _ => 1
+| .succ n, p => (npow n p) * p
+
+instance : HPow (Lawful n R) ℕ (Lawful n R) := ⟨fun p n => npow n p⟩
+
 abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
 

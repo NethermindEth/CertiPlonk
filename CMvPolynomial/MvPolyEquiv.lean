@@ -169,30 +169,29 @@ where
     unfold Unlawful.mul
     grind -- `fromUnlawful_zero`, `grind_pattern zero_eq_empty`
   mul_zero := by
-    intros p
+    intro p
     unfold_projs
     unfold Lawful.mul
     unfold_projs
-    unfold Unlawful.mul Unlawful.mul₀
-    have : @ExtTreeMap.toList (CMvMonomial n) R compare _ (Lawful.C Zero.zero).1 = [] := by
-      grind
-    rw [this]
-    simp only [List.map_nil, ExtTreeMap.ofList_nil, List.map_const', ExtTreeMap.length_toList,
-      Unlawful.zero_eq_zero, Lawful.C_zero]
-    unfold_projs
-    unfold Lawful.C Unlawful.C Lawful.fromUnlawful
-    unfold_projs
-    simp only [Unlawful.zero_eq_zero, ExtTreeMap.empty_eq_emptyc, ↓reduceIte,
-      ExtDTreeMap.empty_eq_emptyc]
-    have {n : ℕ} : @List.sum (Unlawful n R) Unlawful.instAdd Zero.ofOfNat0 (List.replicate (ExtTreeMap.size p.1) ∅) = ∅ := by sorry
-    simp only [this, ExtTreeMap.filter_empty]
-    rfl
+    unfold Unlawful.mul Lawful.C
+    simp
+    have sum_zeros {size : ℕ} :
+      List.sum (α := Unlawful n R) (List.replicate size 0) = 0
+    := by
+      induction' size with s' ih
+      · grind
+      · simp [List.replicate, ih]
+        unfold_projs
+        simp [Unlawful.add]
+        ext m k
+        grind
+    rw [sum_zeros]
+    grind
   mul_assoc := sorry
   one := 1
   one_mul := by
     intros a
     dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
-
     sorry
   mul_one := sorry
   natCast := fun n => Lawful.C n

@@ -131,7 +131,7 @@ lemma ring_trivial_of_zero_eq_one (h : 1 = (0 : R)) {a : R} : a = 0 := by
   have h' := one_mul a
   aesop
 
-lemma all_polys_eq_zero_of_1_eq_0 {n : ℕ} [BEq R] [LawfulBEq R] 
+lemma all_polys_eq_zero_of_1_eq_0 {n : ℕ} [BEq R] [LawfulBEq R]
   (h : 1 = (0 : R)) {p : CMvPolynomial n R} : p = 0 := by
   have h := @ring_trivial_of_zero_eq_one (h := h)
   suffices p.1 = ∅ by grind
@@ -144,6 +144,36 @@ instance : LawfulEqCmp fun (x : ℕ) y => compareOfLessAndEq x y where
   compare_self {a} := by unfold compareOfLessAndEq; grind
 
 attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
+
+lemma map_mul_one' [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
+  List.map (fun t => Unlawful.mul₀ t (Unlawful.C 1)) terms
+    = terms.map (fun t ↦ ({t} : Unlawful n R))
+:= by
+  sorry
+
+lemma mul_one₀ [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
+  List.foldr (fun (x1 x2 : Unlawful n R) => x1 + x2) 0 (List.map (fun t => {t}) terms)
+    = ExtTreeMap.ofList terms
+:= by
+  sorry
+
+lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := by
+  by_cases h : (1 : R) = 0
+  · rw [all_polys_eq_zero_of_1_eq_0 h (p := p * 1), all_polys_eq_zero_of_1_eq_0 h (p := p)]
+  · dsimp only [(·*·), Mul.mul, Lawful.mul]
+    dsimp only [Unlawful.mul]
+    unfold_projs
+    unfold Lawful.C
+    simp only [Nat.cast_one]
+    rw [map_mul_one']
+    unfold List.sum
+    rw [mul_one₀]
+    rcases p with ⟨p, _⟩
+    simp [Lawful.fromUnlawful]
+    congr
+    have toList_ofList := @ExtTreeMap.toList_ofList _ _ _ _ _ _ _ p
+    rw [toList_ofList]
+    grind
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   AddCommSemigroup (CPoly.CMvPolynomial n R) where
@@ -177,10 +207,19 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
     · dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
       unfold_projs
       unfold Lawful.C Unlawful.C MonoR.C
-      have : @ExtTreeMap.toList (CMvMonomial n) R (Vector.compareLex fun x y => compareOfLessAndEq x y) Vector.instTransOrd (ExtTreeMap.ofList [(CMvMonomial.one, 1)] compare) = [(CMvMonomial.one, 1)] := by rfl
-      simp only [Unlawful.zero_eq_zero, Nat.cast_one, Nat.cast_one, h, ↓reduceIte, this, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+      have :
+        @ExtTreeMap.toList (CMvMonomial n) R
+          (Vector.compareLex fun x y => compareOfLessAndEq x y)
+          Vector.instTransOrd
+          (ExtTreeMap.ofList [(CMvMonomial.one, 1)] compare)
+            = [(CMvMonomial.one, 1)]
+      := by rfl
+      simp only [Unlawful.zero_eq_zero, Nat.cast_one, Nat.cast_one, h, ↓reduceIte]
+      simp only [this, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
       unfold CMvMonomial.mul
-      have : List.map (fun (x : CMvMonomial n × R) => (Vector.zipWith Nat.add CMvMonomial.one x.1, Mul.mul 1 x.2)) = id := by
+      have :
+        List.map (fun (x : CMvMonomial n × R) => (Vector.zipWith Nat.add CMvMonomial.one x.1, Mul.mul 1 x.2)) = id
+      := by
         rw [←List.map_id_fun]
         apply congrArg List.map
         funext ⟨m, a⟩
@@ -191,14 +230,24 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
       rcases a with ⟨a, h⟩
       simp only
       congr
-      have : @ExtTreeMap.ofList (CMvMonomial n) R (@ExtTreeMap.toList (CMvMonomial n) R (Vector.compareLex fun x y => compareOfLessAndEq x y) Vector.instTransOrd a) (Vector.compareLex fun x y => compareOfLessAndEq x y) = a := by
+      have :
+        @ExtTreeMap.ofList (CMvMonomial n) R
+          (@ExtTreeMap.toList (CMvMonomial n) R (Vector.compareLex fun x y => compareOfLessAndEq x y) Vector.instTransOrd a)
+          (Vector.compareLex fun x y => compareOfLessAndEq x y) = a
+      := by
         haveI : TransCmp fun (x : ℕ) y => compareOfLessAndEq x y := by
           apply Std.TransOrd.compareOfLessAndEq_of_lt_trans_of_lt_iff <;> grind
-        exact @ExtTreeMap.toList_ofList (CMvMonomial n) R _ _ (Vector.compareLex fun x y => compareOfLessAndEq x y) inferInstance inferInstance a
+        exact
+          @ExtTreeMap.toList_ofList (CMvMonomial n) R _ _
+            (Vector.compareLex fun x y => compareOfLessAndEq x y)
+            inferInstance
+            inferInstance
+            a
       rw [this]
       unfold_projs
       unfold Unlawful.add Unlawful.C
-      simp only [Unlawful.zero_eq_zero, ↓reduceIte, ExtTreeMap.empty_eq_emptyc, ExtTreeMap.mergeWith_empty]
+      simp only
+        [Unlawful.zero_eq_zero, ↓reduceIte, ExtTreeMap.empty_eq_emptyc, ExtTreeMap.mergeWith_empty]
       apply Std.ExtTreeMap.ext_getElem? (cmp := compare)
       intro k
       by_cases h' : k ∈ a
@@ -207,7 +256,7 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
       · have := @ExtTreeMap.filter_not_mem (CMvMonomial n) R _ _ compare _ _ k (fun x c => c != 0) a h'
         rw [this]
         simp [h']
-  mul_one := sorry
+  mul_one := fun _ ↦ mul_one
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] : Semiring (CPoly.CMvPolynomial n R) where
   left_distrib := sorry
@@ -216,10 +265,11 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : Semiring (CPoly.CMvPolynomial n R) wh
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R) where
     natCast_zero := by grind
-    natCast_succ := sorry
-    npow_zero := sorry
-    npow_succ := sorry
+    natCast_succ := by intro n; simp
+    npow_zero := by intro x; simp [npowRecAuto, npowRec]
+    npow_succ := by intro n x; simp [npowRecAuto, npowRec]
     mul_comm := sorry
+
 
 /-
 We needed a `Zero` instance for the coefficients' type in `CommSemiring` because

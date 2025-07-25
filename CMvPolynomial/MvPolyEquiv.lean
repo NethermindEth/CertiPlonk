@@ -145,17 +145,30 @@ instance : LawfulEqCmp fun (x : ℕ) y => compareOfLessAndEq x y where
 
 attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
 
-lemma map_mul_one' [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
-  List.map (fun t => Unlawful.mul₀ t (Unlawful.C 1)) terms
-    = terms.map (fun t ↦ ({t} : Unlawful n R))
-:= by
-  sorry
+-- lemma mul_one_sum [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
+--   (List.map (fun t => {t}) terms).sum
+--     = ExtTreeMap.ofList terms
+-- := by
+--   induction' terms with t ts ih
+--   · grind
+--   · simp only
+--       [ --ExtTreeMap.singleton_eq_insert,
+--         List.sum,
+--         List.map_cons,
+--         List.foldr_cons,
+--       ] at ih ⊢
+--     rw [ih]
+--     rcases t with ⟨m, c⟩
 
-lemma mul_one₀ [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
-  List.foldr (fun (x1 x2 : Unlawful n R) => x1 + x2) 0 (List.map (fun t => {t}) terms)
-    = ExtTreeMap.ofList terms
-:= by
-  sorry
+--     unfold_projs
+--     unfold Unlawful.add
+--     simp
+--     -- rw [ExtTreeMap.ofList_eq_insertMany_empty]
+--     -- rw [ExtTreeMap.ofList_cons]
+--     sorry
+
+#check ExtTreeMap.ordered_keys
+#check ExtTreeMap.keys
 
 lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := by
   by_cases h : (1 : R) = 0
@@ -165,14 +178,68 @@ lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := b
     unfold_projs
     unfold Lawful.C
     simp only [Nat.cast_one]
+    have map_mul_one' [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
+      List.map (fun t => Unlawful.mul₀ t (Unlawful.C 1)) terms
+        = terms.map (fun t ↦ ({t} : Unlawful n R))
+    := by
+      simp only [ExtTreeMap.singleton_eq_insert]
+      induction' terms with t ts ih
+      · simp
+      · simp at ih ⊢
+        constructor
+        · rcases t with ⟨m, r⟩
+          unfold Unlawful.mul₀
+          simp
+          unfold Unlawful.C
+          have : ((1 : R) = 0) = False := by simp [*]
+          simp [this]
+          have : (ExtTreeMap.ofList [@MonoR.C n R 1] compare).toList = [@MonoR.C n R 1] := by
+            simp [ExtTreeMap.ofList_eq_insertMany_empty]
+            rw [ExtTreeMap.insertMany_cons]
+            simp [MonoR.C]
+            rw [←ExtTreeMap.ofList_singleton]
+            have stolen_from_one_mul :
+              @ExtTreeMap.toList (CMvMonomial n) R
+                (Vector.compareLex fun x y => compareOfLessAndEq x y)
+                Vector.instTransOrd
+                (ExtTreeMap.ofList [(CMvMonomial.one, 1)] compare)
+                  = [(CMvMonomial.one, 1)]
+            := by rfl
+            rw [stolen_from_one_mul]
+          simp [this]
+          congr <;> simp [MonoR.C, CMvMonomial.mul_one]
+        · intro m r mr_in
+          apply ih
+          exact mr_in
     rw [map_mul_one']
-    unfold List.sum
-    rw [mul_one₀]
+    generalize terms_def : ExtTreeMap.toList p.val = terms
+    have mul_one_sum [BEq R] [LawfulBEq R] {terms : List (MonoR n R)} :
+      (List.map (fun t => {t}) terms).sum = ExtTreeMap.ofList terms
+    := by
+      induction' terms with t ts ih
+      · grind
+      · simp only
+          [ --ExtTreeMap.singleton_eq_insert,
+            List.sum,
+            List.map_cons,
+            List.foldr_cons,
+          ] at ih ⊢
+        rw [ih]
+        rcases t with ⟨m, c⟩
+        rw [ExtTreeMap.ofList_cons]
+        -- induction' ts with t' ts' ih'
+        -- · simp
+        --   grind
+        -- ·
+        --   simp_all only
+        --     [ExtTreeMap.singleton_eq_insert, List.map_inj_left, Prod.forall,
+        --       List.map_cons, List.foldr_cons]
+
+        sorry
+    rw [mul_one_sum]
     rcases p with ⟨p, _⟩
     simp [Lawful.fromUnlawful]
     congr
-    have toList_ofList := @ExtTreeMap.toList_ofList _ _ _ _ _ _ _ p
-    rw [toList_ofList]
     grind
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :

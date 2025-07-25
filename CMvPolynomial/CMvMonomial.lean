@@ -48,6 +48,12 @@ def mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
 
 instance : Mul (CMvMonomial n) := ⟨mul⟩
 
+lemma mul_one {m : CMvMonomial n} : m * one = m := by
+  unfold one
+  unfold_projs
+  unfold CMvMonomial.mul
+  grind
+
 def divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 
@@ -80,8 +86,8 @@ theorem ofFinsupp_toFinsupp {m : CMvMonomial n} : ofFinsupp m.toFinsupp = m := b
 theorem toFinsupp_ofFinsupp {m : Fin n →₀ ℕ} : (ofFinsupp m).toFinsupp = m := by
   ext i; aesop (add simp [CMvMonomial.toFinsupp, CMvMonomial.ofFinsupp, Vector.get])
 
-lemma injective_ofFinsupp : Function.Injective (ofFinsupp (n := n)) := 
-  Function.HasLeftInverse.injective ⟨toFinsupp, fun _ ↦ toFinsupp_ofFinsupp⟩   
+lemma injective_ofFinsupp : Function.Injective (ofFinsupp (n := n)) :=
+  Function.HasLeftInverse.injective ⟨toFinsupp, fun _ ↦ toFinsupp_ofFinsupp⟩
 
 def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
   toFun := toFinsupp

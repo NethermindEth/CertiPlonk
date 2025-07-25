@@ -12,67 +12,126 @@ def Lawful (n : ℕ) (R : Type) [Zero R] :=
 
 variable {n : ℕ} {R : Type} [Zero R]
 
+@[grind=]
+instance instEmptyCol : EmptyCollection (Lawful n R) := ⟨∅, by grind⟩
+
 instance : GetElem (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
   ⟨fun lp m h ↦ lp.1[m]'h⟩
 
 instance : GetElem? (Lawful n R) (CMvMonomial n) R (fun lp m ↦ m ∈ lp.1) :=
   ⟨fun lp m ↦ lp.1[m]?, fun lp m ↦ lp.1[m]!⟩
 
-@[simp]
-lemma getElem?_eq_val_getElem? {p : Lawful n R} {m : CMvMonomial n} :
-  p[m]? = p.1[m]? := rfl
-
 instance : Membership (CMvMonomial n) (Lawful n R) :=
   ⟨fun lp m ↦ m ∈ lp.1⟩
 
-omit [Zero R] in
-lemma Unlawful.mem_of_mem_lawful {p : Unlawful n R} {m : CMvMonomial n}
-  (h : m ∈ p) : m ∈ p.1 := h
+namespace Lawful
 
-namespace Lawful  
+variable {p : Lawful n R} {m x : CMvMonomial n}
+
+@[simp, grind _=_]
+lemma getElem?_eq_val_getElem? : p[m]? = p.1[m]? := rfl
+
+@[simp, grind _=_]
+lemma mem_iff_cast : x ∈ p.1 ↔ x ∈ p := by rfl
+
+@[grind =]
+lemma mem_iff : x ∈ p ↔ ∃ v, v ≠ 0 ∧ p[x]? = .some v := by
+  rw [←mem_iff_cast, ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists]
+  rcases p; grind
 
 @[simp]
-theorem getElem?_ne_some_zero {p : Lawful n R} {m : CMvMonomial n} :
-  p[m]? ≠ some 0 := by simp only [getElem?_eq_val_getElem?, ne_eq]; rcases p; grind
+theorem getElem?_ne_some_zero : p[m]? ≠ some 0 := by
+  rcases p; grind
 
 variable [BEq R] [LawfulBEq R]
 
 def fromUnlawful (p : Unlawful n R) : Lawful n R :=
-  { 
+  {
     val := p.filter fun _ c ↦ c != 0
     property _ := by aesop (add simp ExtTreeMap.getElem?_filter)
   }
 
-instance : Zero (Lawful n R) := ⟨.empty, by grind⟩
+@[grind←]
+protected lemma grind_fromUnlawful_congr {p₁ p₂ : Unlawful n R}
+  (h : p₁ = p₂) : Lawful.fromUnlawful p₁ = Lawful.fromUnlawful p₂ := by grind
 
 def C (c : R) : Lawful n R :=
-  ⟨
-    Unlawful.C c,
-    by unfold Unlawful.C
-       by_cases eq : c = 0
-       · grind
-       · simp [eq, MonoR.C]
-         grind
-  ⟩
+  ⟨Unlawful.C c, by grind⟩
 
+instance instOfNat_zero : OfNat (Lawful n R) 0 := ⟨C 0⟩
+
+lemma zero_def : Zero.zero (α := Lawful n R) = C 0 := rfl
+
+instance instOfNat {m : ℕ} [NeZero m] [NatCast R] : OfNat (Lawful n R) m := ⟨C m⟩
+
+@[simp, grind]
+lemma C_zero : C (n := n) (0 : R) = 0 := rfl
+
+@[simp, grind]
+lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
+
+lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
+
+lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
+
+-- Not sure why `zero_eq_empty` dislikes `grind` annotation of the form `(∅ : Unlawful n R)`.
+grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R) 
+
+@[simp, grind]
+lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
+
+@[simp, grind]
+lemma not_mem_zero : x ∉ (0 : Lawful n R) := by rw [zero_eq_zero]; exact Unlawful.not_mem_zero
+
+@[simp]
+lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
+  unfold fromUnlawful
+  rcases p with ⟨p, hp⟩
+  simp; ext1 x
+  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]  
+    
 section
-
-variable [CommSemiring R]
-
-instance {m : ℕ} : OfNat (Lawful n R) m := ⟨C n⟩
 
 def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=
   fromUnlawful <| p.val.extend n'
 
-def add (p₁ p₂ : Lawful n R) : Lawful n R :=
+def add [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val + p₂.val
 
-instance : Add (Lawful n R) := ⟨add⟩
+instance [Add R] : Add (Lawful n R) := ⟨add⟩
 
-def mul (p₁ p₂ : Lawful n R) : Lawful n R :=
+@[grind=]
+protected lemma grind_add_skip [Add R] {p₁ p₂ : Lawful n R} :
+  p₁ + p₂ = Lawful.fromUnlawful (p₁.1.add p₂.1) := rfl
+
+/--
+  Note to self: This goes too far.
+-/
+@[grind=]
+protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful n R} :
+  p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun x c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
+
+def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val * p₂.val
 
-instance : Mul (Lawful n R) := ⟨mul⟩
+instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
+
+/--
+  Note to self: This goes too far, we could stop at `Unlawful.mul` and formualte lemmas thereabout.
+-/
+@[grind=]
+protected lemma grind_mul_skip [Mul R] [Add R] {p₁ p₂ : Lawful n R} :
+  p₁ * p₂ =
+  fromUnlawful (List.map (fun t => Unlawful.mul₀ t p₂.1) (ExtTreeMap.toList p₁.1)).sum := by
+  rfl
+
+def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
+| .zero  , _ => 1
+| .succ n, p => (npow n p) * p
+
+-- instance [NatCast R] [Add R] [Mul R] : HPow (Lawful n R) ℕ (Lawful n R) := ⟨fun p n => npow n p⟩
+
+instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful n R) := ⟨fun e b ↦ npow b e⟩
 
 abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
@@ -86,18 +145,16 @@ instance {p : Lawful n R} : Decidable (NZConst p) := by
 
 end
 
-@[simp]
-lemma from_to_Unlawful {p : Lawful n R} : fromUnlawful p.1 = p := by
+@[simp, grind=]
+lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
   unfold fromUnlawful
   rcases p with ⟨up, h⟩
-  dsimp; congr
-  refine ExtTreeMap.ext_getElem? fun k ↦ ?p₁
-  rw [ExtTreeMap.getElem?_filter]
-  rcases eq : up[k]? <;> simp; grind
+  congr
+  grind
 
 section
 
-variable [BEq R] [LawfulBEq R] [CommRing R] 
+variable [BEq R] [LawfulBEq R] [CommRing R]
 
 def neg (p : Lawful n R) : Lawful n R :=
   fromUnlawful p.1.neg
@@ -133,7 +190,7 @@ section
 
 variable {n₁ n₂ : ℕ}
 
-def align [Zero R]
+def align
   (p₁ : Lawful n₁ R) (p₂ : Lawful n₂ R) :
   Lawful (n₁ ⊔ n₂) R × Lawful (n₁ ⊔ n₂) R :=
   letI sup := n₁ ⊔ n₂
@@ -142,7 +199,7 @@ def align [Zero R]
     cast (by congr 1; grind) (p₂.extend sup)
   )
 
-def liftPoly [Zero R]
+def liftPoly
   (f : Lawful (n₁ ⊔ n₂) R →
        Lawful (n₁ ⊔ n₂) R →
        Lawful (n₁ ⊔ n₂) R)

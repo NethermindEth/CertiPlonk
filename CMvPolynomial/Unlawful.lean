@@ -30,7 +30,7 @@ abbrev monomials (p : Unlawful n R) : List (CMvMonomial n) :=
   p.keys
 
 @[simp]
-lemma mem_monomials {m : CMvMonomial n} {up : Unlawful n R} : 
+lemma mem_monomials {m : CMvMonomial n} {up : Unlawful n R} :
   m ∈ up.monomials ↔ m ∈ up := ExtTreeMap.mem_keys
 
 instance [Repr R] : Repr (Unlawful n R) where
@@ -40,21 +40,61 @@ instance [Repr R] : Repr (Unlawful n R) where
       ⟨λ (m, c) => repr c ++ " * " ++ repr m⟩
     @Std.Format.joinSep _ toFormat p.toList " + "
 
-instance : Zero (Unlawful n R) := ⟨.empty⟩
+@[grind=]
+def C [BEq R] [LawfulBEq R] [Zero R] (c : R) : Unlawful n R :=
+  if c = 0 then Std.ExtTreeMap.empty else .ofList [MonoR.C c]
 
-@[simp]
-lemma not_mem_zero {x : CMvMonomial n} : x ∉ (0 : Unlawful n R) := by unfold_projs; grind
+section
 
-@[simp, grind←]
-lemma isNoZeroCoef_zero [Zero R] : isNoZeroCoef (n := n) (R := R) 0 := fun _ ↦ by simp
+variable {m : ℕ} [Zero R] {x : CMvMonomial n}
 
-def C [BEq R] [Zero R] (c : R) : Unlawful n R :=
-  if c == 0 then 0 else .ofList [MonoR.C c]
+section
+
+variable [BEq R] [LawfulBEq R]
+
+instance : OfNat (Unlawful n R) 0 := ⟨C 0⟩
+
+instance [NatCast R] [NeZero m] : OfNat (Unlawful n R) m := ⟨C m⟩
+
+@[simp, grind _=_]
+lemma C_zero : C (n := n) (0 : R) = 0 := rfl
+
+end
+
+@[simp, grind]
+lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
+
+@[simp, grind _=_]
+lemma zero_eq_zero : (Zero.zero : R) = 0 := rfl
+
+@[grind←]
+lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by unfold_projs; simp [C]
+
+@[simp, grind]
+lemma not_mem_C_zero : x ∉ C 0 := by grind
+
+section
+
+variable [BEq R] [LawfulBEq R]
+
+@[simp, grind]
+lemma not_mem_zero : x ∉ (0 : Unlawful n R) := by grind
+
+@[simp, grind]
+lemma isNoZeroCoef_zero : isNoZeroCoef (n := n) (R := R) 0 := fun _ ↦ by simp
+
+end
+
+end
 
 def add [Add R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂
 
 instance [Add R] : Add (Unlawful n R) := ⟨add⟩
+
+@[grind=]
+protected lemma grind_add_skip [Add R] {p₁ p₂ : Unlawful n R} :
+  p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
 
 def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
   p + (ExtTreeMap.ofList [term] : Unlawful n R)
@@ -62,10 +102,17 @@ def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
 def mul₀ [Mul R] (t : MonoR n R) (p : Unlawful n R) : Unlawful n R :=
   ExtTreeMap.ofList (p.toList.map fun (k, v) ↦ (t.1*k, t.2*v))
 
-def mul [CommSemiring R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
+attribute [grind=] ExtTreeMap.ofList_eq_empty_iff List.map_eq_nil_iff ExtTreeMap.toList_eq_nil_iff
+
+@[simp, grind=]
+lemma mul₀_zero [Zero R] [BEq R] [LawfulBEq R] [Mul R] {t : MonoR n R} : mul₀ t 0 = 0 := by
+  unfold mul₀
+  grind
+
+def mul [Mul R] [Add R] [Zero R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.toList.map p₂.mul₀ |>.sum
 
-instance [CommSemiring R] : Mul (Unlawful n R) := ⟨mul⟩
+instance [BEq R] [LawfulBEq R] [Mul R] [Add R] [Zero R] : Mul (Unlawful n R) := ⟨mul⟩
 
 def neg [Neg R] (p : Unlawful n R) : Unlawful n R :=
   p.map fun _ v ↦ -v
@@ -86,10 +133,11 @@ def leadingMonomial? : Unlawful n R → Option (CMvMonomial n) :=
 def findDivisibleTerm? (p : Unlawful n R) (divisor : CMvMonomial n) : Option (MonoR n R) :=
   p.filter (fun k _ ↦ k ∣ divisor) |>.maxEntry?
 
-def reduce [CommRing R] [BEq R] (p : Unlawful n R) (l : List (R × Unlawful n R)) : Unlawful n R :=
+def reduce [CommRing R] [BEq R] [LawfulBEq R]
+  (p : Unlawful n R) (l : List (R × Unlawful n R)) : Unlawful n R :=
   p - (l.map (fun (cᵢ, pᵢ) ↦ C cᵢ * pᵢ) |>.sum)
 
-def Reduces [BEq R] [CommRing R] (p q : Unlawful n R) (l : List (R × Unlawful n R)) : Prop :=
+def Reduces[CommRing R] [BEq R] [LawfulBEq R] (p q : Unlawful n R) (l : List (R × Unlawful n R)) : Prop :=
   p.reduce l = q
 
 instance instDecidableEq [DecidableEq R] : DecidableEq (Unlawful n R) := fun x y ↦
@@ -100,6 +148,19 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Unlawful n R) := fun x y
 instance [BEq R] [LawfulBEq R] [CommRing R]
   {p q : Unlawful n R} {l : List (R × Unlawful n R)} :
   Decidable (Reduces p q l) := by dsimp [Reduces]; infer_instance
+
+def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) : R :=
+  p[m]?.getD 0
+
+/--
+  Conditional extensionality.
+-/
+theorem ext' {n : ℕ} [Zero R] {p q : Unlawful n R}
+  (h₀ : isNoZeroCoef p) (h₁ : isNoZeroCoef q)
+  (h : ∀ m, coeff m p = coeff m q) : p = q := by
+  unfold coeff at h
+  apply ExtTreeMap.ext_getElem?
+  grind
 
 end Unlawful
 

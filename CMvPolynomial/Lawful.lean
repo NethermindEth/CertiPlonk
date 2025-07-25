@@ -51,6 +51,10 @@ def fromUnlawful (p : Unlawful n R) : Lawful n R :=
     property _ := by aesop (add simp ExtTreeMap.getElem?_filter)
   }
 
+@[grind←]
+protected lemma grind_fromUnlawful_congr {p₁ p₂ : Unlawful n R}
+  (h : p₁ = p₂) : Lawful.fromUnlawful p₁ = Lawful.fromUnlawful p₂ := by grind
+
 def C (c : R) : Lawful n R :=
   ⟨Unlawful.C c, by grind⟩
 
@@ -88,28 +92,46 @@ lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
     
 section
 
-variable [CommSemiring R]
-
-instance {m : ℕ} : OfNat (Lawful n R) m := ⟨C m⟩
-
 def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=
   fromUnlawful <| p.val.extend n'
 
-def add (p₁ p₂ : Lawful n R) : Lawful n R :=
+def add [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val + p₂.val
 
-instance : Add (Lawful n R) := ⟨add⟩
+instance [Add R] : Add (Lawful n R) := ⟨add⟩
 
-def mul (p₁ p₂ : Lawful n R) : Lawful n R :=
+@[grind=]
+protected lemma grind_add_skip [Add R] {p₁ p₂ : Lawful n R} :
+  p₁ + p₂ = Lawful.fromUnlawful (p₁.1.add p₂.1) := rfl
+
+/--
+  Note to self: This goes too far.
+-/
+@[grind=]
+protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful n R} :
+  p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun x c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
+
+def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val * p₂.val
 
-instance : Mul (Lawful n R) := ⟨mul⟩
+instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
 
-def npow : ℕ → Lawful n R → Lawful n R
+/--
+  Note to self: This goes too far, we could stop at `Unlawful.mul` and formualte lemmas thereabout.
+-/
+@[grind=]
+protected lemma grind_mul_skip [Mul R] [Add R] {p₁ p₂ : Lawful n R} :
+  p₁ * p₂ =
+  fromUnlawful (List.map (fun t => Unlawful.mul₀ t p₂.1) (ExtTreeMap.toList p₁.1)).sum := by
+  rfl
+
+def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
 | .zero  , _ => 1
 | .succ n, p => (npow n p) * p
 
-instance : HPow (Lawful n R) ℕ (Lawful n R) := ⟨fun p n => npow n p⟩
+-- instance [NatCast R] [Add R] [Mul R] : HPow (Lawful n R) ℕ (Lawful n R) := ⟨fun p n => npow n p⟩
+
+instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful n R) := ⟨fun e b ↦ npow b e⟩
 
 abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
@@ -123,14 +145,12 @@ instance {p : Lawful n R} : Decidable (NZConst p) := by
 
 end
 
-@[simp]
-lemma from_to_Unlawful {p : Lawful n R} : fromUnlawful p.1 = p := by
+@[simp, grind=]
+lemma fromUnlawful_cast {p : Lawful n R} : fromUnlawful p.1 = p := by
   unfold fromUnlawful
   rcases p with ⟨up, h⟩
-  dsimp; congr
-  refine ExtTreeMap.ext_getElem? fun k ↦ ?p₁
-  rw [ExtTreeMap.getElem?_filter]
-  rcases eq : up[k]? <;> simp; grind
+  congr
+  grind
 
 section
 

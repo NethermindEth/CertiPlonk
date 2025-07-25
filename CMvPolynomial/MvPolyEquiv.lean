@@ -103,7 +103,6 @@ where
 -- variable (cmp : α → α → Ordering) [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] (m : Std.ExtTreeMap α β cmp)
 -- variable (k : α)
 
-#check Lawful.from_to_Unlawful
 #check ExtTreeMap.getElem?_filter
 
 lemma Unlawful.mem_add {m : CMvMonomial n} {p₁ p₂ : Unlawful n R} :
@@ -113,124 +112,68 @@ lemma Unlawful.mem_add {m : CMvMonomial n} {p₁ p₂ : Unlawful n R} :
 
 attribute [grind =] Option.filter_eq_some_iff
 
-lemma zero_add [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : 0 + p = p := by
-  dsimp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful, Unlawful.add]
-  grind
+section
+
+attribute [local grind=] Lawful.fromUnlawful
 
 lemma add_zero [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : p + 0 = p := by
-  dsimp only [(·+·), Add.add, Lawful.add, Lawful.fromUnlawful, Unlawful.add]
   grind
+
+lemma zero_add [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : 0 + p = p := by
+  grind
+
+end
 
 attribute [grind=] Option.some_inj
 
-lemma ring_trivial_of_zero_eq_one : 1 = (0 : R) → ∀ a : R, a = 0 := by
-  intros h a
-  have h' := one_mul a
-  rw [h, zero_mul] at h'
-  exact h'.symm
 
-lemma all_polys_eq_zero_of_1_eq_0 {n : ℕ} [BEq R] [LawfulBEq R] : 1 = (0 : R) → ∀ p : CMvPolynomial n R,  p = 0 := by
-  intros h p
-  have h := ring_trivial_of_zero_eq_one h
-  unfold_projs
-  unfold Lawful.C Unlawful.C
-  unfold_projs
-  simp only [Unlawful.zero_eq_zero, ↓reduceIte]
-  rcases p with ⟨p, ph⟩
-  congr
+lemma ring_trivial_of_zero_eq_one (h : 1 = (0 : R)) {a : R} : a = 0 := by
+  have h' := one_mul a
+  aesop
+
+lemma all_polys_eq_zero_of_1_eq_0 {n : ℕ} [BEq R] [LawfulBEq R] 
+  (h : 1 = (0 : R)) {p : CMvPolynomial n R} : p = 0 := by
+  have h := @ring_trivial_of_zero_eq_one (h := h)
+  suffices p.1 = ∅ by grind
   ext m a
-  have h' := @Std.ExtTreeMap.getElem?_empty (CMvMonomial n) R compare _ m
-  unfold Unlawful.isNoZeroCoef at ph
-  unfold_projs at h' ph ⊢
-  rw [h']
-  simp only [reduceCtorEq, iff_false, ne_eq]
-  intros h''
-  specialize ph m
-  rw [h''] at ph
-  apply ph
-  simp only [Unlawful.zero_eq_zero, Option.some.injEq]
-  exact h a
+  specialize @h a
+  grind
 
 instance : LawfulEqCmp fun (x : ℕ) y => compareOfLessAndEq x y where
-  eq_of_compare := by
-    intros a b
-    unfold compareOfLessAndEq
-    aesop
-  compare_self := by
-    intros a
-    unfold compareOfLessAndEq
-    aesop
+  eq_of_compare {a b} := by unfold compareOfLessAndEq; grind
+  compare_self {a} := by unfold compareOfLessAndEq; grind
+
+attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
-  CommSemiring (CPoly.CMvPolynomial n R)
-where
-  add := Lawful.add
-  add_assoc := by
-    intros p q r
-    unfold_projs
-    unfold Lawful.add
-    unfold_projs
-    unfold Unlawful.add
-    congr 1
-    ext m a
-    by_cases h : m ∈ p.1 <;> by_cases h' : m ∈ q.1 <;> by_cases h'' : m ∈ r.1 <;> sorry
-  zero := 0
-  zero_add := fun _ ↦ zero_add
-  add_zero := fun _ ↦ add_zero
-  nsmul n p := List.foldl (.+.) 0 (List.replicate n p) -- `(List.replicate n p).sum` might be better
-                                                       -- there's things like `List.sum_replciate`
-                                                       -- admittedly this wants a monoid which we're
-                                                       -- in the process of defining, eh...
-  nsmul_zero := by simp
-  nsmul_succ {m x} := by
-    generalize (0 : CMvPolynomial n R) = y
-    induction m generalizing y with
-    | zero => simp
-    | succ n ih => specialize ih (y + x); grind
-  add_comm := by
-    intros p q
-    unfold_projs
-    unfold Lawful.add
-    unfold_projs
-    unfold Unlawful.add
-    congr 1
-    ext1 m -- dont extensionality-ise too much, no lemmas for = some, but lemmas for [x]?
-    grind -- attribute [grind=] Option.some_inj
-  mul := Lawful.mul
-  left_distrib := sorry
-  right_distrib := sorry
-  zero_mul := by
-    intros p
-    unfold_projs
-    unfold Lawful.mul
-    unfold_projs
-    unfold Unlawful.mul
-    grind -- `fromUnlawful_zero`, `grind_pattern zero_eq_empty`
+  AddCommSemigroup (CPoly.CMvPolynomial n R) where
+    add_assoc := sorry
+    add_comm {p q} := by grind
+
+instance {n : ℕ} [BEq R] [LawfulBEq R] : AddMonoid (CPoly.CMvPolynomial n R) where
+  zero_add _ := zero_add -- this is just `by grind` but in a different scope
+  add_zero _ := add_zero -- this is just `by grind` but in a different scope
+  nsmul n p := (List.replicate n p).sum
+  nsmul_succ {m x} := by grind -- `nsmul` def changed + `add_comm` is now available; `grind`!
+
+instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n R) where
+  zero_mul := by grind
   mul_zero := by
     intro p
+    -- have := List.sum_replicate (ExtTreeMap.size p.1) (0 : Lawful n R) -- Mmmmm. Will grind.
+    have sum_zeros : List.sum (List.replicate (ExtTreeMap.size p.1) (0 : Unlawful n R)) = 0 := by
+      generalize ExtTreeMap.size p.1 = n
+      induction n <;> grind
     unfold_projs
     unfold Lawful.mul
     unfold_projs
     unfold Unlawful.mul Lawful.C
-    simp
-    have sum_zeros {size : ℕ} :
-      List.sum (α := Unlawful n R) (List.replicate size 0) = 0
-    := by
-      induction' size with s' ih
-      · grind
-      · simp [List.replicate, ih]
-        unfold_projs
-        simp [Unlawful.add]
-        ext m k
-        grind
-    rw [sum_zeros]
-    grind
+    simp; grind
   mul_assoc := sorry
-  one := 1
   one_mul := by
     intros a
     by_cases h : (1 : R) = 0
-    · rw [all_polys_eq_zero_of_1_eq_0 h (1 * a), all_polys_eq_zero_of_1_eq_0 h a]
+    · rw [all_polys_eq_zero_of_1_eq_0 h (p := (1 * a)), all_polys_eq_zero_of_1_eq_0 h (p := a)]
     · dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
       unfold_projs
       unfold Lawful.C Unlawful.C MonoR.C
@@ -264,37 +207,20 @@ where
       · have := @ExtTreeMap.filter_not_mem (CMvMonomial n) R _ _ compare _ _ k (fun x c => c != 0) a h'
         rw [this]
         simp [h']
-  mul_one := by
-    -- intros a
-    -- unfold_projs
-    -- unfold Lawful.C Unlawful.C Lawful.mul
-    -- split_ifs with h
-    -- · simp at h
-    --   have h := @all_polys_eq_zero_of_1_eq_0 R _ n _ _ h
-    --   rw (occs := .pos [2]) [h a]
-    --   simp only [ExtTreeMap.empty_eq_emptyc]
-    --   rw [h (Lawful.fromUnlawful (a.1 * ∅))]
-    -- · simp only [Nat.cast_one]
-    --   unfold_projs
-    --   unfold Unlawful.mul
+  mul_one := sorry
 
+instance {n : ℕ} [BEq R] [LawfulBEq R] : Semiring (CPoly.CMvPolynomial n R) where
+  left_distrib := sorry
+  right_distrib := sorry
+    
 
-      sorry
-  natCast := fun n => Lawful.C n
-  natCast_zero := by
-    unfold Lawful.C Unlawful.C
-    unfold_projs
-    simp only [Nat.cast_zero, Unlawful.zero_eq_zero, ↓reduceIte, Lawful.C_zero]
-    unfold_projs
-    unfold Lawful.C Unlawful.C
-    unfold_projs
-    simp
-  natCast_succ := sorry
-  npow := Lawful.npow
-  npow_zero := by intros x; rfl
-  npow_succ := by intros e p; rfl
-  mul_comm := sorry
-
+instance {n : ℕ} [BEq R] [LawfulBEq R] :
+  CommSemiring (CPoly.CMvPolynomial n R) where
+    natCast_zero := by grind
+    natCast_succ := sorry
+    npow_zero := sorry
+    npow_succ := sorry
+    mul_comm := sorry
 
 /-
 We needed a `Zero` instance for the coefficients' type in `CommSemiring` because

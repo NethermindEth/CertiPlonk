@@ -56,7 +56,7 @@ instance : OfNat (Unlawful n R) 0 := ⟨C 0⟩
 
 instance [NatCast R] [NeZero m] : OfNat (Unlawful n R) m := ⟨C m⟩
 
-@[simp, grind]
+@[simp, grind _=_]
 lemma C_zero : C (n := n) (0 : R) = 0 := rfl
 
 end
@@ -64,7 +64,7 @@ end
 @[simp, grind]
 lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 
-@[simp, grind]
+@[simp, grind _=_]
 lemma zero_eq_zero : (Zero.zero : R) = 0 := rfl
 
 @[grind←]
@@ -92,6 +92,10 @@ def add [Add R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
 
 instance [Add R] : Add (Unlawful n R) := ⟨add⟩
 
+@[grind=]
+protected lemma grind_add_skip [Add R] {p₁ p₂ : Unlawful n R} :
+  p₁ + p₂ = p₁.mergeWith (fun _ c₁ c₂ ↦ c₁ + c₂) p₂ := rfl
+
 def addMonoR [Add R] (p : Unlawful n R) (term : MonoR n R) : Unlawful n R :=
   p + (ExtTreeMap.ofList [term] : Unlawful n R)
 
@@ -105,10 +109,10 @@ lemma mul₀_zero [Zero R] [BEq R] [LawfulBEq R] [Mul R] {t : MonoR n R} : mul�
   unfold mul₀
   grind
 
-def mul [CommSemiring R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
+def mul [Mul R] [Add R] [Zero R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.toList.map p₂.mul₀ |>.sum
 
-instance [CommSemiring R] [BEq R] [LawfulBEq R] : Mul (Unlawful n R) := ⟨mul⟩
+instance [BEq R] [LawfulBEq R] [Mul R] [Add R] [Zero R] : Mul (Unlawful n R) := ⟨mul⟩
 
 def neg [Neg R] (p : Unlawful n R) : Unlawful n R :=
   p.map fun _ v ↦ -v

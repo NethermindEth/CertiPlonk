@@ -3,6 +3,7 @@ import Mathlib.Tactic.Cases
 import Aesop
 import Std.Classes.Ord.Basic
 import Std.Data.ExtTreeMap
+import Std.Data.ExtTreeMap.Lemmas
 
 lemma distinct_of_inj_nodup {α β : Type*} {l : List α} {f : α → β}
   (h₁ : Function.Injective f) (h₂ : l.Nodup) :
@@ -71,7 +72,6 @@ lemma toList_ofList {a : Std.ExtTreeMap α β cmp} : @Std.ExtTreeMap.ofList α �
       rw [←Std.ExtTreeMap.isSome_getKey?_iff_mem] at h'
       aesop
 
-
 grind_pattern mergeWith₀ => k ∈ m₁, k ∈ m₂, Std.ExtTreeMap.mergeWith f m₁ m₂
 grind_pattern mergeWith₁ => k ∈ m₁, k ∈ m₂, Std.ExtTreeMap.mergeWith f m₁ m₂
 grind_pattern mergeWith₂ => k ∈ m₁, k ∈ m₂, Std.ExtTreeMap.mergeWith f m₁ m₂
@@ -104,6 +104,7 @@ lemma filter_not_mem {f : α → β → Bool} {m : Std.ExtTreeMap α β cmp} (h 
   rw [getElem?_filter]
   simp [h]
 
+attribute [grind ext] Std.ExtTreeMap.ext_getElem?
 
 end ExtTreeMap
 

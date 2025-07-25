@@ -123,6 +123,44 @@ lemma add_zero [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : p + 0 = p := by
 
 attribute [grind=] Option.some_inj
 
+lemma ring_trivial_of_zero_eq_one : 1 = (0 : R) → ∀ a : R, a = 0 := by
+  intros h a
+  have h' := one_mul a
+  rw [h, zero_mul] at h'
+  exact h'.symm
+
+lemma all_polys_eq_zero_of_1_eq_0 {n : ℕ} [BEq R] [LawfulBEq R] : 1 = (0 : R) → ∀ p : CMvPolynomial n R,  p = 0 := by
+  intros h p
+  have h := ring_trivial_of_zero_eq_one h
+  unfold_projs
+  unfold Lawful.C Unlawful.C
+  unfold_projs
+  simp only [Unlawful.zero_eq_zero, ↓reduceIte]
+  rcases p with ⟨p, ph⟩
+  congr
+  ext m a
+  have h' := @Std.ExtTreeMap.getElem?_empty (CMvMonomial n) R compare _ m
+  unfold Unlawful.isNoZeroCoef at ph
+  unfold_projs at h' ph ⊢
+  rw [h']
+  simp only [reduceCtorEq, iff_false, ne_eq]
+  intros h''
+  specialize ph m
+  rw [h''] at ph
+  apply ph
+  simp only [Unlawful.zero_eq_zero, Option.some.injEq]
+  exact h a
+
+instance : LawfulEqCmp fun (x : ℕ) y => compareOfLessAndEq x y where
+  eq_of_compare := by
+    intros a b
+    unfold compareOfLessAndEq
+    aesop
+  compare_self := by
+    intros a
+    unfold compareOfLessAndEq
+    aesop
+
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R)
 where
@@ -191,15 +229,62 @@ where
   one := 1
   one_mul := by
     intros a
-    dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
-    sorry
-  mul_one := sorry
+    by_cases h : (1 : R) = 0
+    · rw [all_polys_eq_zero_of_1_eq_0 h (1 * a), all_polys_eq_zero_of_1_eq_0 h a]
+    · dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
+      unfold_projs
+      unfold Lawful.C Unlawful.C MonoR.C
+      have : @ExtTreeMap.toList (CMvMonomial n) R (Vector.compareLex fun x y => compareOfLessAndEq x y) Vector.instTransOrd (ExtTreeMap.ofList [(CMvMonomial.one, 1)] compare) = [(CMvMonomial.one, 1)] := by rfl
+      simp only [Unlawful.zero_eq_zero, Nat.cast_one, Nat.cast_one, h, ↓reduceIte, this, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+      unfold CMvMonomial.mul
+      have : List.map (fun (x : CMvMonomial n × R) => (Vector.zipWith Nat.add CMvMonomial.one x.1, Mul.mul 1 x.2)) = id := by
+        rw [←List.map_id_fun]
+        apply congrArg List.map
+        funext ⟨m, a⟩
+        have : Mul.mul 1 a = 1 * a := by rfl
+        unfold CMvMonomial.one
+        aesop
+      simp only [this, id_eq]
+      rcases a with ⟨a, h⟩
+      simp only
+      congr
+      have : @ExtTreeMap.ofList (CMvMonomial n) R (@ExtTreeMap.toList (CMvMonomial n) R (Vector.compareLex fun x y => compareOfLessAndEq x y) Vector.instTransOrd a) (Vector.compareLex fun x y => compareOfLessAndEq x y) = a := by
+        haveI : TransCmp fun (x : ℕ) y => compareOfLessAndEq x y := by
+          apply Std.TransOrd.compareOfLessAndEq_of_lt_trans_of_lt_iff <;> grind
+        exact @ExtTreeMap.toList_ofList (CMvMonomial n) R _ _ (Vector.compareLex fun x y => compareOfLessAndEq x y) inferInstance inferInstance a
+      rw [this]
+      unfold_projs
+      unfold Unlawful.add Unlawful.C
+      simp only [Unlawful.zero_eq_zero, ↓reduceIte, ExtTreeMap.empty_eq_emptyc, ExtTreeMap.mergeWith_empty]
+      apply Std.ExtTreeMap.ext_getElem? (cmp := compare)
+      intro k
+      by_cases h' : k ∈ a
+      · specialize h k
+        rw [ExtTreeMap.filter_mem (f := (fun x c => c != 0)) h'] <;> grind
+      · have := @ExtTreeMap.filter_not_mem (CMvMonomial n) R _ _ compare _ _ k (fun x c => c != 0) a h'
+        rw [this]
+        simp [h']
+  mul_one := by
+    -- intros a
+    -- unfold_projs
+    -- unfold Lawful.C Unlawful.C Lawful.mul
+    -- split_ifs with h
+    -- · simp at h
+    --   have h := @all_polys_eq_zero_of_1_eq_0 R _ n _ _ h
+    --   rw (occs := .pos [2]) [h a]
+    --   simp only [ExtTreeMap.empty_eq_emptyc]
+    --   rw [h (Lawful.fromUnlawful (a.1 * ∅))]
+    -- · simp only [Nat.cast_one]
+    --   unfold_projs
+    --   unfold Unlawful.mul
+
+
+      sorry
   natCast := fun n => Lawful.C n
   natCast_zero := by
     unfold Lawful.C Unlawful.C
     unfold_projs
-    simp only [Nat.cast_zero, Unlawful.zero_eq_zero, ↓reduceIte, ExtDTreeMap.empty_eq_emptyc,
-      Lawful.C_zero]
+    simp only [Nat.cast_zero, Unlawful.zero_eq_zero, ↓reduceIte, Lawful.C_zero]
     unfold_projs
     unfold Lawful.C Unlawful.C
     unfold_projs

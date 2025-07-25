@@ -42,7 +42,7 @@ instance [Repr R] : Repr (Unlawful n R) where
 
 @[grind=]
 def C [BEq R] [LawfulBEq R] [Zero R] (c : R) : Unlawful n R :=
-  if c = 0 then ⟨.empty⟩ else .ofList [MonoR.C c]
+  if c = 0 then Std.ExtTreeMap.empty else .ofList [MonoR.C c]
 
 section
 
@@ -68,7 +68,7 @@ lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 lemma zero_eq_zero : (Zero.zero : R) = 0 := rfl
 
 @[grind←]
-lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by unfold_projs; simp [C]; rfl
+lemma zero_eq_empty [BEq R] [LawfulBEq R] : (0 : Unlawful n R) = ∅ := by unfold_projs; simp [C]
 
 @[simp, grind]
 lemma not_mem_C_zero : x ∉ C 0 := by grind

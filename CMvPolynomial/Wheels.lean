@@ -27,20 +27,40 @@ variable {α β : Type} [BEq α] [LawfulBEq α]
          {cmp : α → α → Ordering} [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
          {k : α} {m m₁ m₂ : Std.ExtTreeMap α β cmp} {f : α → β → β → β}
 
+@[grind=]
 lemma mergeWith₀ (h₁ : k ∈ m₁) (h₂ : k ∈ m₂) :
   (m₁.mergeWith f m₂)[k]? = .some (f k m₁[k] m₂[k]) := sorry
 
+@[grind=]
 lemma mergeWith₁ (h₁ : k ∈ m₁) (h₂ : k ∉ m₂) :
   (m₁.mergeWith f m₂)[k]? = m₁[k]? := sorry
 
+@[grind=]
 lemma mergeWith₂ (h₁ : k ∉ m₁) (h₂ : k ∈ m₂) :
   (m₁.mergeWith f m₂)[k]? = m₂[k]? := sorry
 
+@[grind=]
 lemma mergeWith₃ (h₁ : k ∉ m₁) (h₂ : k ∉ m₂) :
   (m₁.mergeWith f m₂)[k]? = .none := sorry
 
 @[simp, grind=]
-lemma filter_empty {α β : Type} {f : α → β → Bool} {cmp : α → α → Ordering} : Std.ExtTreeMap.filter f (∅ : Std.ExtTreeMap α β cmp) = ∅ := by
+lemma filter_empty {f : α → β → Bool} {cmp : α → α → Ordering} : Std.ExtTreeMap.filter f (∅ : Std.ExtTreeMap α β cmp) = ∅ := by
+  sorry
+
+@[grind=]
+lemma filter_mem {f : α → β → Bool} {m : Std.ExtTreeMap α β cmp} (h : k ∈ m) : f k m[k] → (Std.ExtTreeMap.filter f m)[k]? = .some m[k] := by
+  sorry
+
+@[grind=]
+lemma filter_not_mem {f : α → β → Bool} {m : Std.ExtTreeMap α β cmp} (h : k ∉ m) : (Std.ExtTreeMap.filter f m)[k]? = .none := by
+  sorry
+
+@[simp, grind=]
+lemma mergeWith_empty {f : α → β → β → β} {cmp : α → α → Ordering} [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] {t : Std.ExtTreeMap α β cmp} :
+  Std.ExtTreeMap.mergeWith f t ∅ = t := by ext; grind
+
+@[simp, grind=]
+lemma toList_ofList {a} : @Std.ExtTreeMap.ofList α β (@Std.ExtTreeMap.toList α β cmp _ a) cmp = a := by
   sorry
 
 grind_pattern mergeWith₀ => k ∈ m₁, k ∈ m₂, Std.ExtTreeMap.mergeWith f m₁ m₂
@@ -61,4 +81,4 @@ end ExtTreeMap
 
 lemma Option.filter_irrel {α : Type} {o : Option α} {p : α → Bool}
   (h : ∀ x, x ∈ o → p x) : o.filter p = o := by
-  aesop (add simp Option.filter)  
+  aesop (add simp Option.filter)

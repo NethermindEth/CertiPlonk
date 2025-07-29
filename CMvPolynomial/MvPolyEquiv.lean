@@ -217,9 +217,49 @@ lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := b
     rw [sum_id terms_distinct]
     grind
 
+lemma add_getD? [BEq R] [LawfulBEq R] {m : CMvMonomial n} {p q : CMvPolynomial n R} :
+  (p + q).val[m]?.getD 0 = q.val[m]?.getD 0 + p.val[m]?.getD 0
+:= by
+  rw [HAdd.hAdd, instHAdd, Add.add, Lawful.instAdd]; dsimp
+  simp only [Lawful.add, Lawful.fromUnlawful];
+  rw [HAdd.hAdd, instHAdd, Add.add, Unlawful.instAdd]; dsimp
+  rw [Unlawful.add];
+  rw [ExtTreeMap.getElem?_filter]
+  by_cases in_p : m ∈ p <;> by_cases in_q : m ∈ q
+  · simp [ExtTreeMap.mergeWith₀ in_p in_q, Option.filter]
+    by_cases sum_0 : p.val[m] + q.val[m] != 0
+      <;> simp [sum_0]
+      <;> by_cases pm_0 : p.val[m] = 0 <;> by_cases qm_0 : q.val[m] = 0
+      <;> grind [add_comm]
+  · simp [ExtTreeMap.mergeWith₁ in_p in_q]
+    by_cases p.val[m] = 0
+    · grind
+    · unfold_projs at in_p; simp at in_p
+      rw [ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists] at in_p
+      rcases in_p with ⟨c₁, in_p⟩
+      simp [Option.filter, in_p]
+      by_cases c₁_eq_0 : c₁ = 0 <;> simp [c₁_eq_0, in_q]
+  · simp [ExtTreeMap.mergeWith₂ in_p in_q]
+    by_cases q.val[m] = 0
+    · grind
+    · unfold_projs at in_q; simp at in_q
+      rw [ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists] at in_q
+      rcases in_q with ⟨c₁, in_q⟩
+      simp [Option.filter, in_q]
+      by_cases c₁_eq_0 : c₁ = 0 <;> simp [c₁_eq_0, in_p]
+  · simp [ExtTreeMap.mergeWith₃ in_p in_q]
+    unfold_projs at in_p; simp at in_p
+    unfold_projs at in_q; simp at in_q
+    aesop
+
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   AddCommSemigroup (CPoly.CMvPolynomial n R) where
-    add_assoc := sorry
+    add_assoc := by
+      intro a b c
+      ext m
+      unfold CMvPolynomial.coeff
+      simp [add_getD?]
+      rw [add_assoc]
     add_comm {p q} := by grind
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] : AddMonoid (CPoly.CMvPolynomial n R) where

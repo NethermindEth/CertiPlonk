@@ -13,7 +13,7 @@ namespace CPoly
 
 section
 
-variable {n : ℕ} {R : Type} [csR : CommSemiring R]
+variable {n : ℕ} {R : Type} [CommSemiring R]
 
 def fromCMvPolynomial [BEq R] [LawfulBEq R] (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
   let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
@@ -145,16 +145,22 @@ instance : LawfulEqCmp fun (x : ℕ) y => compareOfLessAndEq x y where
 
 attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
 
+omit [CommSemiring R] in
+lemma ofList_toList_MonoR {t : MonoR n R} :
+  ExtTreeMap.toList (ExtTreeMap.ofList [t] compare) = [t]
+:= by rfl
+
 lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := by
-  by_cases h : (1 : R) = 0
-  · rw [all_polys_eq_zero_of_1_eq_0 h (p := p * 1), all_polys_eq_zero_of_1_eq_0 h (p := p)]
-  · dsimp only [(·*·), Mul.mul, Lawful.mul]
-    dsimp only [Unlawful.mul]
+  by_cases eq_1_0 : (1 : R) = 0
+  · rw
+      [ all_polys_eq_zero_of_1_eq_0 eq_1_0 (p := p * 1),
+        all_polys_eq_zero_of_1_eq_0 eq_1_0 (p := p)
+      ]
+  · dsimp only [(·*·), Mul.mul, Lawful.mul, Unlawful.mul]
     unfold_projs
-    unfold Lawful.C
-    simp only [Nat.cast_one]
-    have map_mul_one' [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
-      List.map (fun t => Unlawful.mul₀ t (Unlawful.C 1)) terms
+    simp only [Lawful.C, Nat.cast_one]
+    have list_MonoR_map_Unlawful [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
+      List.map (fun t ↦ Unlawful.mul₀ t (Unlawful.C 1)) terms
         = terms.map (fun t ↦ ({t} : Unlawful n R))
     := by
       simp only [ExtTreeMap.singleton_eq_insert]
@@ -162,102 +168,53 @@ lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := b
       · simp
       · simp at ih ⊢
         constructor
-        · rcases t with ⟨m, r⟩
-          unfold Unlawful.mul₀
-          simp
-          unfold Unlawful.C
-          have : ((1 : R) = 0) = False := by simp [*]
-          simp [this]
-          have : (ExtTreeMap.ofList [@MonoR.C n R 1] compare).toList = [@MonoR.C n R 1] := by
-            simp [ExtTreeMap.ofList_eq_insertMany_empty]
-            rw [ExtTreeMap.insertMany_cons]
-            simp [MonoR.C]
-            rw [←ExtTreeMap.ofList_singleton]
-            have stolen_from_one_mul :
-              @ExtTreeMap.toList (CMvMonomial n) R
-                (Vector.compareLex fun x y => compareOfLessAndEq x y)
-                Vector.instTransOrd
-                (ExtTreeMap.ofList [(CMvMonomial.one, 1)] compare)
-                  = [(CMvMonomial.one, 1)]
-            := by rfl
-            rw [stolen_from_one_mul]
-          simp [this]
-          congr <;> simp [MonoR.C, CMvMonomial.mul_one]
-        · intro m r mr_in
-          apply ih
-          exact mr_in
-    rw [map_mul_one']
+        · simp [Unlawful.mul₀, Unlawful.C, eq_1_0, ofList_toList_MonoR]
+          simp [MonoR.C, CMvMonomial.mul_one]
+        · intros; grind
+    rw [list_MonoR_map_Unlawful]
     generalize terms_def : ExtTreeMap.toList p.val = terms
     have terms_distinct := ExtTreeMap.distinct_keys_toList (t := p.val)
     rw [terms_def] at terms_distinct
-    have mul_one_sum [BEq R] [LawfulBEq R] {terms : List (MonoR n R)} :
-      List.Pairwise (fun a b => ¬compare a.1 b.1 = Ordering.eq) terms →
-      (List.map (fun t => {t}) terms).sum = ExtTreeMap.ofList terms
+    have sum_id [BEq R] [LawfulBEq R] {terms : List (MonoR n R)} :
+      List.Pairwise (fun a b ↦ ¬compare a.1 b.1 = Ordering.eq) terms →
+      (List.map (fun t ↦ {t}) terms).sum = ExtTreeMap.ofList terms
     := by
-      intro distinct
-      let terms' := terms
+      intro terms_distinct
       induction' terms with t ts ih
       · grind
-      · have ts_distinct := (List.pairwise_cons.1 distinct).2
+      · have ts_distinct := (List.pairwise_cons.1 terms_distinct).2
         specialize ih ts_distinct
-        simp only
-          [ List.sum,
-            List.map_cons,
-            List.foldr_cons,
-          ] at ih ⊢
+        simp only [List.sum, List.map_cons, List.foldr_cons] at ih ⊢
         rw [ih]
         rcases t with ⟨m, c⟩
-        have distinct₀ := distinct
-        simp at distinct
+        have distinct₀ := terms_distinct
+        simp at terms_distinct
         ext m' c'
-        unfold HAdd.hAdd instHAdd; dsimp
-        unfold Add.add Unlawful.instAdd Unlawful.add
+        simp only [HAdd.hAdd, Add.add, Unlawful.add]
         dsimp
         by_cases m_eq : m = m'
         · subst m_eq
           have in₁ : m ∈ (∅ : Unlawful n R).insert m c := by simp
-          have in₂ : m ∉ ExtTreeMap.ofList ts compare := by
-            simp
-            intro x
-            intro mx_in_ts
-            apply distinct.1 m x mx_in_ts
-            rfl
-          have : (m, c) ∈ (m, c) :: ts := by simp
+          have in₂ : m ∉ ExtTreeMap.ofList ts compare := by grind
           rw
             [ ExtTreeMap.mergeWith₁ in₁ in₂,
-              ExtTreeMap.getElem?_ofList_of_mem (by simp) distinct₀ this
+              ExtTreeMap.getElem?_ofList_of_mem (k := m) (v := c) (by simp) distinct₀ (by simp)
             ]
           simp
         · by_cases ex_coeff : ∃ coeff, (m', coeff) ∈ ts
           · rcases ex_coeff with ⟨coeff, m'coeff_in⟩
             have in₁ : m' ∉ (∅ : Unlawful n R).insert m c := by grind
             have in₂ : m' ∈ ExtTreeMap.ofList ts compare := by grind
-            rw [ExtTreeMap.mergeWith₂ in₁ in₂]
-            rw [ExtTreeMap.getElem?_ofList_of_mem (by simp) ts_distinct (mem := m'coeff_in)]
-            simp
-            have : (m', coeff) ∈ (m, c) :: ts := by grind
-            constructor
-            · intro c_eq
-              subst c_eq
-              have : (m', coeff) ∈ (m, c) :: ts := by grind
-              rw [ExtTreeMap.getElem?_ofList_of_mem (by simp) distinct₀ (mem := this)]
-            · intro find_c
-              have find_coeff : (ExtTreeMap.ofList ((m, c) :: ts) compare)[m']? = some coeff := by
-                rw [ExtTreeMap.getElem?_ofList_of_mem (by simp) distinct₀ (mem := this)]
-              grind
+            rw
+              [ ExtTreeMap.mergeWith₂ in₁ in₂,
+                ExtTreeMap.getElem?_ofList_of_mem (by simp) ts_distinct m'coeff_in,
+                ExtTreeMap.getElem?_ofList_of_mem (k := m') (v := coeff) (by simp) distinct₀ (by grind)
+              ]
           · have in₁ : m' ∉ (∅ : Unlawful n R).insert m c := by grind
-            have in₂ : m' ∉ ExtTreeMap.ofList ts compare := by
-              simp
-              intro x contra
-              simp at ex_coeff
-              specialize ex_coeff x
-              contradiction
+            have in₂ : m' ∉ ExtTreeMap.ofList ts compare := by grind
             rw [ExtTreeMap.mergeWith₃ in₁ in₂]
             grind
-    rw [mul_one_sum terms_distinct]
-    rcases p with ⟨p, _⟩
-    simp [Lawful.fromUnlawful]
-    congr
+    rw [sum_id terms_distinct]
     grind
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
@@ -292,15 +249,8 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
     · dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
       unfold_projs
       unfold Lawful.C Unlawful.C MonoR.C
-      have :
-        @ExtTreeMap.toList (CMvMonomial n) R
-          (Vector.compareLex fun x y => compareOfLessAndEq x y)
-          Vector.instTransOrd
-          (ExtTreeMap.ofList [(CMvMonomial.one, 1)] compare)
-            = [(CMvMonomial.one, 1)]
-      := by rfl
       simp only [Unlawful.zero_eq_zero, Nat.cast_one, Nat.cast_one, h, ↓reduceIte]
-      simp only [this, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
+      simp only [ofList_toList_MonoR, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
       unfold CMvMonomial.mul
       have :
         List.map (fun (x : CMvMonomial n × R) => (Vector.zipWith Nat.add CMvMonomial.one x.1, Mul.mul 1 x.2)) = id

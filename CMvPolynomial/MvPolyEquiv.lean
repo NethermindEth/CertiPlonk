@@ -381,32 +381,76 @@ example [OfNat (Unlawful n R) 0] {l₁ l₂ : List (Unlawful n R)} : List.Perm l
 
   sorry
 
-instance {α : Type} : Zero (Option α) where
-  zero := none
+@[grind =]
+def Option.add {α : Type*} [Add α] (a b : Option α) : Option α :=
+  match a, b with
+  | none  , none   => none
+  | none  , some a => a
+  | some a, none   => a
+  | some a, some b => a + b
 
-instance {α : Type} [Add α] : Add (Option α) where
-  add
-  | none, none => none
-  | some a, none => some a
-  | none, some a => some a
-  | some a, some b => some (a + b)
+variable {α : Type*} {a b c d : Option α} {x y z w : α}
 
--- attribute [local instance 5] instDecidableEqOfLawfulBEq
+@[simp, grind =]
+def Option.zero : Option α := .none
+
+instance : Zero (Option α) := ⟨Option.zero⟩
+
+@[simp, grind =]
+lemma Option.zero_eq_none : (Zero.zero : Option α) = none := rfl
+
+@[simp, grind =]
+lemma Option.natCast_zero_eq_none [Zero α] : (0 : Option α) = none := rfl
+
+variable [Add α]
+
+@[grind =]
+instance {α : Type*} [Add α] : Add (Option α) := ⟨Option.add⟩
+
+@[simp, grind =]
+lemma Option.none_add : a + none = a := by aesop (add simp [(·+·), Add.add, Option.add])
+
+@[simp, grind =]
+lemma Option.add_none : none + a = a := by aesop (add simp [(·+·), Add.add, Option.add])
+
+@[simp, grind =]
+lemma Option.none_add_none : (none : Option α) + none = none := by aesop (add simp [(·+·), Add.add, Option.add])
+
+@[simp, grind =]
+lemma Option.some_add_some : some x + some z = some (x + z) := by aesop (add simp [(·+·), Add.add, Option.add])
+
+@[grind =]
+def Option.nsmul {α : Type*} [SMul ℕ α] (n : ℕ) (a : Option α) : Option α :=
+  match n with
+  | 0 => .none
+  | k@(_ + 1) => a.map (k•·)
+
+instance [SMul ℕ α] : SMul ℕ (Option α) := ⟨Option.nsmul⟩
+
+attribute [local grind cases] Option
+attribute [local grind =] Option.map Option.some_inj 
+
+instance abc [AddCommMonoid R] : AddCommMonoid (Option R) where
+  add_assoc := by grind
+  add_zero := by grind
+  zero_add := by grind
+  nsmul := Option.nsmul
+  nsmul_zero := by grind
+  nsmul_succ {n x} := by rcases x <;> rcases n <;> simp [Option.nsmul, Option.map]; grind -- can be 'fixed' to `grind`
+  add_comm := by grind
 
 lemma lookup_sum_eq_sum_lookup [BEq R] [LawfulBEq R] {l : List (Unlawful n R)} (m : CMvMonomial n) :
   l.sum[m]? = (l.map (·[m]?)).sum := by
   induction l with
-  | nil => simp; rfl
+  | nil => simp
   | cons l ls ih =>
     simp [←ih, Unlawful.grind_add_skip]
-    dsimp [(·+·), Add.add]
+    dsimp [(·+·), Add.add, Option.add]
     grind
 
 example {α β γ : Type} {f : α → β} {g : β → γ} : g ∘ f = fun x => g (f x) := by
   ext x
   simp only [Function.comp_apply]
-
-instance abc : AddCommMonoid (Option R) := sorry
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R) where

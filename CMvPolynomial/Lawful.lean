@@ -45,6 +45,11 @@ theorem getElem?_ne_some_zero : p[m]? ≠ some 0 := by
 
 variable [BEq R] [LawfulBEq R]
 
+lemma isNoZeroCoef_of_filter (p : Unlawful n R) :
+  Unlawful.isNoZeroCoef (ExtTreeMap.filter (fun _ c => c != 0) p) := by
+  unfold Unlawful.isNoZeroCoef
+  aesop (add simp ExtTreeMap.getElem?_filter)
+
 def fromUnlawful (p : Unlawful n R) : Lawful n R :=
   {
     val := p.filter fun _ c ↦ c != 0
@@ -75,7 +80,7 @@ lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
 
 -- Not sure why `zero_eq_empty` dislikes `grind` annotation of the form `(∅ : Unlawful n R)`.
-grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R) 
+grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R)
 
 @[simp, grind]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
@@ -88,8 +93,8 @@ lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
   unfold fromUnlawful
   rcases p with ⟨p, hp⟩
   simp; ext1 x
-  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]  
-    
+  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]
+
 section
 
 def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=

@@ -4,6 +4,10 @@ import Mathlib.Algebra.Equiv.TransferInstance
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib
 
+example : Polynomial.natDegree (Polynomial.C (1 : ℝ)) = 0 := by
+  compute_degree
+  simp
+
 -- import Std.Data.DTreeMap
 section
 
@@ -148,7 +152,7 @@ attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
 -- lemma mul_one_sum [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
 --   (List.map (fun t => {t}) terms).sum
 --     = ExtTreeMap.ofList terms
--- := by
+-- -- := by
 --   induction' terms with t ts ih
 --   · grind
 --   · simp only
@@ -244,20 +248,47 @@ lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := b
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   AddCommSemigroup (CPoly.CMvPolynomial n R) where
-    add_assoc := sorry
+    add_assoc := by
+      intros p q r
+      unfold_projs
+      unfold Lawful.add Lawful.fromUnlawful
+      simp only
+      unfold_projs
+      unfold Unlawful.add
+      congr 1
+      apply Unlawful.ext' (Lawful.isNoZeroCoef_of_filter _) (Lawful.isNoZeroCoef_of_filter _)
+      intros m
+      unfold Unlawful.coeff
+      rw [ExtTreeMap.getElem?_filter, ExtTreeMap.getElem?_filter]
+      by_cases h : m ∈ p <;> by_cases h' : m ∈ q <;> by_cases h'' : m ∈ r
+      · by_cases g : p[m] + q[m] = 0
+        · rw [ExtTreeMap.mergeWith₂ _ h'']
+          by_cases g' : q[m] + r[m] = 0
+          · rw [ExtTreeMap.mergeWith₁ h]
+
+
+
+
+
+
+
+      sorry
     add_comm {p q} := by grind
 
-instance {n : ℕ} [BEq R] [LawfulBEq R] : AddMonoid (CPoly.CMvPolynomial n R) where
+instance bla {n : ℕ} [BEq R] [LawfulBEq R] : AddMonoid (CPoly.CMvPolynomial n R) where
   zero_add _ := zero_add -- this is just `by grind` but in a different scope
   add_zero _ := add_zero -- this is just `by grind` but in a different scope
   nsmul n p := (List.replicate n p).sum
   nsmul_succ {m x} := by grind -- `nsmul` def changed + `add_comm` is now available; `grind`!
 
+#synth Mul (MvPolynomial (Fin 42) R)
+
 instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul := by grind
   mul_zero := by
     intro p
-    -- have := List.sum_replicate (ExtTreeMap.size p.1) (0 : Lawful n R) -- Mmmmm. Will grind.
+    have := List.sum_replicate (ExtTreeMap.size p.1) (0 : Lawful n R) -- Mmmmm. Will grind.
+
     have sum_zeros : List.sum (List.replicate (ExtTreeMap.size p.1) (0 : Unlawful n R)) = 0 := by
       generalize ExtTreeMap.size p.1 = n
       induction n <;> grind
@@ -266,7 +297,16 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
     unfold_projs
     unfold Unlawful.mul Lawful.C
     simp; grind
-  mul_assoc := sorry
+  mul_assoc := by
+    intros a b c
+    unfold_projs
+    unfold Lawful.mul Lawful.fromUnlawful
+    unfold_projs
+    unfold Unlawful.mul Unlawful.mul₀
+    simp
+    congr
+
+    sorry
   one_mul := by
     intros a
     by_cases h : (1 : R) = 0
@@ -329,13 +369,89 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : Semiring (CPoly.CMvPolynomial n R) wh
   left_distrib := sorry
   right_distrib := sorry
 
+#check @List.Perm.sum_eq
+#check @List.sum
+#check AddCommMonoid
+
+#check Zero.ofOfNat0
+
+example [OfNat (Unlawful n R) 0] {l₁ l₂ : List (Unlawful n R)} : List.Perm l₁ l₂ → l₁.sum = l₂.sum := by
+  intros h
+
+
+  sorry
+
+instance {α : Type} : Zero (Option α) where
+  zero := none
+
+instance {α : Type} [Add α] : Add (Option α) where
+  add
+  | none, none => none
+  | some a, none => some a
+  | none, some a => some a
+  | some a, some b => some (a + b)
+
+lemma lookup_sum_eq_sum_lookup [BEq R] [LawfulBEq R] {l : List (Unlawful n R)} (m : CMvMonomial n) :
+  l.sum[m]? = (List.map (fun l => l[m]?) l).sum := by
+  induction l with
+  | nil =>
+    simp only [List.sum_nil, Unlawful.not_mem_zero, not_false_eq_true, getElem?_neg, List.map_nil]
+    rfl
+  | cons l ls ih =>
+    simp only [List.sum_cons, List.map_cons]
+    rw [←ih]
+    rw [Unlawful.grind_add_skip]
+    dsimp [(·+·), Add.add]
+    grind
+
+example {α β γ : Type} {f : α → β} {g : β → γ} : g ∘ f = fun x => g (f x) := by
+  ext x
+  simp only [Function.comp_apply]
+
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R) where
     natCast_zero := by grind
     natCast_succ := by intro n; simp
     npow_zero := by intro x; simp [npowRecAuto, npowRec]
     npow_succ := by intro n x; simp [npowRecAuto, npowRec]
-    mul_comm := sorry
+    mul_comm := by
+      intros a b
+      unfold_projs
+      unfold Lawful.mul Lawful.fromUnlawful
+      unfold_projs
+      unfold Unlawful.mul Unlawful.mul₀
+      simp only [Unlawful.zero_eq_zero]
+      congr 2
+      ext1 m
+      rw [lookup_sum_eq_sum_lookup, List.map_map, lookup_sum_eq_sum_lookup, List.map_map]
+
+      have {f : MonoR n R → ExtTreeMap (CMvMonomial n) R compare} : (fun (l : Unlawful n R) => l[m]?) ∘ f = (fun x => (f x)[m]?) := by aesop
+      rw [this, this]
+
+      have bla := @List.Perm.sum_eq (List (Option R)) sorry
+      apply bla
+
+
+
+      -- have := @Function.comp_apply (f := (fun (l : Unlawful n R) => l[m]?)) (g := fun (t : MonoR n R) => ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList b.1)) compare) (x := ExtTreeMap.toList a.1)
+
+
+      have : (fun l => l[m]?) ∘ fun (t : MonoR n R) =>
+        ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList ↑b)) compare) =
+        (fun l => l[m]?) ∘ fun t =>
+          wExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList ↑b)) compare)
+
+
+      have :=
+        @List.Perm.sum_eq (Unlawful n R) sorry
+          (List.map (fun t => ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList b.1)) compare)
+            (ExtTreeMap.toList a.1))
+          (List.map (fun t => ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList a.1)) compare)
+            (ExtTreeMap.toList b.1))
+      apply this
+
+
+      sorry
 
 
 /-

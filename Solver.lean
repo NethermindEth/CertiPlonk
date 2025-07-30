@@ -40,32 +40,59 @@ def buildSymbolTable (n : Array Lean.Name) : SymbolTable :=
 -- Given symbol table construct a "Monomial" : x1 * x2 * ... * xn wher
 -- xi = natlit or sym or sym^natlit
 inductive MTerm where
-  | lit : Q(Nat) → MTerm
+  | lit : Nat → MTerm
   | sym : Lean.Name → MTerm
-  | pow : Lean.Name → Q(Nat) → MTerm
+  | pow : Lean.Name → Nat → MTerm
   | mul : MTerm → MTerm → MTerm
-deriving Nonempty, Repr
+deriving Inhabited, Repr
 
 -- lemma abc : ∀ {a b : Nat}, (b = 1) → a + 0 = a := sorry
 
 -- example : 42 + 0 = 42 := by
 --   rw [abc]
 
-partial def MTerm.ofExpr (e : Lean.Expr) : Lean.MetaM MTerm := do
-  match e.getAppFnArgs with
-  | (``HMul.hMul, #[_, _, _, _, l, r]) => return .mul (← MTerm.ofExpr l) (← MTerm.ofExpr r)
-  | (``HPow.hPow, #[_, _, _, _, b, p]) =>
-    let .const n _ := b.getAppFn | throwError "base should be a symbol"
-    return .pow n p
-  | (s, #[]) => return MTerm.sym s
-  | _ =>
-    let nm ← Lean.Meta.mkFreshExprMVar q(Nat)
-    Lean.logInfo s!"E: {e}"
-    Lean.logInfo m!"NM1: {nm}"
-    if ← Lean.Meta.isDefEq e nm then
-      Lean.logInfo m!"NM2: {nm}"
-      return MTerm.lit nm
-    else throwError "Something went wrong!"
+open Lean Meta
+
+-- partial def MTerm.ofExpr (e : Lean.Expr) : Lean.MetaM MTerm := do
+--   match e.getAppFnArgs with
+--   | (``HMul.hMul, #[_, _, _, _, l, r]) => return .mul (← MTerm.ofExpr l) (← MTerm.ofExpr r)
+--   | (``HPow.hPow, #[_, _, _, _, b, p]) =>
+--     let .const n _ := b.getAppFn | throwError "base should be a symbol"
+--     return .pow n p
+--   | (s, #[]) => return MTerm.sym s
+--   | _ =>
+--     let m₂ ← Lean.Meta.mkFreshExprMVar (← inferType e)
+--     Lean.logInfo m!"m₂ PRE = {m₂}"
+--     if ← Lean.Meta.isDefEq e m₂ then
+--       Lean.logInfo m!"m₂ POST = {m₂}"
+--       return MTerm.lit m₂
+--     else throwError "Something went wrong!"
+
+
+
+partial def MTerm.ofExpr' (e : Term) : Elab.Command.CommandElabM MTerm := do
+  match e with
+  | `($x * $y) => 
+    logInfo m!"Entered: {x} * {y}"
+    return .mul (←MTerm.ofExpr' x) (←MTerm.ofExpr' y)
+  | `($b:ident ^ $n:num) =>
+    logInfo m!"Entered: {b} ^ {n}"
+    return .pow b.getId n.getNat
+  | `($x:ident) => 
+    logInfo m!"Entered: {x}"
+    return .sym x.getId
+  | `($n:num) =>
+    logInfo m!"Entered: {n}"
+    return .lit n.getNat
+  | _ => logInfo m!"Catch any!"
+         pure default
+
+open Core
+
+elab "#abc" t:term : command => do
+  discard (MTerm.ofExpr' t)
+
+#abc 10 * j * k
 
 elab "#printMTerm" t:term : command => do
   let e ← Lean.Elab.Command.liftTermElabM (Lean.Elab.Term.elabTerm t .none)

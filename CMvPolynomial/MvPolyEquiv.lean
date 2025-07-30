@@ -391,22 +391,22 @@ instance {α : Type} [Add α] : Add (Option α) where
   | none, some a => some a
   | some a, some b => some (a + b)
 
+-- attribute [local instance 5] instDecidableEqOfLawfulBEq
+
 lemma lookup_sum_eq_sum_lookup [BEq R] [LawfulBEq R] {l : List (Unlawful n R)} (m : CMvMonomial n) :
-  l.sum[m]? = (List.map (fun l => l[m]?) l).sum := by
+  l.sum[m]? = (l.map (·[m]?)).sum := by
   induction l with
-  | nil =>
-    simp only [List.sum_nil, Unlawful.not_mem_zero, not_false_eq_true, getElem?_neg, List.map_nil]
-    rfl
+  | nil => simp; rfl
   | cons l ls ih =>
-    simp only [List.sum_cons, List.map_cons]
-    rw [←ih]
-    rw [Unlawful.grind_add_skip]
+    simp [←ih, Unlawful.grind_add_skip]
     dsimp [(·+·), Add.add]
     grind
 
 example {α β γ : Type} {f : α → β} {g : β → γ} : g ∘ f = fun x => g (f x) := by
   ext x
   simp only [Function.comp_apply]
+
+instance abc : AddCommMonoid (Option R) := sorry
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R) where
@@ -427,9 +427,11 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] :
 
       have {f : MonoR n R → ExtTreeMap (CMvMonomial n) R compare} : (fun (l : Unlawful n R) => l[m]?) ∘ f = (fun x => (f x)[m]?) := by aesop
       rw [this, this]
-
-      have bla := @List.Perm.sum_eq (List (Option R)) sorry
+      generalize eq₁ : List.map _ (ExtTreeMap.toList a.1) = l₁
+      generalize eq₂ : List.map _ (ExtTreeMap.toList b.1) = l₂
+      have bla := @List.Perm.sum_eq (Option R) abc l₁ l₂
       apply bla
+      
 
 
 

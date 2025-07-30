@@ -51,7 +51,7 @@ def C (c : R) : Lawful n R :=
     by unfold Unlawful.C
        by_cases eq : c = 0
        · grind
-       · simp [eq, MonoR.C]
+       · simp [eq, MonoR.C, Unlawful.ofList]
          grind
   ⟩
 
@@ -153,17 +153,17 @@ section
 
 variable [CommRing R]
 
-instance : HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
+-- instance : HAdd (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+--   ⟨fun p₁ p₂ ↦ liftPoly (·+·) p₁ p₂⟩
 
-instance : HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
+-- instance : HSub (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+--   ⟨fun p₁ p₂ ↦ liftPoly (·-·) p₁ p₂⟩
 
-instance : HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
-  ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
+-- instance : HMul (Lawful n₁ R) (Lawful n₂ R) (Lawful (n₁ ⊔ n₂) R) :=
+--   ⟨fun p₁ p₂ ↦ liftPoly (·*·) p₁ p₂⟩
 
-instance : HPow (Lawful n R) ℕ (Lawful n R) :=
-  ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
+-- instance : HPow (Lawful n R) ℕ (Lawful n R) :=
+--   ⟨fun p₁ exp ↦ exp.iterate p₁.mul 1⟩
 
 def polyCoe (p : Lawful n R) : Lawful (n + 1) R := cast (by simp) (p.extend n.succ)
 

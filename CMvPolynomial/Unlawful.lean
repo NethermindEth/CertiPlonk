@@ -18,6 +18,8 @@ namespace Unlawful
 
 variable {n : ℕ} {R : Type}
 
+abbrev ofList (l : List (CMvMonomial n × R)) : Unlawful n R := Std.ExtTreeMap.ofList l
+
 def extend (n' : ℕ) (p : Unlawful n R) : Unlawful (n ⊔ n') R :=
   .ofList (p.keys.map (CMvMonomial.extend n') |>.zip p.values)
 

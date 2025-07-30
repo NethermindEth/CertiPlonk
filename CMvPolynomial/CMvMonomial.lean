@@ -11,6 +11,9 @@ namespace CPoly
 -/
 abbrev CMvMonomial (n : ℕ) : Type := Vector ℕ n
 
+abbrev CMvMonomial.mk {n : ℕ} (toArray : Array ℕ) (h : toArray.size = n) : CMvMonomial n :=
+  Vector.mk (α := ℕ) (n := n) toArray h
+
 syntax "#m[" withoutPosition(term,*,?) "]" : term
 
 open Lean in

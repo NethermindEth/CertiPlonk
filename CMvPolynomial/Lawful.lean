@@ -75,7 +75,7 @@ lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
 
 -- Not sure why `zero_eq_empty` dislikes `grind` annotation of the form `(∅ : Unlawful n R)`.
-grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R) 
+grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R)
 
 @[simp, grind]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
@@ -88,8 +88,8 @@ lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
   unfold fromUnlawful
   rcases p with ⟨p, hp⟩
   simp; ext1 x
-  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]  
-    
+  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]
+
 section
 
 def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=
@@ -166,10 +166,10 @@ def sub (p₁ p₂ : Lawful n R) : Lawful n R :=
 
 instance : Sub (Lawful n R) := ⟨sub⟩
 
-def reduce [BEq R] [LawfulBEq R] (p : Lawful n R) (l : List (R × Lawful n R)) : Lawful n R :=
+def reduce [BEq R] [LawfulBEq R] (p : Lawful n R) (l : List (MonoR n R × Lawful n R)) : Lawful n R :=
   fromUnlawful <| Unlawful.reduce p.val <| l.map fun (c, p) ↦ (c, p.val)
 
-def Reduces [BEq R] [LawfulBEq R] (p q : Lawful n R) (l : List (R × Lawful n R)) : Prop :=
+def Reduces [BEq R] [LawfulBEq R] (p q : Lawful n R) (l : List (MonoR n R × Lawful n R)) : Prop :=
   p.reduce l = q
 
 instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y ↦
@@ -179,7 +179,7 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Lawful n R) := fun x y �
                             grind)
   else Decidable.isFalse (by grind)
 
-instance [BEq R] [LawfulBEq R] {p q : Lawful n R} {l : List (R × Lawful n R)} :
+instance [BEq R] [LawfulBEq R] {p q : Lawful n R} {l : List (MonoR n R × Lawful n R)} :
   Decidable (Reduces p q l) := by dsimp [Reduces]; infer_instance
 
 def X (i : ℕ) : Lawful (i + 1) ℤ :=

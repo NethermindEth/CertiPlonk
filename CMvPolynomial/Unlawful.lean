@@ -134,10 +134,10 @@ def findDivisibleTerm? (p : Unlawful n R) (divisor : CMvMonomial n) : Option (Mo
   p.filter (fun k _ ↦ k ∣ divisor) |>.maxEntry?
 
 def reduce [CommRing R] [BEq R] [LawfulBEq R]
-  (p : Unlawful n R) (l : List (R × Unlawful n R)) : Unlawful n R :=
-  p - (l.map (fun (cᵢ, pᵢ) ↦ C cᵢ * pᵢ) |>.sum)
+  (p : Unlawful n R) (l : List (MonoR n R × Unlawful n R)) : Unlawful n R :=
+  p - (l.map (fun (cᵢ, pᵢ) ↦ mul₀ cᵢ pᵢ) |>.sum)
 
-def Reduces[CommRing R] [BEq R] [LawfulBEq R] (p q : Unlawful n R) (l : List (R × Unlawful n R)) : Prop :=
+def Reduces [CommRing R] [BEq R] [LawfulBEq R] (p q : Unlawful n R) (l : List (MonoR n R × Unlawful n R)) : Prop :=
   p.reduce l = q
 
 instance instDecidableEq [DecidableEq R] : DecidableEq (Unlawful n R) := fun x y ↦
@@ -146,7 +146,7 @@ instance instDecidableEq [DecidableEq R] : DecidableEq (Unlawful n R) := fun x y
   else Decidable.isFalse (by grind)
 
 instance [BEq R] [LawfulBEq R] [CommRing R]
-  {p q : Unlawful n R} {l : List (R × Unlawful n R)} :
+  {p q : Unlawful n R} {l : List (MonoR n R × Unlawful n R)} :
   Decidable (Reduces p q l) := by dsimp [Reduces]; infer_instance
 
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) : R :=

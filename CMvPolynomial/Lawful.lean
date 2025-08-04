@@ -55,6 +55,7 @@ def fromUnlawful (p : Unlawful n R) : Lawful n R :=
 protected lemma grind_fromUnlawful_congr {p₁ p₂ : Unlawful n R}
   (h : p₁ = p₂) : Lawful.fromUnlawful p₁ = Lawful.fromUnlawful p₂ := by grind
 
+@[grind=]
 def C (c : R) : Lawful n R :=
   ⟨Unlawful.C c, by grind⟩
 

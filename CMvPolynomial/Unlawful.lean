@@ -109,6 +109,26 @@ lemma mul₀_zero [Zero R] [BEq R] [LawfulBEq R] [Mul R] {t : MonoR n R} : mul�
   unfold mul₀
   grind
 
+attribute [-simp] ExtTreeMap.ofList_singleton
+
+@[simp high, grind =]
+lemma toList_ofList_singleton {t : MonoR n R} :
+  ExtTreeMap.toList (ExtTreeMap.ofList [t] compare) = [t] := rfl
+
+@[simp, grind=]
+lemma mul₀_one [Zero R] [One R] [BEq R] [LawfulBEq R] [Mul R] [Nontrivial R] {t : MonoR n R} :
+  mul₀ t (C 1) = sorry := by
+  unfold C
+  rw [if_neg sorry]
+  
+  simp only [MonoR.C]
+  unfold mul₀
+  simp
+  rw [ExtTreeMap.ofList_singleton]
+  sorry
+
+
+
 def mul [Mul R] [Add R] [Zero R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.toList.map p₂.mul₀ |>.sum
 

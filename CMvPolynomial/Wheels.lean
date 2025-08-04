@@ -92,7 +92,7 @@ lemma mergeWith_empty {f : α → β → β → β} {cmp : α → α → Orderin
   Std.ExtTreeMap.mergeWith f t ∅ = t := by ext; grind
 
 @[simp, grind=]
-lemma toList_ofList {a : Std.ExtTreeMap α β cmp} : @Std.ExtTreeMap.ofList α β (@Std.ExtTreeMap.toList α β cmp _ a) cmp = a := by
+lemma ofList_toList {a : Std.ExtTreeMap α β cmp} : @Std.ExtTreeMap.ofList α β (@Std.ExtTreeMap.toList α β cmp _ a) cmp = a := by
   ext k v
   revert v
   by_cases h : ∃ v, (k, v) ∈ a.toList

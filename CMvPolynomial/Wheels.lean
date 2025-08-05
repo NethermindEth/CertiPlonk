@@ -1,9 +1,22 @@
+import Mathlib.Algebra.Ring.Defs
 import Mathlib.Logic.Function.Defs
 import Mathlib.Tactic.Cases
 import Aesop
 import Std.Classes.Ord.Basic
 import Std.Data.ExtTreeMap
 import Std.Data.ExtTreeMap.Lemmas
+
+namespace CPoly
+
+@[simp, grind ←]
+lemma one_ne_zero_of_nontrivial_ring {R : Type} [Semiring R] [φ : Nontrivial R] : (1 : R) ≠ 0 :=
+  fun contra ↦ by
+    rcases φ with ⟨⟨x, y, h⟩⟩
+    have eq₁ : x * 1 = 0 := by aesop
+    have eq₂ : y * 1 = 0 := by aesop
+    grind [mul_one]
+
+end CPoly
 
 namespace Std
 

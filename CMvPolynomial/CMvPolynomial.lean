@@ -30,6 +30,7 @@ attribute [grind=] Option.some_inj
 lemma fromUnlawful_zero {n : ℕ} {R : Type} [Zero R] [BEq R] [LawfulBEq R] :
   Lawful.fromUnlawful 0 = (0 : Lawful n R) := by
   unfold Lawful.fromUnlawful
+  congr
   grind
 
 end CMvPolynomial

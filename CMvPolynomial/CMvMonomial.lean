@@ -48,6 +48,7 @@ def mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
 
 instance : Mul (CMvMonomial n) := ⟨mul⟩
 
+@[simp, grind =]
 lemma mul_one {m : CMvMonomial n} : m * one = m := by
   unfold one
   unfold_projs
@@ -113,7 +114,7 @@ instance [Repr R] : Repr (MonoR n R) where
     | (m, c), _ => repr c ++ " * " ++ repr m
 
 @[grind=]
-def C (c : R) : MonoR n R := (CMvMonomial.one, c)
+abbrev C (c : R) : MonoR n R := (CMvMonomial.one, c)
 
 variable [CommSemiring R]
 

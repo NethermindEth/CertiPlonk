@@ -64,6 +64,12 @@ end
 @[simp, grind]
 lemma C_zero' : C (n := n) (0 : ℕ) = 0 := rfl
 
+instance {R : Type} [Semiring R] [Nontrivial R] : NeZero (1 : R) := inferInstance
+
+@[simp, grind ←]
+lemma C_one {R : Type} [BEq R] [LawfulBEq R] [Semiring R] [Nontrivial R] :
+  C (n := n) (1 : R) = ExtTreeMap.ofList [MonoR.C (1 : R)] := by aesop (add simp C)
+
 @[simp, grind _=_]
 lemma zero_eq_zero : (Zero.zero : R) = 0 := rfl
 
@@ -116,19 +122,9 @@ lemma toList_ofList_singleton {t : MonoR n R} :
   ExtTreeMap.toList (ExtTreeMap.ofList [t] compare) = [t] := rfl
 
 @[simp, grind=]
-lemma mul₀_one [Zero R] [One R] [BEq R] [LawfulBEq R] [Mul R] [Nontrivial R] {t : MonoR n R} :
-  mul₀ t (C 1) = sorry := by
-  unfold C
-  rw [if_neg sorry]
+lemma mul₀_one [BEq R] [LawfulBEq R] [CommSemiring R] [φ : Nontrivial R] {t : MonoR n R} :
+  mul₀ t (C 1) = {t} := by aesop (add simp mul₀)
   
-  simp only [MonoR.C]
-  unfold mul₀
-  simp
-  rw [ExtTreeMap.ofList_singleton]
-  sorry
-
-
-
 def mul [Mul R] [Add R] [Zero R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
   p₁.toList.map p₂.mul₀ |>.sum
 

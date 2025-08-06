@@ -7,6 +7,212 @@ import Qq
 
 open Qq
 
+
+variable [Fact (Nat.Prime 394357)]
+instance : Field (ZMod 394357) := inferInstance
+variable (f: Field $ ZMod 394357)
+
+lemma mul_inj_left {n} (c : ZMod n) {a b : ZMod n} : a = b → c * a = c * b := by grind
+-- lemma div_inj {n} (c : ZMod n) {a b : ZMod n} : a = b → a / c = b / c := by grind
+lemma eq_sub_zero {a b : ZMod 394357} : a = b → a - b = 0 := by grind
+
+-- UNSAT(
+--        REDUCTIONS(
+--                M(18, 19)
+--                S(13{1}, 14{diseq[0]}, 18)
+--                R(5; 6{c1*x}, 8{2*c1*x}, 8{c2*x}, 9{2*c1*x}, 9{2*c2*x}, 9{c3*x}, 6{2*c4*x}, 8{2*c4*x}, 9{2*c4*x}, 4{x}, 6{5*x}, 8{3*x}, 9{x}, 12{7*x}, 6{-1}, 8{-1}, 9{-1}, 12{-1}; 14)
+--                M(11, 12)
+--                S(10{c4}, 4{diseq[1]}, 11)
+--                R(7; 6{x*diseq[0]}, 8{x*diseq[0]}, 9{x*diseq[0]}, 12{x*diseq[0]}; 13)
+--        )
+--        POLYNOMIALS(
+--                P(4, c4^2 -c4)
+--                P(5, c1^2*x +2*c1*c2*x +c2^2*x +2*c1*c3*x +2*c2*c3*x +c3^2*x +2*c1*c4*x +2*c2*c4*x +2*c3*c4*x +c4^2*x -c1 -c2 -c3 -c4)
+--                P(6, c1 -1)
+--                P(7, c1*x*diseq[0] +c2*x*diseq[0] +c3*x*diseq[0] +c4*x*diseq[0] -diseq[0] +1)
+--                P(8, c2 -1)
+--                P(9, c3 -1)
+--                P(10, c4*diseq[1] -diseq[1] -1)
+--                P(11, -c4)
+--                P(12, c4)
+--                P(13, x*diseq[0] +131452*diseq[0] -131452)
+--                P(14, x +131452)
+--                P(18, -131452)
+--                P(19, 1)
+--        )
+-- )
+
+-- Use R ::= ZZ/(394357)[c1,c2,c3,c4,x,diseq[0],diseq[1]];
+
+-- define SPoly(g1, g2)
+--   M := lcm(LT(g1), LT(g2));
+--   return (M/LM(g1)) * g1 - (M/LM(g2)) * g2;
+-- enddefine;
+
+-- p4 := c4^2 -c4;
+-- p5 := c1^2*x +2*c1*c2*x +c2^2*x +2*c1*c3*x +2*c2*c3*x +c3^2*x +2*c1*c4*x +2*c2*c4*x +2*c3*c4*x +c4^2*x -c1 -c2 -c3 -c4;
+-- p6 := c1 -1;
+-- p7 := c1*x*diseq[0] +c2*x*diseq[0] +c3*x*diseq[0] +c4*x*diseq[0] -diseq[0] +1;
+-- p8 := c2 -1;
+-- p9 := c3 -1;
+-- p10 := c4*diseq[1] -diseq[1] -1;
+-- p11 := -c4;
+-- p12 := c4;
+-- p13 := x*diseq[0] +131452*diseq[0] -131452;
+-- p14 := x +131452;
+-- p18 := -131452;
+-- p19 := 1;
+
+-- -- S(10{c4}, 4{diseq[1]}, 11)
+-- -- p10 = 0 /\ p4 = 0
+-- -- c4 * p10 = c4 * 0 /\ diseq[1] * p4 = diseq[1] * 0 -> c4 * p10 = 0 /\ diseq[1] * p4 = 0
+-- -- c4 * p10 = diseq[1] * p4 -> c4 * p10 - diseq[1] * p4 = 0
+-- p11s := (c4 * p10) - (diseq[1] * p4); -- p11s equal to p11
+
+-- -- p11 = 0 -> -c4 = 0 -> (-1) * c4 = 0 -> (-1) * (-1) * c4 = (-1) * 0 -> c4 = 0 -> p12 = 0
+
+-- -- R(7; 6{x*diseq[0]}, 8{x*diseq[0]}, 9{x*diseq[0]}, 12{x*diseq[0]}; 13)
+-- -- p7 = 0 /\ p6 = 0 /\ p8 = 0 /\ p9 = 0 /\ p12 = (p10 = 0 /\ p4 = 0)
+-- -- p7 = 0 -> p7 = x*diseq[0] * 0 -> p7 = x*diseq[0] * p6 -> p7 - (x*diseq[0] * p6) = 0 == p71
+-- p71 := p7 - (x*diseq[0] * p6);
+-- -- p71 = 0 -> p71 = x*diseq[0] * 0 -> p71 = x*diseq[0] * p8 -> p71 - (x*diseq[0] * p8) = 0 == p72
+-- p72 := p71 - (x*diseq[0] * p8);
+-- -- p72 = 0 -> p72 = x*diseq[0] * 0 -> p72 = x*diseq[0] * p9 -> p72 - (x*diseq[0] * p9) = 0 == p73
+-- p73 := p72 - (x*diseq[0] * p9);
+-- -- p73 = 0 -> p73 = x*diseq[0] * 0 -> p73 = x*diseq[0] * p12 -> p73 - (x*diseq[0] * p12) = 0 == p74
+-- p74 := p73 - (x*diseq[0] * p12);
+-- -- p74 = 0 -> p74/LC(p74) = 0/LC(p74) -> p74/LC(p74) = p13
+
+-- -- R(5; 6{c1*x}, 8{2*c1*x}, 8{c2*x}, 9{2*c1*x}, 9{2*c2*x}, 9{c3*x}, 6{2*c4*x}, 8{2*c4*x}, 9{2*c4*x}, 4{x}, 6{5*x}, 8{3*x}, 9{x}, 12{7*x}, 6{-1}, 8{-1}, 9{-1}, 12{-1}; 14)
+-- -- p6 = 0 /\ p8 = 0 /\ p9 = 0 /\ p12 = (p10 = 0 /\ p4 = 0)
+-- p51 := p5 - (c1*x * p6);
+-- p52 := p51 - (2*c1*x * p8);
+-- p53 := p52 - (c2*x * p8);
+-- p54 := p53 - (2*c1*x * p9);
+-- p55 := p54 - (2*c2*x * p9);
+-- p56 := p55 - (c3*x * p9);
+-- p57 := p56 - (2*c4*x * p6);
+-- p58 := p57 - (2*c4*x * p8);
+-- p59 := p58 - (2*c4*x * p9);
+-- p510 := p59 - (x * p4);
+-- p511 := p510 - (5*x * p6);
+-- p512 := p511 - (3*x * p8);
+-- p513 := p512 - (x * p9);
+-- p514 := p513 - (7*x * p12);
+-- p515 := p514 - (-1 * p6);
+-- p516 := p515 - (-1 * p8);
+-- p517 := p516 - (-1 * p9);
+-- p518 := p517 - (-1 * p12);
+-- -- p518/LC(p518) == p14
+-- -- p14 = 0
+
+-- -- S(13{1}, 14{diseq[0]}, 18)
+-- -- p13 = 0 /\ p14 = 0
+-- -- p13 = 0 /\ diseq[0] * p14 = diseq[0] * 0 -> p13 = 0 /\ diseq[0] * p14 = 0
+-- -- p13 = diseq[0] * p14 -> p13 - diseq[0] * p14 = 0
+-- -- p18 = 0 -> -131452 = 0 FALSE
+-- p18s := p13 - diseq[0] * p14;
+
+
+theorem test
+        (c1 c2 c3 c4 x d0 d1 : ZMod 394357)
+        (p4  : c4^2 - c4 = 0)
+        (p5  : c1^2*x +2*c1*c2*x +c2^2*x +2*c1*c3*x +2*c2*c3*x +c3^2*x +2*c1*c4*x +2*c2*c4*x +2*c3*c4*x +c4^2*x - c1 - c2 - c3 - c4 = 0)
+        (p6  : c1 - 1 = 0)
+        (p7  : c1*x*d0 +c2*x*d0 +c3*x*d0 +c4*x*d0 - d0 +1 = 0)
+        (p8  : c2 - 1 = 0)
+        (p9  : c3 - 1 = 0)
+        (p10 : c4*d1 - d1 - 1 = 0)
+ : False := by
+  -- We can do S-polys:  S(10{c4}, 4{diseq[1]}, 11)
+  have _p10'  : c4 * (c4*d1 - d1 - 1) = 0 := by exact (mul_inj_left c4 p10)
+  have _p4'   : d1 * (c4^2 - c4)      = 0 := by exact (mul_inj_left d1 p4)
+  have _p11'' : c4 * (c4*d1 - d1 - 1) = d1 * (c4^2 - c4) := by rw [←_p4'] at _p10' <;> exact _p10'
+  have _p11 : c4 * (c4*d1 - d1 - 1) - (d1 * (c4^2 - c4)) = 0 := by exact eq_sub_zero _p11''
+  ring_nf at _p11
+  -- have p11g  : -c4 = 0 := by grind -- grind does it
+  have p11 : c4 = 0 := by grind
+  clear _p11 _p11'' _p10' _p4'
+
+  -- Reduction R(5; 6{c1*x}, 8{2*c1*x}, 8{c2*x}, 9{2*c1*x}, 9{2*c2*x}, 9{c3*x}, 6{2*c4*x}, 8{2*c4*x}, 9{2*c4*x}, 4{x}, 6{5*x}, 8{3*x}, 9{x}, 12{7*x}, 6{-1}, 8{-1}, 9{-1}, 12{-1}; 14)
+  let p5t := c1^2*x +2*c1*c2*x +c2^2*x +2*c1*c3*x +2*c2*c3*x +c3^2*x +2*c1*c4*x +2*c2*c4*x +2*c3*c4*x +c4^2*x - c1 - c2 - c3 - c4
+  let p6t := c1 - 1
+  let p8t := c2 - 1
+  let p9t := c3 - 1
+  let p4t := c4^2 - c4
+  let p11t := c4
+  let p51t := p5t - (c1*x * p6t)
+  have p51 : p51t = 0 := by grind
+  let p52t := p51t - (2*c1*x * p8t)
+  have p52 : p52t = 0 := by grind
+  let p53t := p52t - (c2*x * p8t)
+  have p53 : p53t = 0 := by grind
+  let p54t := p53t - (2*c1*x * p9t)
+  have p54 : p54t = 0 := by grind
+  let p55t := p54t - (2*c2*x * p9t)
+  have p55 : p55t = 0 := by grind
+  let p56t := p55t - (c3*x * p9t)
+  have p56 : p56t = 0 := by grind
+  let p57t := p56t - (2*c4*x * p6t)
+  have p57 : p57t = 0 := by grind
+  let p58t := p57t - (2*c4*x * p8t)
+  have p58 : p58t = 0 := by grind
+  let p59t := p58t - (2*c4*x * p9t)
+  have p59 : p59t = 0 := by grind
+  let p510t := p59t - (x * p4t)
+  have p510 : p510t = 0 := by grind
+  let p511t := p510t - (5*x * p6t)
+  have p511 : p511t = 0 := by grind
+  let p512t := p511t - (3*x * p8t)
+  have p512 : p512t = 0 := by grind
+  let p513t := p512t - (x * p9t)
+  have p513 : p513t = 0 := by grind
+  let p514t := p513t - (7*x * p11t)
+  have p514 : p514t = 0 := by grind
+  let p515t := p514t - (-1 * p6t)
+  have p515 : p515t = 0 := by grind
+  let p516t := p515t - (-1 * p8t)
+  have p516 : p516t = 0 := by grind
+  let p517t := p516t - (-1 * p9t)
+  have p517 : p517t = 0 := by grind
+  let p518t := p517t - (-1 * p11t)
+  have p14 : p518t = 0 := by grind
+  unfold p518t p517t p516t p515t p514t p513t p512t p511t p510t p59t p58t p57t p56t p55t p54t p53t p52t p51t p6t p8t p9t p4t p11t p5t at p14
+  ring_nf at p14
+
+  -- R(7; 6{x*diseq[0]}, 8{x*diseq[0]}, 9{x*diseq[0]}, 12{x*diseq[0]}; 13)
+  let p7t := c1*x*d0 +c2*x*d0 +c3*x*d0 +c4*x*d0 - d0 +1
+  have p13 : p7t - (x*d0 * p6t) - (x*d0 * p8t) - (x*d0 * p9t) - (x*d0 * p11t) = 0 := by grind
+  unfold p7t p6t p8t p9t p11t at p13 <;> ring_nf at p13
+
+  -- S-poly S(13{1}, 14{diseq[0]}, 18)
+  -- -131452 * p13t - 87635*d0 * p14t = 0
+  let p13t := 1 + (x * d0 * 3 - d0)
+  let p14t := -3 + x * 9
+
+  -- p13 == 3 * x * d0 - d0 + 1
+  -- p13 * (-131452) == (-131452) * 3 * x * d0 + (-131452) * d0 + (-131452) * 1 == -394356 * x * d0 + 131452 * d0 - 131452
+  have p18_1 : (-131452 * p13t) = 0 := by grind
+  unfold p13t at p18_1 <;> ring_nf at p18_1
+
+  -- p14 == 9 * x - 3
+  -- p14 * 87635 * d0 == 788715 * x * d0 - 262905 * d0
+  have p18_2 : (87635*d0 * p14t) = 0 := by grind
+  unfold p14t at p18_2 <;> ring_nf at p18_2
+
+  -- final should be : -131452 = 0
+
+  have final : -131452 - x * d0 * 394356 + d0 * 131452 - (-(d0 * 262905) + d0 * x * 788715) = 0 := by grind
+  ring_nf at final
+
+
+
+
+-- h6 ∧ h3 ∧ h8 ∧ ... ∧ (¬ goal)
+  ring_nf at *
+  subst_eqs
+  ring_nf at *
+
 -- We want to construct CMVPolys from a bunch of X = Y where both X and Y are in ZMod n.
 -- The first step, of the (for now) called pz tactic, is collect all indeterminates (variables Lean.Name)
 -- in the context of type ZMod n. Check if all are in the same modules n, and construct a symbol

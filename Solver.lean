@@ -1,18 +1,21 @@
 import Lean.Data.AssocList
 
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Ring
+import Mathlib.Tactic.FieldSimp
+-- import Mathlib
 import Qq
 
 open Qq
 
+example : Nat.Prime 394357 := by sorry
 
 variable [Fact (Nat.Prime 394357)]
 instance : Field (ZMod 394357) := inferInstance
-variable (f: Field $ ZMod 394357)
 
-lemma mul_inj_left {n} (c : ZMod n) {a b : ZMod n} : a = b → c * a = c * b := by grind
+-- lemma mul_inj_left {n} (c : ZMod n) {a b : ZMod n} : a = b → c * a = c * b := by grind
 -- lemma div_inj {n} (c : ZMod n) {a b : ZMod n} : a = b → a / c = b / c := by grind
 lemma eq_sub_zero {a b : ZMod 394357} : a = b → a - b = 0 := by grind
 
@@ -41,7 +44,8 @@ lemma eq_sub_zero {a b : ZMod 394357} : a = b → a - b = 0 := by grind
 --                P(19, 1)
 --        )
 -- )
-
+-- l : [Monomial × Polynomial] × p : Polynomial
+-- p →ₗ q
 -- Use R ::= ZZ/(394357)[c1,c2,c3,c4,x,diseq[0],diseq[1]];
 
 -- define SPoly(g1, g2)
@@ -114,6 +118,21 @@ lemma eq_sub_zero {a b : ZMod 394357} : a = b → a - b = 0 := by grind
 -- p18s := p13 - diseq[0] * p14;
 
 
+open Lean Elab Parser Tactic in
+elab "normalise_please!" l:(location)? : tactic => do
+  evalTactic <| ←`(tactic| (
+    unfold_projs $[$l]?
+    unfold DivInvMonoid.div' $[$l]?
+    unfold_projs $[$l]?
+    dsimp [ZMod.inv, Nat.gcdA, Nat.xgcd] $[$l]?
+    repeat (
+      rw [Nat.xgcdAux.eq_def] $[$l]?
+      try dsimp $[$l:location]?
+      try unfold ZMod.val $[$l]?
+      try dsimp $[$l:location]?
+      try reduce $[$l]?
+  )))
+
 theorem test
         (c1 c2 c3 c4 x d0 d1 : ZMod 394357)
         (p4  : c4^2 - c4 = 0)
@@ -125,8 +144,8 @@ theorem test
         (p10 : c4*d1 - d1 - 1 = 0)
  : False := by
   -- We can do S-polys:  S(10{c4}, 4{diseq[1]}, 11)
-  have _p10'  : c4 * (c4*d1 - d1 - 1) = 0 := by exact (mul_inj_left c4 p10)
-  have _p4'   : d1 * (c4^2 - c4)      = 0 := by exact (mul_inj_left d1 p4)
+  have _p10'  : c4 * (c4*d1 - d1 - 1) = 0 := by rw [p10]; exact mul_zero _
+  have _p4'   : d1 * (c4^2 - c4)      = 0 := by rw [p4]; exact mul_zero _
   have _p11'' : c4 * (c4*d1 - d1 - 1) = d1 * (c4^2 - c4) := by rw [←_p4'] at _p10' <;> exact _p10'
   have _p11 : c4 * (c4*d1 - d1 - 1) - (d1 * (c4^2 - c4)) = 0 := by exact eq_sub_zero _p11''
   ring_nf at _p11
@@ -204,10 +223,35 @@ theorem test
 
   have final : -131452 - x * d0 * 394356 + d0 * 131452 - (-(d0 * 262905) + d0 * x * 788715) = 0 := by grind
   ring_nf at final
+  apply_fun (·/9) at p14
+  
+  
+  ring_nf at p14
+  field_simp at p14
+  rw [mul_div_assoc] at p14 -- COCOA: x + 131452
 
 
+  have : - (3 : ZMod 394357) / 9 = sorry := by
+    grind
+    
+    normalise_please!; grind
+
+    
 
 
+    -- ∀ (x : ZMod (1 + n)), x.1 = x.toNat % (1 + n)
+
+    iterate 4 rw [Nat.xgcdAux.eq_def]
+  have : p14t = x + 131452 := by grind
+
+unseal Nat.xgcdAux
+
+example : Nat.xgcdAux 9 2 2 3 4 5 = (3, 4, 5) := by
+  unfold Nat.xgcdAux
+  dsimp
+  repeat (rw [Nat.xgcdAux.eq_def]; try dsimp)
+
+#print test._proof_1_29
 -- h6 ∧ h3 ∧ h8 ∧ ... ∧ (¬ goal)
   ring_nf at *
   subst_eqs

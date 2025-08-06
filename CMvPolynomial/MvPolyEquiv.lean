@@ -1,6 +1,5 @@
 import CMvPolynomial.CMvPolynomial
 import CMvPolynomial.Wheels
-import Mathlib.Algebra.Equiv.TransferInstance
 import Mathlib.Algebra.MvPolynomial.Basic
 
 section
@@ -101,13 +100,13 @@ where
 end
 
 noncomputable instance {n : ℕ} {R : Type} [CommSemiring R] :
-  CommSemiring (CPoly.CMvPolynomial n R) := Equiv.commSemiring CPoly.polyEquiv
+  CommSemiring (CPoly.CMvPolynomial n R) := sorry
 
 noncomputable def polyRingEquiv {R : Type} [CommSemiring R] :
   RingEquiv (CPoly.CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
   toEquiv := CPoly.polyEquiv
-  map_mul' := by intros; unfold_projs; simp
-  map_add' := by intros; unfold_projs; simp
+  map_mul' := sorry
+  map_add' := sorry
 
 end CPoly

@@ -59,7 +59,7 @@ instance {n : ℕ} : ToExpr (CPoly.CMvMonomial n) where
                                mkApp3 (mkConst ``CPoly.CMvMonomial.mk) arityQ arrExpr q(Eq.refl $arityQ)
   toTypeExpr := let arityQ : Q(ℕ) := ToExpr.toExpr n
                 mkApp2 (mkConst ``Vector [0]) q(ℕ) arityQ
-                
+
 /--
 TODO: Note this assumes that `nf_ring` puts `ZMod` equations in a certain format.
       This will need a tiny bit more finesse if we need to collect terms ourselves.
@@ -70,17 +70,17 @@ TODO: Note this assumes that `nf_ring` puts `ZMod` equations in a certain format
       - mono * mono
 -/
 partial def cMvMonoOfZMod {k : Q(ℕ)}
-  (e : Q(ZMod $k)) (xyzMap : Std.HashMap String ℕ) (arity : Q(ℕ)) : MetaM (Option Q(CPoly.CMvMonomial $arity)) := do
-  let kval ← unsafe evalExpr ℕ q(ℕ) k
+  (e : Q(ZMod $k)) (xyzMap : Std.HashMap String ℕ) (arity : Q(ℕ)) :
+  MetaM (Option Q(CPoly.CMvMonomial $arity)) := do
+  assert! (xyzMap.size == (← unsafe evalExpr ℕ q(ℕ) arity))
   match e with
   | ~q($x * $y) => do
     -- Assumes x * x was normalised to x^2 by `ring_nf`.
     let .some lhs ← cMvMonoOfZMod x xyzMap arity | return .none
     let .some rhs ← cMvMonoOfZMod y xyzMap arity | return .none
-    let lhsval ← unsafe evalExpr (CPoly.CMvMonomial xyzMap.size) q(CPoly.CMvMonomial $arity) lhs
-    let rhsval ← unsafe evalExpr (CPoly.CMvMonomial xyzMap.size) q(CPoly.CMvMonomial $arity) rhs
-    let combined := lhsval * rhsval
-    return .some (toExpr combined)
+    let evalMono (e : Expr) :=
+      unsafe evalExpr (CPoly.CMvMonomial xyzMap.size) q(CPoly.CMvMonomial $arity) e
+    return .some (toExpr ((← evalMono lhs) * (← evalMono rhs)))
   | ~q($sym ^ $e) => do
     -- Assumes this is an identifier ^ natural number.
     let exponentvalQ : Q(ℕ) ← ToExpr.toExpr <$> unsafe evalExpr ℕ q(ℕ) e
@@ -92,6 +92,7 @@ partial def cMvMonoOfZMod {k : Q(ℕ)}
     ]
   | ~q(@OfNat.ofNat (ZMod _) $n $inst) => do
     -- Assumes this is 1, for more is 1 + 1 + ... + 1, i.e. a polynomial.
+    let kval ← unsafe evalExpr ℕ q(ℕ) k
     let nval ← unsafe evalExpr (ZMod kval) q(ZMod $k) e
     if nval != 1 then return .none
     let monomial : Q(CPoly.CMvMonomial $arity) := q(CPoly.CMvMonomial.one (n := $arity))

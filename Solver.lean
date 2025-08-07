@@ -8,19 +8,20 @@ import Qq
 import CMvPolynomial.CMvMonomial
 import CMvPolynomial.CMvPolynomial
 
-open Qq
-
-deriving instance Repr for Lean.AssocList
+open Lean Qq CPoly
 
 namespace EzPz
 
-scoped syntax "spoon" Lean.Parser.Tactic.location : term
+scoped syntax "spoon" Lean.Parser.Tactic.location : term 
 
-open Lean Parser Elab Tactic Meta
+open Lean Parser Elab Tactic Meta 
 
-def isZModEq (e : Expr) : TacticM Bool := withMainContext do
-  let (_, ⟨.app (.const name _) _ :: _⟩) := e.getAppFnArgs | return false
-  pure (name == ``ZMod)
+def pOfZModEq (e : Expr) : TacticM (Option Nat) := withMainContext do
+  let (_, ⟨.app (.const name _) k :: _⟩) := e.getAppFnArgs | return .none
+  let k ← unsafe evalExpr ℕ q(ℕ) k
+  return if name == ``ZMod then .some k else .none
+
+def isZModEq (e : Expr) : TacticM Bool := pOfZModEq e <&> Option.isSome
 
 def zModEqs : TacticM (Array FVarId × Bool) := withMainContext do
   let includeTarget ← isZModEq (← getMainTarget)
@@ -41,72 +42,186 @@ def locactionOfFVarIDsAndTarget
 def expressionsOfFVarIDsAndTarget
   (hyps : Array FVarId × Bool) : TacticM (Std.HashMap (Option FVarId) Expr) := withMainContext do
   let (hyps, includeTarget) := hyps
-  let lctx ← getLCtx
-  let mut result := hyps.map Option.some |>.zip <| hyps.map (LocalDecl.type ∘ lctx.get!)
+  let mut result := hyps.map Option.some |>.zip <| hyps.map (LocalDecl.type ∘ (← getLCtx).get!)
   if includeTarget then result := result.push (.none, ←getMainTarget)
   return Std.HashMap.ofList result.toList
 
 def indeterminates : TacticM (Array String) := do
   let zmodHyps ← (← getLocalHyps).filterM (inferType · <&> (·.getAppFnArgs.1 == ``ZMod))
-  zmodHyps.mapM (·.fvarId!.getUserName <&> Name.toString)  
+  zmodHyps.mapM (·.fvarId!.getUserName <&> Name.toString)
 
-open Lean in
-instance {n : ℕ} : ToExpr (CPoly.CMvMonomial n) where
-  toExpr mono := -- The proof is erased by Lean here, and I am not sure whether `Eq.refl` is enough.
-                 match mono with
-                 | ⟨vec, _⟩ => let arrExpr := ToExpr.toExpr vec
-                               let arityQ : Q(ℕ) := ToExpr.toExpr n
-                               mkApp3 (mkConst ``CPoly.CMvMonomial.mk) arityQ arrExpr q(Eq.refl $arityQ)
-  toTypeExpr := let arityQ : Q(ℕ) := ToExpr.toExpr n
-                mkApp2 (mkConst ``Vector [0]) q(ℕ) arityQ
-                
-/--
-TODO: Note this assumes that `nf_ring` puts `ZMod` equations in a certain format.
-      This will need a tiny bit more finesse if we need to collect terms ourselves.
+def consistentIndeterminates : TacticM (Option (Array String × Nat)) := do
+  let mut mod : Option Nat := .none
+  let mut indets : Array String := #[]
+  for hyp in ← getLocalHyps do
+    let (_, ⟨.app (.const ``ZMod _) k :: _⟩) := (←inferType hyp).getAppFnArgs | continue
+    let name := (←hyp.fvarId!.getUserName).toString
+    match mod with
+    | .none => mod := .some (← unsafe evalExpr ℕ q(ℕ) k)
+               indets := indets.push name
+    | .some k' => if (← unsafe evalExpr ℕ q(ℕ) k) == k'
+                  then indets := indets.push name
+                  else return .none
+  return pure (indets, mod.getD 0)
 
-      - nat
-      - ident
-      - ident ^ nat
-      - mono * mono
--/
-partial def cMvMonoOfZMod {k : Q(ℕ)}
-  (e : Q(ZMod $k)) (xyzMap : Std.HashMap String ℕ) (arity : Q(ℕ)) : MetaM (Option Q(CPoly.CMvMonomial $arity)) := do
-  let kval ← unsafe evalExpr ℕ q(ℕ) k
-  match e with
-  | ~q($x * $y) => do
-    -- Assumes x * x was normalised to x^2 by `ring_nf`.
-    let .some lhs ← cMvMonoOfZMod x xyzMap arity | return .none
-    let .some rhs ← cMvMonoOfZMod y xyzMap arity | return .none
-    let lhsval ← unsafe evalExpr (CPoly.CMvMonomial xyzMap.size) q(CPoly.CMvMonomial $arity) lhs
-    let rhsval ← unsafe evalExpr (CPoly.CMvMonomial xyzMap.size) q(CPoly.CMvMonomial $arity) rhs
-    let combined := lhsval * rhsval
-    return .some (toExpr combined)
-  | ~q($sym ^ $e) => do
-    -- Assumes this is an identifier ^ natural number.
-    let exponentvalQ : Q(ℕ) ← ToExpr.toExpr <$> unsafe evalExpr ℕ q(ℕ) e
-    let xyzIdxQ : Q(ℕ) := ToExpr.toExpr xyzMap[sym.constName.getString!]!
-    .some <$> mkAppOptM ``CPoly.CMvMonomial.mk #[
-      arity,
-      ←reduce q(Array.replicate $arity 0 |>.set! $xyzIdxQ $exponentvalQ),
-      q(Eq.refl $arity)
-    ]
-  | ~q(@OfNat.ofNat (ZMod _) $n $inst) => do
-    -- Assumes this is 1, for more is 1 + 1 + ... + 1, i.e. a polynomial.
-    let nval ← unsafe evalExpr (ZMod kval) q(ZMod $k) e
-    if nval != 1 then return .none
-    let monomial : Q(CPoly.CMvMonomial $arity) := q(CPoly.CMvMonomial.one (n := $arity))
-    return .some monomial
-  | ~q($sym) => -- Assumes this is an identifier.
-    cMvMonoOfZMod q($e^1) xyzMap arity
-  | _ => logInfo m!"Unrecognised ZMod eq shape: {e}."; return .none
-  
-def cMvMonoOfZModEq (e : Q(Prop)) (xyzMap : Std.HashMap String ℕ) (arity : Q(ℕ)) : MetaM (Option Q(CPoly.CMvMonomial $arity)) := do
+section
+
+open Lean.Grind.CommRing
+
+partial def grindMonoOfZMod {kQ : Q(ℕ)}
+  (eQ : Q(ZMod $kQ)) (indetMap : Std.HashMap String Var) : MetaM (Option Mon) := do
+  let grindMonoOfZMod e := grindMonoOfZMod e indetMap
+  match eQ with
+  | ~q($xQ * $yQ) => do
+    let .some x ← grindMonoOfZMod xQ | return .none
+    let .some y ← grindMonoOfZMod yQ | return .none
+    return .some (x.concat y)
+  | ~q($indetQ ^ $expQ) =>
+    return .some <|
+      .mult
+        ⟨
+          indetMap[indetQ.constName.getString!]!,
+          ← unsafe evalExpr ℕ q(ℕ) expQ
+        ⟩
+        .unit
+  | ~q(@OfNat.ofNat (ZMod _) $_nQ $_instQ) =>
+    let n ← unsafe evalExpr (ZMod (← unsafe evalExpr ℕ q(ℕ) kQ)) q(ZMod $kQ) eQ
+    if n != 1 then return .none
+    return .some .unit
+  | ~q($_symQ) => grindMonoOfZMod q($eQ^1)
+  | _ => logInfo m!"Unrecognised ZMod eq shape: {eQ}."; return .none
+
+partial def grindPolyOfZMod {kQ : Q(ℕ)}
+  (eQ : Q(ZMod $kQ)) (indetMap : Std.HashMap String Var) : MetaM (Option Poly) := do
+  let .succ _ ← unsafe evalExpr ℕ q(ℕ) kQ | return .none
+  let grindPolyOfZMod e := grindPolyOfZMod (kQ := kQ) e indetMap
+  match eQ with
+  | ~q($xQ + $yQ) =>
+    let .some x ← grindPolyOfZMod xQ | return .none
+    let .some y ← grindPolyOfZMod yQ | return .none
+    return .some (x.combine y)
+  | ~q($xQ - $yQ) =>
+    let .some x ← grindPolyOfZMod xQ | return .none
+    let .some y ← grindPolyOfZMod yQ | return .none
+    return .some (x.combine (y.mulConst (-1)))
+  | ~q((@OfNat.ofNat (ZMod _) $nQ $_instQ) * $monoQ) =>
+    let n ← unsafe evalExpr ℕ q(ℕ) nQ
+    let .some mon ← grindMonoOfZMod q($monoQ) indetMap | return .none
+    return .some (Poly.num 0 |>.insert n.cast mon)
+  | ~q($monoQ * (@OfNat.ofNat (ZMod _) $_nQ $_instQ)) =>
+    -- Ouch, cannot do `name@pattern` in `~q()`.
+    grindPolyOfZMod q((@OfNat.ofNat (ZMod _) $_nQ $_instQ) * $monoQ)
+  | ~q(@OfNat.ofNat (ZMod _) $nQ $_instQ) => grindPolyOfZMod q($eQ * 1)
+  | ~q(-@OfNat.ofNat (ZMod _) $nQ $_instQ) => return .some (Poly.num (-(← unsafe evalExpr ℕ q(ℕ) nQ)))
+  | ~q($monoQ) =>
+    let .some mon ← grindMonoOfZMod monoQ indetMap | return .none
+    return .some (Poly.ofMon mon)
+  | _ => logInfo m!"Unrecognised ZMod eq shape: {eQ}."; return .none
+
+def grindPolyOfZModEq (e : Q(Prop)) (indetMap : Std.HashMap String ℕ) : TacticM (Option Poly) := do
   match e with
   | ~q(@Eq (ZMod $k) $lhs $rhs) =>
     let kval ← unsafe evalExpr ℕ q(ℕ) k
     if (← unsafe evalExpr (ZMod kval) q(ZMod $k) rhs) != 0 then throwError "Expected _ = 0. Rhs: {rhs}"
-    cMvMonoOfZMod lhs xyzMap arity
+    grindPolyOfZMod lhs indetMap
   | _ => logInfo m!"Expected: lhs = rhs for ZMod k. Expr: {e}"; return .none
+
+-- def syms : Std.HashMap String Var := Std.HashMap.ofList [("x", 0), ("y", 1)]
+
+-- def x : ZMod 394357 := 4
+-- def y : ZMod 394357 := 5
+
+-- #eval show MetaM _ from do 
+--   let .some x ← grindPolyOfZMod q(3 * x ^ 2 + y ^ 3 * 2 + 4) syms | .pure 43
+--   logInfo m!"x: {repr x}"
+--   logInfo m!"{x.denote (RArray.ofArray #[(4 : ℤ), 2] (by decide))}"
+
+end
+
+#check Lean.Grind.CommRing.Mon
+
+variable {x : ZMod 394357}
+
+
+set_option quotPrecheck false in
+notation "testPoly" => -3 + x * 9 = 0
+
+-- #eval show MetaM _ from do 
+--   let .some x ← grindPolyOfZMod q(-3 + x * 9) syms | .pure 43
+--   logInfo m!"x: {repr x} lc: {x.lc}"
+--   -- logInfo m!"{x.denote (RArray.ofArray #[(4 : ℤ), 2] (by decide))}"
+
+elab "exprs" : tactic => do
+  let exprs ← expressionsOfFVarIDsAndTarget (← zModEqs)
+  for (hyp, e) in exprs do
+    match hyp with
+    | .none => logInfo m!"⊢ → {e}"
+    | .some hyp => logInfo m!"{←hyp.getUserName} → {e}"
+    let .some (xyz, _) ← consistentIndeterminates | throwError "All indets must be in the same field."
+    let indetMap := Std.HashMap.ofList xyz.toList.zipIdx
+    let .some grindInternal ← grindPolyOfZModEq e indetMap | throwError "Cannot translate the polynomial."
+    logInfo m!"lc: {grindInternal.lc}"
+    -- logInfo m!"grindInternal: {repr grindInternal}"
+
+example (h : testPoly) : x - 42 = 0 := by
+  exprs
+  
+
+instance {n : ℕ} : ToExpr (CMvMonomial n) :=
+  let arityQ : Q(ℕ) := mkNatLit n
+  {
+    toExpr mono := mkApp3 (mkConst ``CMvMonomial.mk) arityQ (toExpr mono.1) q(Eq.refl $arityQ)
+    toTypeExpr := mkApp2 (mkConst ``Vector [0]) q(ℕ) arityQ
+  }
+
+-- example {x y α₁ α₂ : ZMod 5}
+--         (h : (x^2 - 3 * x + 1) - 3 * (- x) = 0 - α₂ * 0) : False := by
+--   ring_nf at h
+--   3 * x + 4       = 0 
+--   (3 * x)/3 + 4/3 = 0 
+--   x + 4/3 = 0
+--   what is 4/3 ... extended gcd...
+/--
+TODO: Note this assumes that `nf_ring` puts `ZMod` equations in a certain format, as determined
+      by what shapes of terms we are matching on.
+
+- We take `arityQ` in addition to `indetMap` even if we enforce `indetMap.size = arityQ`.
+  This is to help articulate the Q-return type of the function.
+-/
+partial def cMvMonoOfZMod {kQ : Q(ℕ)}
+  (eQ : Q(ZMod $kQ)) (indetMap : Std.HashMap String ℕ) (arityQ : Q(ℕ)) :
+  MetaM (Option Q(CMvMonomial $arityQ)) := do
+  assert! (indetMap.size == (← unsafe evalExpr ℕ q(ℕ) arityQ))
+  let cMvMonoOfZMod e := cMvMonoOfZMod e indetMap arityQ
+  match eQ with
+  | ~q($xQ * $yQ) => do
+    let .some xQ ← cMvMonoOfZMod xQ | return .none
+    let .some yQ ← cMvMonoOfZMod yQ | return .none
+    let evalMono e := unsafe evalExpr (CMvMonomial indetMap.size) q(CMvMonomial $arityQ) e
+    return .some (toExpr ((← evalMono xQ) * (← evalMono yQ)))
+  | ~q($indetQ ^ $eQ) => do
+    let finIndetQ : Q(ℕ) := toExpr indetMap[indetQ.constName.getString!]!
+    .some <$> mkAppOptM ``CPoly.CMvMonomial.mk #[
+      arityQ,
+      ←reduce q(Array.replicate $arityQ 0 |>.set! $finIndetQ $eQ),
+      q(Eq.refl $arityQ)
+    ]
+  | ~q(@OfNat.ofNat (ZMod _) $_nQ $_instQ) => do
+    let n ← unsafe evalExpr (ZMod (← unsafe evalExpr ℕ q(ℕ) kQ)) q(ZMod $kQ) eQ
+    if n != 1 then return .none
+    return .some q(CMvMonomial.one $arityQ)
+  | ~q($_symQ) => cMvMonoOfZMod q($eQ^1)
+  | _ => logInfo m!"Unrecognised ZMod eq shape: {eQ}."; return .none
+  
+def cMvMonoOfZModEq
+  (eQ : Q(Prop)) (indetMap : Std.HashMap String ℕ) (arityQ : Q(ℕ)) :
+  MetaM (Option Q(CMvMonomial $arityQ)) := do
+  match eQ with
+  | ~q(@Eq (ZMod $kQ) $lhsQ $rhsQ) =>
+    if (← unsafe evalExpr (ZMod (← unsafe evalExpr ℕ q(ℕ) kQ)) q(ZMod $kQ) rhsQ) != 0
+      then throwError "Expected _ = 0. Rhs: {rhsQ}"
+    cMvMonoOfZMod lhsQ indetMap arityQ
+  | _ => logInfo m!"Expected: lhs = rhs for ZMod k. Expr: {eQ}"; return .none
 
 instance {n : ℕ} : ToExpr (ZMod n) where
   toExpr z := match n with
@@ -114,74 +229,80 @@ instance {n : ℕ} : ToExpr (ZMod n) where
               | k + 1 => ToExpr.toExpr (show Fin (k + 1) from z)
   toTypeExpr := .app (mkConst ``ZMod) (toExpr n)
 
-instance {n : ℕ} {R : Type} [ToExpr R] : ToExpr (CPoly.Unlawful n R) where
+instance {n : ℕ} {R : Type} [ToExpr R] : ToExpr (Unlawful n R) where
   toExpr map := have nQ : Q(ℕ) := mkNatLit n
                 have rQ : Q(Type) := toTypeExpr R
-                let list : Q(List (CPoly.CMvMonomial $nQ × $rQ)) := toExpr map.toList
-                q(@CPoly.Unlawful.ofList $nQ $rQ $list)
+                let entriesQ : Q(List (CMvMonomial $nQ × $rQ)) := toExpr map.toList
+                q(@Unlawful.ofList $nQ $rQ $entriesQ)
   toTypeExpr := mkApp2 (mkConst ``CPoly.Unlawful) (toExpr n) (toTypeExpr R)
 
-partial def cMvPolyOfZMod {k : Q(ℕ)}
-  (e : Q(ZMod $k)) (xyzMap : Std.HashMap String ℕ) (arity : Q(ℕ)) : TacticM (Option Q(CPoly.Lawful $arity (ZMod $k))) := do
-  match e with
+/--
+  - We take `arityQ` in addition to `indetMap` even if we enforce `indetMap.size = arityQ`.
+    This is to help articulate the Q-return type of the function.
+-/
+partial def cMvPolyOfZMod {kQ : Q(ℕ)}
+  (eQ : Q(ZMod $kQ)) (indetMap : Std.HashMap String ℕ) (arityQ : Q(ℕ)) :
+  TacticM (Option Q(CPoly.Lawful $arityQ (ZMod $kQ))) := do
+  assert! (indetMap.size == (← unsafe evalExpr ℕ q(ℕ) arityQ))
+  let cMvMonoOfZMod e := cMvMonoOfZMod e indetMap arityQ
+  match eQ with
   | ~q($x + $y) => do
-    -- Assumes x * x was normalised to x^2 by `ring_nf`.
-    let .some lhs ← cMvPolyOfZMod x xyzMap arity | return .none
-    let .some rhs ← cMvPolyOfZMod y xyzMap arity | return .none
-    let kval ← unsafe evalExpr ℕ q(ℕ) k
-    let lhsval ← unsafe evalExpr (CPoly.CMvPolynomial xyzMap.size (ZMod kval)) q(CPoly.CMvPolynomial $arity (ZMod $k)) lhs
-    let rhsval ← unsafe evalExpr (CPoly.CMvPolynomial xyzMap.size (ZMod kval)) q(CPoly.CMvPolynomial $arity (ZMod $k)) rhs
-    let lhsunlawful : Q(CPoly.Unlawful $arity (ZMod $k)) := toExpr lhsval.1
-    let rhsunlawful : Q(CPoly.Unlawful $arity (ZMod $k)) := toExpr rhsval.1
-    let combined : Q(CPoly.Unlawful $arity (ZMod $k)) := q($lhsunlawful + $rhsunlawful)
+    let .some lhs ← cMvPolyOfZMod x indetMap arityQ | return .none
+    let .some rhs ← cMvPolyOfZMod y indetMap arityQ | return .none
+    let kval ← unsafe evalExpr ℕ q(ℕ) kQ
+    let lhsval ← unsafe evalExpr (CPoly.CMvPolynomial indetMap.size (ZMod kval)) q(CPoly.CMvPolynomial $arityQ (ZMod $kQ)) lhs
+    let rhsval ← unsafe evalExpr (CPoly.CMvPolynomial indetMap.size (ZMod kval)) q(CPoly.CMvPolynomial $arityQ (ZMod $kQ)) rhs
+    let lhsunlawful : Q(Unlawful $arityQ (ZMod $kQ)) := toExpr lhsval.1
+    let rhsunlawful : Q(Unlawful $arityQ (ZMod $kQ)) := toExpr rhsval.1
+    let combined : Q(Unlawful $arityQ (ZMod $kQ)) := q($lhsunlawful + $rhsunlawful)
     -- Do we want to reduce here?
-    return .some q(CPoly.Lawful.fromUnlawful $combined)
+    return .some q(Lawful.fromUnlawful $combined)
   | ~q((@OfNat.ofNat (ZMod _) $n $inst) * $mono) => do
     -- I think `ring_nf` normalises to `_ * OfNat.` only anyway, but alright.
     -- 0 is verboten.
     let n@(_ + 1) ← unsafe evalExpr ℕ q(ℕ) n | return .none
-    let .some monomial ← cMvMonoOfZMod mono xyzMap arity | return .none
-    let unlawful : Q(CPoly.Unlawful $arity (ZMod $k)) := q(CPoly.Unlawful.ofList [($monomial, ($n : ZMod $k))])
+    let .some monomial ← cMvMonoOfZMod mono | return .none
+    let unlawful : Q(CPoly.Unlawful $arityQ (ZMod $kQ)) := q(CPoly.Unlawful.ofList [($monomial, ($n : ZMod $kQ))])
     let mvarid₁ ← mkFreshMVarId
     let proof ← mkFreshExprMVarWithId mvarid₁ (q(CPoly.Unlawful.isNoZeroCoef $unlawful))
     let X ← evalTacticAt (←`(tactic|grind)) mvarid₁
     let lawful ←
       mkAppOptM ``Subtype.mk #[
-        .some q(CPoly.Unlawful $arity (ZMod $k)),
-        .some q(CPoly.Unlawful.isNoZeroCoef (n := $arity) (R := ZMod $k)),
+        .some q(CPoly.Unlawful $arityQ (ZMod $kQ)),
+        .some q(CPoly.Unlawful.isNoZeroCoef (n := $arityQ) (R := ZMod $kQ)),
         unlawful,
         proof
       ]
     return .some lawful
   | ~q($mono * (@OfNat.ofNat (ZMod _) $n $inst)) =>
-    cMvPolyOfZMod q((@OfNat.ofNat (ZMod _) $n $inst) * $mono) xyzMap arity
+    cMvPolyOfZMod q((@OfNat.ofNat (ZMod _) $n $inst) * $mono) indetMap arityQ
   | ~q(@OfNat.ofNat (ZMod _) $n $inst) =>
-    let kval ← unsafe evalExpr ℕ q(ℕ) k
-    let nval ← unsafe evalExpr (ZMod kval) q(ZMod $k) e
-    let nvalQ : Q(ZMod $k) := ToExpr.toExpr nval
-    let monomial : Q(CPoly.CMvMonomial $arity) := q(CPoly.CMvMonomial.one (n := $arity))
-    let unlawful : Q(CPoly.Unlawful $arity (ZMod $k)) := q(CPoly.Unlawful.ofList [($monomial, ($nvalQ : ZMod $k))])
+    let kval ← unsafe evalExpr ℕ q(ℕ) kQ
+    let nval ← unsafe evalExpr (ZMod kval) q(ZMod $kQ) eQ
+    let nvalQ : Q(ZMod $kQ) := ToExpr.toExpr nval
+    let monomial : Q(CPoly.CMvMonomial $arityQ) := q(CPoly.CMvMonomial.one (n := $arityQ))
+    let unlawful : Q(CPoly.Unlawful $arityQ (ZMod $kQ)) := q(CPoly.Unlawful.ofList [($monomial, ($nvalQ : ZMod $kQ))])
     let mvarid₁ ← mkFreshMVarId
     let proof ← mkFreshExprMVarWithId mvarid₁ (q(CPoly.Unlawful.isNoZeroCoef $unlawful))
     let X ← evalTacticAt (←`(tactic|grind)) mvarid₁
     let lawful ←
       mkAppOptM ``Subtype.mk #[
-        .some q(CPoly.Unlawful $arity (ZMod $k)),
-        .some q(CPoly.Unlawful.isNoZeroCoef (n := $arity) (R := ZMod $k)),
+        .some q(CPoly.Unlawful $arityQ (ZMod $kQ)),
+        .some q(CPoly.Unlawful.isNoZeroCoef (n := $arityQ) (R := ZMod $kQ)),
         unlawful,
         proof
       ]
     return .some lawful
   | ~q($mono) =>
-    let .some mono ← cMvMonoOfZMod mono xyzMap arity | return .none
-    let unlawful : Q(CPoly.Unlawful $arity (ZMod $k)) := q(CPoly.Unlawful.ofList [($mono, (1 : ZMod $k))])
+    let .some mono ← cMvMonoOfZMod mono | return .none
+    let unlawful : Q(CPoly.Unlawful $arityQ (ZMod $kQ)) := q(CPoly.Unlawful.ofList [($mono, (1 : ZMod $kQ))])
     let mvarid₁ ← mkFreshMVarId
     let proof ← mkFreshExprMVarWithId mvarid₁ (q(CPoly.Unlawful.isNoZeroCoef $unlawful))
     let X ← evalTacticAt (←`(tactic|grind)) mvarid₁
     let lawful ←
       mkAppOptM ``Subtype.mk #[
-        .some q(CPoly.Unlawful $arity (ZMod $k)),
-        .some q(CPoly.Unlawful.isNoZeroCoef (n := $arity) (R := ZMod $k)),
+        .some q(CPoly.Unlawful $arityQ (ZMod $kQ)),
+        .some q(CPoly.Unlawful.isNoZeroCoef (n := $arityQ) (R := ZMod $kQ)),
         unlawful,
         proof
       ]
@@ -189,12 +310,12 @@ partial def cMvPolyOfZMod {k : Q(ℕ)}
   | _ => pure .none
 
 def cMvPolyOfZModEq {k : Q(ℕ)}
-  (e : Q(Prop)) (xyzMap : Std.HashMap String ℕ) (arity : Q(ℕ)) : TacticM (Option Q(CPoly.Lawful $arity (ZMod $k))) := do
+  (e : Q(Prop)) (indetMap : Std.HashMap String ℕ) (arity : Q(ℕ)) : TacticM (Option Q(CPoly.Lawful $arity (ZMod $k))) := do
   match e with
   | ~q(@Eq (ZMod $k) $lhs $rhs) =>
     let kval ← unsafe evalExpr ℕ q(ℕ) k
     if (← unsafe evalExpr (ZMod kval) q(ZMod $k) rhs) != 0 then throwError "Expected _ = 0. Rhs: {rhs}"
-    cMvPolyOfZMod lhs xyzMap arity
+    cMvPolyOfZMod lhs indetMap arity
   | _ => logInfo m!"Expected: lhs = rhs for ZMod k. Expr: {e}"; return .none
 
 -- elab "testme" : tactic => do
@@ -250,7 +371,7 @@ def normaliseSystem : TacticM (Std.HashMap String ℕ) := withMainContext do
   -- Phase 3: In the new context, gather the indeterminates, create the `<X> → Fin k` mapping for
   -- `k`-variete polys and gather `Expr`essions in need of converting.
   let xyz ← indeterminates <&> Array.qsort
-  let xyzMap := Std.HashMap.ofList xyz.toList.zipIdx
+  let indetMap := Std.HashMap.ofList xyz.toList.zipIdx
   let exprs ← expressionsOfFVarIDsAndTarget (← zModEqs)
   for (hyp, e) in exprs do
     match hyp with
@@ -261,7 +382,7 @@ def normaliseSystem : TacticM (Std.HashMap String ℕ) := withMainContext do
                    logInfo m!"test: {test}"
   -- Phase 4: Synthesize polynomials given the `exprs`.
 
-  pure xyzMap
+  pure indetMap
 
 elab "compute_poly" : tactic => withMainContext do
   discard normaliseSystem
@@ -280,13 +401,13 @@ theorem test'' {x: ZMod 290} {y: ZMod 290}
  : False := by
  compute_poly
 
--- theorem test {x: ZMod 290} {y: ZMod 290}
---         (h6: x * (y + 20 + 30) = 10 * x)
---         --(h3: x = 20)
---         (h8: y = 42 - 42)
---         (h1: x * 2 * (x ^ 3) = 0)
---  : x + 30 = y - 80 := by
---   compute_poly
+theorem test {x: ZMod 290} {y: ZMod 290}
+        (h6: x * (y + 20 + 30) = 10 * x)
+        --(h3: x = 20)
+        (h8: y = 42 - 42)
+        (h1: x * 2 * (x ^ 3) = 0)
+ : x + 30 = y - 80 := by
+  compute_poly
 --   pz
 --   compute_poly
 --   tt at h1 h6

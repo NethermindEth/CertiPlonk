@@ -78,7 +78,7 @@ abbrev monomials (p : Lawful n R) : List (CMvMonomial n) :=
   p.1.monomials
 
 def NZConst {n : ℕ} {R : Type} [Zero R] (p : Lawful n R) : Prop :=
-  p.val.size = 1 ∧ p.val.contains CMvMonomial.one
+  p.val.size = 1 ∧ p.val.contains (CMvMonomial.one n)
 
 instance {p : Lawful n R} : Decidable (NZConst p) := by
   dsimp [NZConst]

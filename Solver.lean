@@ -67,28 +67,25 @@ partial def cMvMonoOfZMod {kQ : Q(ℕ)}
   assert! (indetMap.size == (← unsafe evalExpr ℕ q(ℕ) arityQ))
   let cMvMonoOfZMod e := cMvMonoOfZMod e indetMap arityQ
   match eQ with
-  | ~q($x * $y) => do
+  | ~q($xQ * $yQ) => do
     -- Assumes x * x was normalised to x^2 by `ring_nf`.
-    let .some x ← cMvMonoOfZMod x | return .none
-    let .some y ← cMvMonoOfZMod y | return .none
+    let .some xQ ← cMvMonoOfZMod xQ | return .none
+    let .some yQ ← cMvMonoOfZMod yQ | return .none
     let evalMono e := unsafe evalExpr (CMvMonomial indetMap.size) q(CMvMonomial $arityQ) e
-    return .some (toExpr ((← evalMono x) * (← evalMono y)))
-  | ~q($indet ^ $e) => do
-    let exponentvalQ : Q(ℕ) ← ToExpr.toExpr <$> unsafe evalExpr ℕ q(ℕ) e
-    let xyzIdxQ : Q(ℕ) := ToExpr.toExpr indetMap[indet.constName.getString!]!
+    return .some (toExpr ((← evalMono xQ) * (← evalMono yQ)))
+  | ~q($indetQ ^ $eQ) => do
+    let finIndetQ : Q(ℕ) := toExpr indetMap[indetQ.constName.getString!]!
     .some <$> mkAppOptM ``CPoly.CMvMonomial.mk #[
       arityQ,
-      ←reduce q(Array.replicate $arityQ 0 |>.set! $xyzIdxQ $exponentvalQ),
+      ←reduce q(Array.replicate $arityQ 0 |>.set! $finIndetQ $eQ),
       q(Eq.refl $arityQ)
     ]
-  | ~q(@OfNat.ofNat (ZMod _) $n $inst) => do
+  | ~q(@OfNat.ofNat (ZMod _) $_nQ $_instQ) => do
     -- Assumes this is 1, for more is 1 + 1 + ... + 1, i.e. a polynomial.
-    let kval ← unsafe evalExpr ℕ q(ℕ) kQ
-    let nval ← unsafe evalExpr (ZMod kval) q(ZMod $kQ) eQ
-    if nval != 1 then return .none
-    let monomial : Q(CPoly.CMvMonomial $arityQ) := q(CPoly.CMvMonomial.one (n := $arityQ))
-    return .some monomial
-  | ~q($sym) => -- Assumes this is an identifier.
+    let n ← unsafe evalExpr (ZMod (← unsafe evalExpr ℕ q(ℕ) kQ)) q(ZMod $kQ) eQ
+    if n != 1 then return .none
+    return .some q(CMvMonomial.one $arityQ)
+  | ~q($_symQ) => -- Assumes this is an identifier.
     cMvMonoOfZMod q($eQ^1)
   | _ => logInfo m!"Unrecognised ZMod eq shape: {eQ}."; return .none
   

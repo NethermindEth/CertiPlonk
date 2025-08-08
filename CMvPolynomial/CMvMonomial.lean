@@ -42,9 +42,9 @@ def extend (n' : ℕ) (m : CMvMonomial n) : CMvMonomial (max n n') :=
 
 def totalDegree (m : CMvMonomial n) : ℕ := m.sum
 
-def one : CMvMonomial n := Vector.replicate n 0
+def one (n : ℕ) : CMvMonomial n := Vector.replicate n 0
 
-instance : One (CMvMonomial n) := ⟨one⟩
+instance : One (CMvMonomial n) := ⟨one n⟩
 
 def mul : CMvMonomial n → CMvMonomial n → CMvMonomial n :=
   Vector.zipWith .add
@@ -109,7 +109,7 @@ instance [Repr R] : Repr (MonoR n R) where
   reprPrec
     | (m, c), _ => repr c ++ " * " ++ repr m
 
-def C (c : R) : MonoR n R := (CMvMonomial.one, c)
+def C (c : R) : MonoR n R := (CMvMonomial.one n, c)
 
 variable [CommSemiring R]
 

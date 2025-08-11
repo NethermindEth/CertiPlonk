@@ -54,6 +54,13 @@ lemma mul_one {m : CMvMonomial n} : m * one = m := by
   unfold CMvMonomial.mul
   grind
 
+lemma mul_com {m n : CMvMonomial n} : m * n = n * m := by
+  unfold_projs
+  unfold mul
+  ext1 i h
+  simp only [Vector.getElem_zipWith, Nat.add_eq]
+  rw [add_comm]
+
 def divides (m₁ : CMvMonomial n) (m₂ : CMvMonomial n) : Bool :=
   Vector.all (Vector.zipWith (flip Nat.ble) m₁ m₂) (· == true)
 

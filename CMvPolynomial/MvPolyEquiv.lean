@@ -448,24 +448,16 @@ lemma lookup_sum_eq_sum_lookup [BEq R] [LawfulBEq R] {l : List (Unlawful n R)} (
     dsimp [(·+·), Add.add, Option.add]
     grind
 
-#check List.Perm.recOn
+@[simp]
+lemma sum_filter_eq_sum {α : Type} [AddZeroClass α] [DecidableEq α] {ls : List α} : (List.filter (fun l => l ≠ 0) ls).sum  = ls.sum := by
+  induction ls <;> aesop (add simp List.filter_cons)
 
-lemma perm_iff_bij {α : Type} {l₁ l₂ : List α} :
-    (∃ f, Function.Bijective f ∧ ∀ i, l₁.get i = l₂.get (f i)) → l₁.Perm l₂ := by
-    -- apply List.Perm.recOn
-
-    -- induction l₁.Prem l₂ with
-    -- | nil =>
-
-  sorry
-  -- induction List.Perm with
-  -- | nil =>
-
-  --   sorry
+lemma sum_eq_ind_sum {α : Type} [AddCommMonoid α] [DecidableEq α] {ls : List α} : ls.sum = ∑ i, ls.get i := by
+  simp_all only [List.get_eq_getElem, Fin.sum_univ_getElem]
 
 -- m
 
---  p * q
+--  p * q = q * p
 --          (q₀, m'₀)            (q₁, m'₁) ... (qₘ, m'ₘ)
 -- (p₀, m₀) (p₀ * q₀, m₀ * m'₀)
 -- (p₁, m₁)
@@ -474,6 +466,85 @@ lemma perm_iff_bij {α : Type} {l₁ l₂ : List α} :
 
 -- p.toList = [(m₀, p₀), (m₁, p₁), ..., (mₙ, pₙ)]
 -- q.toList = [(m'₀, q₀), (m'₁, q₁), ..., (m'ₘ, qₘ)]
+
+-- | swap (x y : α) (l m m' : List α) : Perm l (m ++ (x :: y :: m')) → Perm l (m ++ (y :: x :: m'))
+
+lemma exists_list_bij_of_multiset_eq {α : Type} {l₁ l₂ : List α} :
+    (Multiset.ofList l₁) = (Multiset.ofList l₂) →
+      ∃ f : Fin l₁.length → Fin l₂.length, Function.Bijective f ∧ ∀ i, l₁[i] = l₂[f i] := by
+  revert l₂
+  induction l₁ with
+  | nil =>
+    intros l₂ h
+    exists Fin.elim0
+    have : l₂ = [] := by
+      exact (Multiset.coe_eq_zero l₂).mp (id (Eq.symm h))
+    rw [this]
+    simp
+  | cons l l₁' ih =>
+    intros l₂ h
+    rw [←Multiset.cons_coe] at h
+    have : l ∈ (Multiset.ofList l₂) := by
+      rw [←h]; simp
+    rcases Multiset.exists_cons_of_mem this with ⟨t, h'⟩
+    have : Multiset.ofList l₁' = t := by sorry
+    specialize @ih (Multiset.toList t)
+    rw [Multiset.coe_toList] at ih
+    rcases ih this with ⟨f, ih⟩
+    have : l ∈ l₂ := by
+      have : l ∈ (Multiset.ofList l₂) := by
+        rw [h', Multiset.mem_cons]; left; rfl
+      rw [Multiset.mem_coe] at this
+      exact this
+    have : ∃ j : Fin l₂.length, l₂[j] = l := by
+      (expose_names; exact List.mem_iff_get.mp this_1)
+    rcases this with ⟨j, h''⟩
+    have : ∃ l₂' l₂'', l₂ = l₂' ++ (l :: l₂'') ∧ t = Multiset.ofList (l₂' ++ l₂'') := by sorry
+    rcases this with ⟨l₂', l₂'', l₂_split, t_eq⟩
+    let f (i : Fin (l :: l₁').length) : Fin l₂.length :=
+      match i with
+      | ⟨0, h⟩ => j
+      | ⟨.succ i, h⟩ =>
+        let i' : Fin l₁'.length := ⟨i, by simp at h; exact h⟩
+        let j' := f i';
+        have : t.toList.length + 1 = l₂.length := by
+          have : t.card + 1 = (Multiset.ofList l₂).card := by
+            rw [h']
+            simp
+          rw [Multiset.length_toList, this]
+          exact Multiset.coe_card _
+        if j'.1 < j
+        then this ▸ j'.castSucc
+        else this ▸ j'.succ
+    exists f; dsimp [f]
+    apply And.intro
+    · sorry
+    · rintro ⟨i, i_h⟩
+      match i with
+      | 0 => simp [h''.symm]
+      | .succ i =>
+        simp only [Nat.succ_eq_add_one, List.getElem_cons_succ]
+        split_ifs with cond
+        · sorry
+        · sorry
+
+lemma count_le_of_inj {α : Type} [DecidableEq α] {l₁ l₂ : List α} {x : α} : (∃ f : {i | l₁.get i = x} ↪ {j | l₂.get j = x}, True) → List.count x l₁ ≤ List.count x l₂ := by
+  rintro ⟨f, h⟩
+  sorry
+
+example {a b : Std.ExtTreeMap (CMvMonomial n) R compare} [inst : TransCmp compare] :
+  ∀ t ∈ (ExtTreeMap.toList a),
+    (m, k) ∈ List.map (fun x => (t.1 * x.1, t.2 * x.2)) (@ExtTreeMap.toList _ _ compare inst b) →
+      ∃ t' ∈ (ExtTreeMap.toList b), (m, k) ∈  List.map (fun x => (t'.1 * x.1, t'.2 * x.2)) (@ExtTreeMap.toList _ _ compare inst a) := by
+  intros t t_in_a h
+  rw [List.mem_map] at h
+  rcases h with ⟨t', t'_in_b, h⟩
+  exists t'
+  apply And.intro t'_in_b
+  rw [List.mem_map, ←h]
+  exists t
+  apply And.intro t_in_a
+  rw [mul_comm t'.2, CMvMonomial.mul_com]
 
 open Classical
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
@@ -496,84 +567,62 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] :
       rw [this, this]
       generalize eq₁ : List.map _ (ExtTreeMap.toList a.1) = l₁
       generalize eq₂ : List.map _ (ExtTreeMap.toList b.1) = l₂
-      have := @List.Perm.sum_eq (Option R) abc l₁ l₂
-      apply this
-      apply perm_iff_bij
-      rw [←eq₁, ←eq₂]
-      simp only [Multiset.bijective_iff_map_univ_eq_univ, Fin.univ_val_map, List.length_map,
-        ExtTreeMap.length_toList, List.get_eq_getElem, List.getElem_map]
+      rw [←sum_filter_eq_sum, ←sum_filter_eq_sum (ls := l₂)]
 
-      -- let ls (i : Fin _) := List.map (fun x => ((ExtTreeMap.toList a.1)[i].1 * x.1, (ExtTreeMap.toList a.1)[i].2 * x.2)) (ExtTreeMap.toList b.1)
-      let f (i : Fin (ExtTreeMap.toList a.1).length) : Fin (ExtTreeMap.toList b.1).length :=
-          if h : ∃ k,
-                  ⟨m, k⟩ ∈
-                    List.map
-                      (fun x => ((ExtTreeMap.toList a.1)[i].1 * x.1, (ExtTreeMap.toList a.1)[i].2 * x.2))
-                      (ExtTreeMap.toList b.1)
-          then
-            have h : ∃ j : Fin (ExtTreeMap.toList b.1).length, m = (ExtTreeMap.toList a.1)[i].1 * (ExtTreeMap.toList b.1)[j].1 := by
-              rcases h with ⟨k, h⟩
-              rw [List.mem_map] at h
-              rcases h with ⟨⟨m', a'⟩, h', h⟩
-              rw [List.mem_iff_get] at h'
-              rcases h' with ⟨j, h'⟩
+      generalize eq'₁ : (List.filter (fun l => decide (l ≠ 0)) l₁) = l'₁
+      generalize eq'₂ : (List.filter (fun l => decide (l ≠ 0)) l₂) = l'₂
+
+      have : Multiset.ofList l'₁ = Multiset.ofList l'₂ := by
+        ext c
+        match mceq_some_c' : c with
+        | .none =>
+          rw [←eq'₁, ←eq'₂]
+          simp
+        | .some c' =>
+          rw [←eq'₁, ←eq'₂, ←eq₁, ←eq₂, Multiset.coe_count, Multiset.coe_count]
+          simp only [Option.natCast_zero_eq_none, ne_eq, decide_not, reduceCtorEq, decide_false,
+            Bool.not_false, List.count_filter]
+          rw [Nat.eq_iff_le_and_ge]
+          apply And.intro
+          · apply count_le_of_inj
+            refine Exists.intro ?_ (by trivial)
+            constructor
+            swap
+            rintro ⟨i, h⟩
+            simp only [List.get_eq_getElem, List.getElem_map, Set.mem_setOf_eq] at h
+            have {ls : List (CMvMonomial n × R)} {c : R} : (ExtTreeMap.ofList ls compare)[m]? = some c → (m, c) ∈ ls := by
+              -- intros h
+              -- rw [ExtTreeMap.getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList] at h
+              -- rcases h with ⟨m', oh, h⟩
+              -- rw[Std.compare_eq_iff_eq] at oh
+              -- rw [oh]
+              -- convert h
+
+
+              -- apply?
+
+              sorry
+            specialize this h
+            rw [List.mem_map] at this
+            have : ∃ j : Fin (ExtTreeMap.toList b.1).length, ((ExtTreeMap.toList a.1)[i].1 * (ExtTreeMap.toList b.1)[j].1, (ExtTreeMap.toList a.1)[i].2 * (ExtTreeMap.toList b.1)[j].2) = (m, c') := by
+              rcases this with ⟨mb, cb, h⟩
+              rcases List.mem_iff_get.mp cb with ⟨j, h'⟩
               exists j
-              simp only [Fin.getElem_fin, Prod.mk.injEq] at h
-              rw [←h.1]
-              unfold_projs
-              rw [h'];
-            Classical.choose h
-          else sorry
-      apply Exists.intro (by convert f <;> simp)
-      apply And.intro
-      ·
-        unfold f
-        ext j
-        simp only [Fin.getElem_fin, List.mem_map, Prod.mk.injEq, Prod.exists,
-          ExtTreeMap.mem_toList_iff_getElem?_eq_some, eq_mpr_eq_cast, Multiset.coe_count,
-          Multiset.count_univ]
-        apply List.count_eq_one_of_mem
-        unfold List.Nodup
-        simp only [ne_eq, List.pairwise_ofFn]
-        intros i j h h'
-        sorry
-
-        -- grind
-        -- split_ifs with h
-        -- ·
-
-        --   sorry
-        -- · sorry
-      · intros i
-        sorry
+              unfold_projs at h ⊢
+              rw [h']
+              exact h
+            constructor; swap
+            simp only [List.length_map, ExtTreeMap.length_toList]
+            sorry
 
 
-      -- by_cases h : ∃ a, ⟨m, a⟩ ∈ ls i
-      -- have {i} : ExtTreeMap.ofList (ls i)[m]? = some a ↔ ⟨m, a⟩ ∈ ls i :=
+            sorry
+          · sorry
 
 
-
-
-
-      -- have := @Function.comp_apply (f := (fun (l : Unlawful n R) => l[m]?)) (g := fun (t : MonoR n R) => ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList b.1)) compare) (x := ExtTreeMap.toList a.1)
-
-
-      have : (fun l => l[m]?) ∘ fun (t : MonoR n R) =>
-        ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList ↑b)) compare) =
-        (fun l => l[m]?) ∘ fun t =>
-          wExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList ↑b)) compare)
-
-
-      have :=
-        @List.Perm.sum_eq (Unlawful n R) sorry
-          (List.map (fun t => ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList b.1)) compare)
-            (ExtTreeMap.toList a.1))
-          (List.map (fun t => ExtTreeMap.ofList (List.map (fun x => (t.1 * x.1, t.2 * x.2)) (ExtTreeMap.toList a.1)) compare)
-            (ExtTreeMap.toList b.1))
-      apply this
-
-
-      sorry
+      rcases exists_list_bij_of_multiset_eq this with ⟨f, f_prop⟩
+      rw [sum_eq_ind_sum, sum_eq_ind_sum]
+      refine Fintype.sum_bijective (α := Option R) f f_prop.1 l'₁.get l'₂.get f_prop.2
 
 
 /-

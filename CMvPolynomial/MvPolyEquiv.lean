@@ -261,18 +261,11 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] :
       unfold Unlawful.coeff
       rw [ExtTreeMap.getElem?_filter, ExtTreeMap.getElem?_filter]
       by_cases h : m ∈ p <;> by_cases h' : m ∈ q <;> by_cases h'' : m ∈ r
-      · by_cases g : p[m] + q[m] = 0
-        · rw [ExtTreeMap.mergeWith₂ _ h'']
-          by_cases g' : q[m] + r[m] = 0
-          · rw [ExtTreeMap.mergeWith₁ h]
-
-
-
-
-
-
-
-      sorry
+      -- · by_cases g : p[m] + q[m] = 0
+      --   · rw [ExtTreeMap.mergeWith₂ _ h'']
+      --     by_cases g' : q[m] + r[m] = 0
+      --     · rw [ExtTreeMap.mergeWith₁ h]
+      repeat sorry
     add_comm {p q} := by grind
 
 instance bla {n : ℕ} [BEq R] [LawfulBEq R] : AddMonoid (CPoly.CMvPolynomial n R) where
@@ -546,6 +539,33 @@ example {a b : Std.ExtTreeMap (CMvMonomial n) R compare} [inst : TransCmp compar
   apply And.intro t_in_a
   rw [mul_comm t'.2, CMvMonomial.mul_com]
 
+#check Classical.choose_spec
+
+lemma List_map_mem_of_eq {α β : Type} {ls : List α} {f : α → β} (l : β) : (∃ i : Fin ls.length, l = f (ls[i])) → l ∈ List.map f ls := by
+  intro a_1
+  simp_all only [Fin.getElem_fin, List.mem_map]
+  obtain ⟨w_1, h⟩ := a_1
+  subst h
+  apply Exists.intro
+  · apply And.intro
+    on_goal 2 => {rfl
+    }
+    · simp_all only [List.getElem_mem]
+
+
+lemma ofList_lemma {ls : List (CMvMonomial n × R)} {c : R} : (ExtTreeMap.ofList ls compare)[m]? = some c → (m, c) ∈ ls := by
+              -- intros h
+              -- rw [ExtTreeMap.getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList] at h
+              -- rcases h with ⟨m', oh, h⟩
+              -- rw[Std.compare_eq_iff_eq] at oh
+              -- rw [oh]
+              -- convert h
+
+
+              -- apply?
+
+                sorry
+
 open Classical
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R) where
@@ -586,40 +606,40 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] :
           apply And.intro
           · apply count_le_of_inj
             refine Exists.intro ?_ (by trivial)
-            constructor
-            swap
-            rintro ⟨i, h⟩
-            simp only [List.get_eq_getElem, List.getElem_map, Set.mem_setOf_eq] at h
-            have {ls : List (CMvMonomial n × R)} {c : R} : (ExtTreeMap.ofList ls compare)[m]? = some c → (m, c) ∈ ls := by
-              -- intros h
-              -- rw [ExtTreeMap.getElem?_eq_some_iff_exists_compare_eq_eq_and_mem_toList] at h
-              -- rcases h with ⟨m', oh, h⟩
-              -- rw[Std.compare_eq_iff_eq] at oh
-              -- rw [oh]
-              -- convert h
-
-
-              -- apply?
-
-              sorry
-            specialize this h
-            rw [List.mem_map] at this
-            have : ∃ j : Fin (ExtTreeMap.toList b.1).length, ((ExtTreeMap.toList a.1)[i].1 * (ExtTreeMap.toList b.1)[j].1, (ExtTreeMap.toList a.1)[i].2 * (ExtTreeMap.toList b.1)[j].2) = (m, c') := by
-              rcases this with ⟨mb, cb, h⟩
-              rcases List.mem_iff_get.mp cb with ⟨j, h'⟩
-              exists j
-              unfold_projs at h ⊢
-              rw [h']
-              exact h
+            have {i} : i ∈
+              {i |
+                (List.map
+                  (fun x =>
+                    (ExtTreeMap.ofList (List.map (fun x_1 => (x.1 * x_1.1, x.2 * x_1.2)) (ExtTreeMap.toList b.1)) compare)[m]?)
+                    (ExtTreeMap.toList a.1)).get i = some c'} → ∃ j : Fin (ExtTreeMap.toList b.1).length, ((ExtTreeMap.toList a.1)[i].1 * (ExtTreeMap.toList b.1)[j].1, (ExtTreeMap.toList a.1)[i].2 * (ExtTreeMap.toList b.1)[j].2) = (m, c') := by
+                      intros h
+                      simp only [List.get_eq_getElem, List.getElem_map, Set.mem_setOf_eq] at h
+                      have := ofList_lemma h
+                      rw [List.mem_map] at this
+                      rcases this with ⟨mb, cb, h⟩
+                      rcases List.mem_iff_get.mp cb with ⟨j, h'⟩
+                      exists j
+                      unfold_projs at h ⊢
+                      rw [h']
+                      exact h
             constructor; swap
-            simp only [List.length_map, ExtTreeMap.length_toList]
-            sorry
+            · rintro ⟨i, h⟩
+              constructor; swap
+              · simpa [List.length_map, ExtTreeMap.length_toList, ExtTreeMap.length_toList] using Classical.choose (this h)
+              · simp only [List.get_eq_getElem, List.getElem_map, Fin.getElem_fin, Prod.mk.injEq,
+                  eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast, Set.mem_setOf_eq]
+                apply ExtTreeMap.getElem?_ofList_of_mem (k := m) (by simp) sorry
+                apply List_map_mem_of_eq
+                exists (by simpa using i)
+                rw [mul_comm, CMvMonomial.mul_com]
+                rcases this h with ⟨j, this⟩
+                simp only [←this]
+                congr 3; sorry; sorry; sorry; sorry
 
-
-            sorry
+            · simp only [List.get_eq_getElem, Set.coe_setOf, Set.mem_setOf_eq, Fin.getElem_fin,
+              Prod.mk.injEq, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast]
+              sorry
           · sorry
-
-
       rcases exists_list_bij_of_multiset_eq this with ⟨f, f_prop⟩
       rw [sum_eq_ind_sum, sum_eq_ind_sum]
       refine Fintype.sum_bijective (α := Option R) f f_prop.1 l'₁.get l'₂.get f_prop.2

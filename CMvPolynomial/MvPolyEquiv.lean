@@ -634,35 +634,75 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] :
                 rw [mul_comm, CMvMonomial.mul_com]
                 rcases this h with ⟨j, this⟩
                 simp only [←this]
+                let N₁ : ℕ :=
+                  (ExtTreeMap.toList a.1).map 
+                    (fun x =>
+                      (ExtTreeMap.ofList (List.map (fun x_1 => (x.1 * x_1.1, x.2 * x_1.2)) (ExtTreeMap.toList b.1)) compare)[m]?)
+                    |>.length
+                let N₂ : ℕ := (ExtTreeMap.toList a.1).length
+                let N₃ : ℕ := (List.map
+                      (fun x =>
+                        (ExtTreeMap.ofList (List.map (fun x_1 => (x.1 * x_1.1, x.2 * x_1.2)) (ExtTreeMap.toList a.1)) compare)[m]?)
+                      (ExtTreeMap.toList b.1)).length
+                have eq₁₂ : N₁ = N₂ := by grind
+                clear * - N₁ N₂ N₃ eq₁₂
                 congr 3
-                · clear * -i
-                  rcases i with ⟨i, hi⟩
+                · rcases i with ⟨i, hi⟩
                   simp only [Fin.getElem_fin, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast]
                   congr 1
-                  have :
-                    (List.map
-                        (fun x =>
-                          (ExtTreeMap.ofList (List.map (fun x_1 => (x.1 * x_1.1, x.2 * x_1.2)) (ExtTreeMap.toList b.1)) compare)[m]?)
-                        (ExtTreeMap.toList a.1)).length =
-                    (ExtTreeMap.toList a.1).length := by simp
-                  
-                  have : i < (ExtTreeMap.toList a.1).length := by grind
-                  conv_lhs => rw [show i = (⟨i, this⟩ : Fin _).1 from rfl]
+                  conv_lhs => rw [show i = (⟨i, show i < N₂ by grind⟩ : Fin _).1 from rfl]
                   apply Fin.val_eq_of_eq
-                  rw [←Fin.cast_eq_cast]
-                  swap
-                  simp
+                  rw [←Fin.cast_eq_cast eq₁₂]
                   rfl
-                · 
-                  
-
-
-
-
+                · rcases j with ⟨j, hj⟩
+                  simp only [Fin.getElem_fin]
+                  congr 1
+                  generalize_proofs _ h₁ h₂ _ h₃
+                  have eq₃ := choose_spec h₃
+                  generalize eq₂ : choose h₃ = E
+                  let N₄ : ℕ := (ExtTreeMap.toList b.1).length
+                  have eq₃₄ : N₃ = N₄ := by grind
+                  conv_lhs => rw [show j = (⟨j, show j < N₃ by grind⟩ : Fin _).1 from rfl]
+                  apply Fin.val_eq_of_eq
+                  rw [←Fin.cast_eq_cast eq₃₄.symm]
+                  rcases E with ⟨E, hE⟩
+                  rw [Fin.cast_mk]
+                  congr
+                  simp [eq₂] at this eq₃
+                  -- unique?
+                  sorry
+                · rcases i with ⟨i, hi⟩
+                  simp only [Fin.getElem_fin, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast]
+                  congr 1
+                  conv_lhs => rw [show i = (⟨i, show i < N₂ by grind⟩ : Fin _).1 from rfl]
+                  apply Fin.val_eq_of_eq
+                  rw [←Fin.cast_eq_cast eq₁₂]
+                  rfl
+                · rcases j with ⟨j, hj⟩
+                  simp only [Fin.getElem_fin]
+                  congr 1
+                  generalize_proofs _ h₁ h₂ _ h₃
+                  have eq₃ := choose_spec h₃
+                  generalize eq₂ : choose h₃ = E
+                  let N₄ : ℕ := (ExtTreeMap.toList b.1).length
+                  have eq₃₄ : N₃ = N₄ := by grind
+                  conv_lhs => rw [show j = (⟨j, show j < N₃ by grind⟩ : Fin _).1 from rfl]
+                  apply Fin.val_eq_of_eq
+                  rw [←Fin.cast_eq_cast eq₃₄.symm]
+                  rcases E with ⟨E, hE⟩
+                  rw [Fin.cast_mk]
+                  congr
+                  simp [eq₂] at this eq₃
+                  -- unique?
+                  sorry
                   done
 
             · simp only [List.get_eq_getElem, Set.coe_setOf, Set.mem_setOf_eq, Fin.getElem_fin,
               Prod.mk.injEq, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast]
+              intros a b h
+              simp at h
+              generalize_proofs _ _ _ _ p₁ _ p₂ at h
+              -- unique?
               sorry
           · sorry
       rcases exists_list_bij_of_multiset_eq this with ⟨f, f_prop⟩

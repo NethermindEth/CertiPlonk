@@ -634,7 +634,32 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] :
                 rw [mul_comm, CMvMonomial.mul_com]
                 rcases this h with ⟨j, this⟩
                 simp only [←this]
-                congr 3; sorry; sorry; sorry; sorry
+                congr 3
+                · clear * -i
+                  rcases i with ⟨i, hi⟩
+                  simp only [Fin.getElem_fin, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast]
+                  congr 1
+                  have :
+                    (List.map
+                        (fun x =>
+                          (ExtTreeMap.ofList (List.map (fun x_1 => (x.1 * x_1.1, x.2 * x_1.2)) (ExtTreeMap.toList b.1)) compare)[m]?)
+                        (ExtTreeMap.toList a.1)).length =
+                    (ExtTreeMap.toList a.1).length := by simp
+                  
+                  have : i < (ExtTreeMap.toList a.1).length := by grind
+                  conv_lhs => rw [show i = (⟨i, this⟩ : Fin _).1 from rfl]
+                  apply Fin.val_eq_of_eq
+                  rw [←Fin.cast_eq_cast]
+                  swap
+                  simp
+                  rfl
+                · 
+                  
+
+
+
+
+                  done
 
             · simp only [List.get_eq_getElem, Set.coe_setOf, Set.mem_setOf_eq, Fin.getElem_fin,
               Prod.mk.injEq, eq_mp_eq_cast, eq_mpr_eq_cast, cast_cast]

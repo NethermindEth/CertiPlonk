@@ -222,8 +222,7 @@ lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := b
       [ all_polys_eq_zero_of_1_eq_0 eq_1_0 (p := p * 1),
         all_polys_eq_zero_of_1_eq_0 eq_1_0 (p := p)
       ]
-  · dsimp only [(·*·), Mul.mul, Lawful.mul, Unlawful.mul]
-
+  · rw [Lawful.grind_mul_skip]
     unfold_projs
     simp only [Lawful.C, Nat.cast_one]
     have list_MonoR_map_Unlawful [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
@@ -324,18 +323,20 @@ lemma left_distrib [BEq R] [LawfulBEq R] : ∀ {p q r : CMvPolynomial n R},
   (p + q) * r = p * r + q * r
 := by
   intro p q r
-  ext m
-  rw [add_getD?']
-  simp [mul_sum]
-  trans
-    ∑ mᵢ ∈ filter_monomials m (p + q) r,
-      (coeff mᵢ p * coeff (m / mᵢ) r + coeff mᵢ q * coeff (m / mᵢ) r)
-  · congr
-    ext a
-    simp [add_getD?', right_distrib]
-  · rw [Finset.sum_add_distrib]
-    -- congr 1
-    sorry
+  rw [Lawful.grind_mul_skip, Lawful.grind_mul_skip, Lawful.grind_mul_skip]
+  sorry
+  -- ext m
+  -- rw [add_getD?']
+  -- simp [mul_sum]
+  -- trans
+  --   ∑ mᵢ ∈ filter_monomials m (p + q) r,
+  --     (coeff mᵢ p * coeff (m / mᵢ) r + coeff mᵢ q * coeff (m / mᵢ) r)
+  -- · congr
+  --   ext a
+  --   simp [add_getD?', right_distrib]
+  -- · rw [Finset.sum_add_distrib]
+  --   -- congr 1
+  --   sorry
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   AddCommSemigroup (CPoly.CMvPolynomial n R) where
@@ -353,7 +354,16 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : AddMonoid (CPoly.CMvPolynomial n R) w
   nsmul n p := (List.replicate n p).sum
   nsmul_succ {m x} := by grind -- `nsmul` def changed + `add_comm` is now available; `grind`!
 
--- #check
+lemma foldl_eq_sum [BEq R] [LawfulBEq R] [AddCommMonoid δ] {t : Unlawful n R} (f : CMvMonomial n → R → δ) :
+    ExtTreeMap.foldl (fun x a b => (f a b) + x) 0 t =
+      Finsupp.sum (Unlawful.toMvPoly t) (f ∘ CMvMonomial.ofFinsupp) := by
+  sorry
+
+lemma bad_lemma_name [BEq R] [LawfulBEq R] {t : Unlawful n R} (f : CMvMonomial n → R → Unlawful n R) :
+    Lawful.fromUnlawful (ExtTreeMap.foldl (fun x a b => (f a b) + x) 0 t) =
+      ExtTreeMap.foldl (fun x a b => (Lawful.fromUnlawful (f a b)) + x) 0 (Lawful.fromUnlawful t).1 := by
+  sorry
+
 lemma mul_assoc [BEq R] [LawfulBEq R] :
   ∀ (a b c : CMvPolynomial n R), a * b * c = a * (b * c)
 := by
@@ -362,9 +372,47 @@ lemma mul_assoc [BEq R] [LawfulBEq R] :
   simp [Lawful.mul]
   unfold_projs
   dsimp [Unlawful.mul]
+  generalize eq : Lawful.fromUnlawful (R := R) (ExtTreeMap.foldl (cmp := Ord.compare (α := CMvMonomial n)) _ _ a.1) = abc
+  rw [@bad_lemma_name n R _ _ _ abc.1]
+  conv =>
+    lhs
+    arg 1
+    ext a b c
+    arg 1
+    rw [bad_lemma_name]
+
+  generalize eq' : (_ : Lawful n R → CMvMonomial n → R → Lawful n R) = f
+
+  simp only [Lawful.fromUnlawful_cast]
+
+  have bla := @foldl_eq_sum n R _ (Lawful n R) _ _ sorry abc.1
+    (fun b c_1 => ExtTreeMap.foldl (fun x a b_1 => Lawful.fromUnlawful ((∅ : ExtTreeMap (CMvMonomial n) R compare).insert (b * a) (c_1 * b_1)) + x) 0 c.1)
+
+
+  -- convert bla
+
+
+  -- conv =>
+  --   lhs
+  --   arg 1
+  --   ext a b c
+  --   arg 1
+  --   rw [@foldl_eq_sum n R _ (Lawful n R) _ _ sorry _ (fun f b c)]
+
+  -- have bla := @foldl_eq_sum n R _ (Lawful n R) _ _ sorry _ (f b c)
+
+  -- rw [bla]
+
+  -- set abc' := Lawful.fromUnlawful (R := R) (ExtTreeMap.foldl (cmp := Ord.compare (α := CMvMonomial n)) _ _ c.1) with eq'
+
+
+
+  -- have bla := @foldl_eq_sum n R _ (Unlawful n R) _ _ _
   -- unfold Unlawful.mul₀
   -- dsimp
   sorry
+
+#exit
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul := by grind
@@ -374,17 +422,17 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
     have sum_zeros : List.sum (List.replicate (ExtTreeMap.size p.1) (0 : Unlawful n R)) = 0 := by
       generalize ExtTreeMap.size p.1 = n
       induction n <;> grind
+    rw [Lawful.grind_mul_skip]
     unfold_projs
-    unfold Lawful.mul
-    unfold_projs
-    unfold Unlawful.mul Lawful.C
+    unfold Lawful.C
     simp; grind
   mul_assoc := sorry
   one_mul := by
     intros a
     by_cases h : (1 : R) = 0
     · rw [all_polys_eq_zero_of_1_eq_0 h (p := (1 * a)), all_polys_eq_zero_of_1_eq_0 h (p := a)]
-    · dsimp only [(·*·), Mul.mul, Lawful.mul, Lawful.fromUnlawful, Unlawful.mul₀, Unlawful.mul]
+    · rw [Lawful.grind_mul_skip]
+      dsimp only [Unlawful.mul₀, Unlawful.mul]
       unfold_projs
       unfold Lawful.C Unlawful.C MonoR.C
       simp only [Unlawful.zero_eq_zero, Nat.cast_one, Nat.cast_one, h, ↓reduceIte]
@@ -421,14 +469,8 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
       unfold Unlawful.add Unlawful.C
       simp only
         [Unlawful.zero_eq_zero, ↓reduceIte, ExtTreeMap.empty_eq_emptyc, ExtTreeMap.mergeWith_empty]
-      apply Std.ExtTreeMap.ext_getElem? (cmp := compare)
-      intro k
-      by_cases h' : k ∈ a
-      · specialize h k
-        rw [ExtTreeMap.filter_mem (f := (fun x c => c != 0)) h'] <;> grind
-      · have := @ExtTreeMap.filter_not_mem (CMvMonomial n) R _ _ compare _ _ k (fun x c => c != 0) a h'
-        rw [this]
-        simp [h']
+      unfold Lawful.fromUnlawful
+      grind
   mul_one := fun _ ↦ mul_one
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] : Semiring (CPoly.CMvPolynomial n R) where

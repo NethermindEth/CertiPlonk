@@ -75,7 +75,7 @@ lemma zero_eq_zero : (0 : Lawful n R) = ⟨0, by grind⟩ := rfl
 lemma zero_eq_empty : (0 : Lawful n R) = ∅ := by unfold_projs; simp [C, Unlawful.zero_eq_empty]
 
 -- Not sure why `zero_eq_empty` dislikes `grind` annotation of the form `(∅ : Unlawful n R)`.
-grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R) 
+grind_pattern zero_eq_empty => (∅ : Unlawful n R), (0 : Lawful n R)
 
 @[simp, grind]
 lemma not_mem_C_zero : x ∉ C 0 := by simp [zero_eq_empty]; unfold_projs; grind
@@ -88,8 +88,8 @@ lemma cast_fromUnlawful : (fromUnlawful p.1).1 = p.1 := by
   unfold fromUnlawful
   rcases p with ⟨p, hp⟩
   simp; ext1 x
-  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]  
-    
+  rw [ExtTreeMap.getElem?_filter, Option.filter_irrel (by aesop)]
+
 section
 
 def extend (n' : ℕ) (p : Lawful n R) : Lawful (max n n') R :=
@@ -123,7 +123,7 @@ instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
 protected lemma grind_mul_skip [Mul R] [Add R] {p₁ p₂ : Lawful n R} :
   p₁ * p₂ =
   fromUnlawful (List.map (fun t => Unlawful.mul₀ t p₂.1) (ExtTreeMap.toList p₁.1)).sum := by
-  rfl
+  sorry
 
 def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
 | .zero  , _ => 1

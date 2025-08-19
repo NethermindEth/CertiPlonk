@@ -10,6 +10,7 @@ section
 open Std
 
 namespace CPoly
+open CMvPolynomial
 
 section
 
@@ -17,6 +18,18 @@ variable {n : ℕ} {R : Type} [CommSemiring R]
 
 def fromCMvPolynomial [BEq R] [LawfulBEq R] (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
   let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
+  let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
+  let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
+    dsimp [toFun, support]
+    refine ⟨fun _ _ ↦ ?p₁, fun _ ↦ ?p₂⟩
+    · grind
+    · suffices ∃ m ∈ p, CMvMonomial.toFinsupp m = a by grind
+      grind
+  Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
+
+def Unlawful.toMvPoly [BEq R] [LawfulBEq R] (p : Unlawful n R) : (Fin n →₀ ℕ) →₀ R :=
+  let support : List (Fin n →₀ ℕ) :=
+    (p.monomials.filter (fun x ↦ p[x]? != some 0)).map CMvMonomial.toFinsupp
   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
     dsimp [toFun, support]
@@ -116,8 +129,61 @@ section
 
 attribute [local grind=] Lawful.fromUnlawful
 
+lemma bla [BEq R] [LawfulBEq R] {u : Unlawful n R} :
+  (Lawful.fromUnlawful u).1.toMvPoly = u.toMvPoly
+:= by sorry
+  -- unfold Lawful.fromUnlawful Unlawful.toMvPoly
+  -- simp
+  -- constructor
+  -- · ext x
+  --   simp
+  --   sorry
+  -- · ext x
+  --   grind
+
+lemma eq_iff_fromCMvPolynomial [BEq R] [LawfulBEq R] {u₁ u₂: Unlawful n R} :
+  u₁ = u₂ ↔ u₁.toMvPoly = u₂.toMvPoly
+:= by
+  sorry
+
+#check Finsupp.zipWith
+
+lemma merge_lemma [BEq R] [LawfulBEq R] {p q : Unlawful n R} :
+  Unlawful.toMvPoly (ExtTreeMap.mergeWith (fun _ ↦ f) p q) =
+    Finsupp.zipWith f h (Unlawful.toMvPoly p) (Unlawful.toMvPoly q)
+:= by sorry
+
+lemma abc [BEq R] [LawfulBEq R] {u v: Lawful n R} :
+  u = v ↔ u.1 = v.1
+:= by
+  rcases u; rcases v; grind
+
+lemma from_empty_zero [BEq R] [LawfulBEq R] :
+  Unlawful.toMvPoly (ExtTreeMap.empty : Unlawful n R) = 0
+:= by
+  sorry
+
 lemma add_zero [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : p + 0 = p := by
-  grind
+  unfold_projs
+  unfold Lawful.add Lawful.C Unlawful.C MonoR.C
+  dsimp
+  simp_rw [if_pos]
+  unfold_projs
+  unfold Unlawful.add
+
+  rw [abc]
+  -- rcases p with ⟨p', _⟩
+  rw [eq_iff_fromCMvPolynomial]
+  rw [bla]
+  rw [merge_lemma]
+  rw [from_empty_zero]
+  apply _root_.add_zero
+  rw [_root_.add_zero]
+
+#synth Add (MvPolynomial (Fin 2) R)
+#synth Distrib (MvPolynomial (Fin 2) R)
+#synth NonUnitalNonAssocSemiring (MvPolynomial (Fin 2) R)
+
 
 lemma zero_add [BEq R] [LawfulBEq R] {p : CMvPolynomial n R} : 0 + p = p := by
   grind
@@ -157,6 +223,7 @@ lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := b
         all_polys_eq_zero_of_1_eq_0 eq_1_0 (p := p)
       ]
   · dsimp only [(·*·), Mul.mul, Lawful.mul, Unlawful.mul]
+
     unfold_projs
     simp only [Lawful.C, Nat.cast_one]
     have list_MonoR_map_Unlawful [BEq R] [LawfulBEq R] {terms : List (MonoR n R)}:
@@ -218,7 +285,7 @@ lemma mul_one [BEq R] [i : LawfulBEq R] {p : CMvPolynomial n R} : p * 1 = p := b
     grind
 
 lemma add_getD? [BEq R] [LawfulBEq R] {m : CMvMonomial n} {p q : CMvPolynomial n R} :
-  (p + q).val[m]?.getD 0 = q.val[m]?.getD 0 + p.val[m]?.getD 0
+  (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0
 := by
   rw [HAdd.hAdd, instHAdd, Add.add, Lawful.instAdd]; dsimp
   simp only [Lawful.add, Lawful.fromUnlawful];
@@ -252,6 +319,24 @@ lemma add_getD? [BEq R] [LawfulBEq R] {m : CMvMonomial n} {p q : CMvPolynomial n
     unfold_projs at in_q; simp at in_q
     aesop
 
+
+lemma left_distrib [BEq R] [LawfulBEq R] : ∀ {p q r : CMvPolynomial n R},
+  (p + q) * r = p * r + q * r
+:= by
+  intro p q r
+  ext m
+  rw [add_getD?']
+  simp [mul_sum]
+  trans
+    ∑ mᵢ ∈ filter_monomials m (p + q) r,
+      (coeff mᵢ p * coeff (m / mᵢ) r + coeff mᵢ q * coeff (m / mᵢ) r)
+  · congr
+    ext a
+    simp [add_getD?', right_distrib]
+  · rw [Finset.sum_add_distrib]
+    -- congr 1
+    sorry
+
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   AddCommSemigroup (CPoly.CMvPolynomial n R) where
     add_assoc := by
@@ -267,6 +352,19 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : AddMonoid (CPoly.CMvPolynomial n R) w
   add_zero _ := add_zero -- this is just `by grind` but in a different scope
   nsmul n p := (List.replicate n p).sum
   nsmul_succ {m x} := by grind -- `nsmul` def changed + `add_comm` is now available; `grind`!
+
+-- #check
+lemma mul_assoc [BEq R] [LawfulBEq R] :
+  ∀ (a b c : CMvPolynomial n R), a * b * c = a * (b * c)
+:= by
+  intro a b c
+  unfold_projs
+  simp [Lawful.mul]
+  unfold_projs
+  dsimp [Unlawful.mul]
+  -- unfold Unlawful.mul₀
+  -- dsimp
+  sorry
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul := by grind
@@ -334,8 +432,8 @@ instance {n : ℕ} [BEq R] [LawfulBEq R] : MonoidWithZero (CPoly.CMvPolynomial n
   mul_one := fun _ ↦ mul_one
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] : Semiring (CPoly.CMvPolynomial n R) where
-  left_distrib := sorry
-  right_distrib := sorry
+  left_distrib {p q r} := sorry
+  right_distrib {p q r} := sorry
 
 instance {n : ℕ} [BEq R] [LawfulBEq R] :
   CommSemiring (CPoly.CMvPolynomial n R) where

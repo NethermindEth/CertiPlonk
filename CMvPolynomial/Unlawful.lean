@@ -110,7 +110,9 @@ lemma mul₀_zero [Zero R] [BEq R] [LawfulBEq R] [Mul R] {t : MonoR n R} : mul�
   grind
 
 def mul [Mul R] [Add R] [Zero R] [BEq R] [LawfulBEq R] (p₁ p₂ : Unlawful n R) : Unlawful n R :=
-  p₁.toList.map p₂.mul₀ |>.sum
+  p₁.foldl (init := 0)
+    fun p m₁ c₁ ↦
+      (p₂.foldl (init := 0) fun p' m₂ c₂ ↦ {(m₁ * m₂, c₁ * c₂)} + p') + p
 
 instance [BEq R] [LawfulBEq R] [Mul R] [Add R] [Zero R] : Mul (Unlawful n R) := ⟨mul⟩
 

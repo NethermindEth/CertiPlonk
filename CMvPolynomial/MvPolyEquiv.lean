@@ -364,7 +364,7 @@ lemma bad_lemma_name [BEq R] [LawfulBEq R] {t : Unlawful n R} (f : CMvMonomial n
       ExtTreeMap.foldl (fun x a b => (Lawful.fromUnlawful (f a b)) + x) 0 (Lawful.fromUnlawful t).1 := by
   sorry
 
-lemma mul_assoc [BEq R] [LawfulBEq R] :
+lemma mul_assoc [BEq R] [LawfulBEq R] [AddCommMonoid (Lawful n R)]:
   ∀ (a b c : CMvPolynomial n R), a * b * c = a * (b * c)
 := by
   intro a b c
@@ -372,21 +372,23 @@ lemma mul_assoc [BEq R] [LawfulBEq R] :
   simp [Lawful.mul]
   unfold_projs
   dsimp [Unlawful.mul]
-  generalize eq : Lawful.fromUnlawful (R := R) (ExtTreeMap.foldl (cmp := Ord.compare (α := CMvMonomial n)) _ _ a.1) = abc
-  rw [@bad_lemma_name n R _ _ _ abc.1]
+  simp only [bad_lemma_name, Lawful.fromUnlawful_cast]
+
+  -- generalize eq' : (_ : Lawful n R → CMvMonomial n → R → Lawful n R) = f
+
+  have bla := @foldl_eq_sum n R _ (Lawful n R) _ _ _
+  simp [bla]
   conv =>
     lhs
     arg 1
     ext a b c
     arg 1
-    rw [bad_lemma_name]
+    simp [foldl_eq_sum]
 
-  generalize eq' : (_ : Lawful n R → CMvMonomial n → R → Lawful n R) = f
 
-  simp only [Lawful.fromUnlawful_cast]
 
-  have bla := @foldl_eq_sum n R _ (Lawful n R) _ _ sorry abc.1
-    (fun b c_1 => ExtTreeMap.foldl (fun x a b_1 => Lawful.fromUnlawful ((∅ : ExtTreeMap (CMvMonomial n) R compare).insert (b * a) (c_1 * b_1)) + x) 0 c.1)
+
+    -- (fun b c_1 => ExtTreeMap.foldl (fun x a b_1 => Lawful.fromUnlawful ((∅ : ExtTreeMap (CMvMonomial n) R compare).insert (b * a) (c_1 * b_1)) + x) 0 c.1)
 
 
   -- convert bla

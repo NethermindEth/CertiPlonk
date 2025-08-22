@@ -13,9 +13,9 @@ open CMvPolynomial
 
 section
 
-variable {n : ℕ} {R : Type} [CommSemiring R]
+variable {n : ℕ} {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R]
 
-def fromCMvPolynomial [BEq R] [LawfulBEq R] (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
+def fromCMvPolynomial  (p : CMvPolynomial n R) : MvPolynomial (Fin n) R :=
   let support : List (Fin n →₀ ℕ) := p.monomials.map CMvMonomial.toFinsupp
   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
@@ -25,30 +25,6 @@ def fromCMvPolynomial [BEq R] [LawfulBEq R] (p : CMvPolynomial n R) : MvPolynomi
     · suffices ∃ m ∈ p, CMvMonomial.toFinsupp m = a by grind
       grind
   Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
-
-@[aesop simp]
-lemma eq_iff_fromCMvPolynomial [BEq R] [LawfulBEq R] {u v: CMvPolynomial n R} :
-  u = v ↔ fromCMvPolynomial u = fromCMvPolynomial v := by sorry
-
-@[simp]
-lemma map_mul [BEq R] [LawfulBEq R] (a b : CMvPolynomial n R) :
-  fromCMvPolynomial (a * b) = (fromCMvPolynomial a) * (fromCMvPolynomial b)
-:= by
-  sorry
-
-@[simp]
-lemma map_add [BEq R] [LawfulBEq R]  (a b : CMvPolynomial n R) :
-  fromCMvPolynomial (a + b) = fromCMvPolynomial a + fromCMvPolynomial b
-:= by
-  sorry
-
-@[simp]
-lemma map_zero [BEq R] [LawfulBEq R] : fromCMvPolynomial (0 : CMvPolynomial n R) = 0 := by
-  sorry
-
-@[simp]
-lemma map_one [BEq R] [LawfulBEq R] : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
-  sorry
 
 noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n R :=
   let ⟨s, f, _⟩ := p
@@ -72,8 +48,6 @@ noncomputable def toCMvPolynomial (p : MvPolynomial (Fin n) R) : CMvPolynomial n
           exact distinct_of_inj_nodup CMvMonomial.injective_ofFinsupp (Finset.nodup_toList _)
       grind
   ⟩
-
-variable [BEq R] [LawfulBEq R]
 
 @[grind=, simp]
 theorem toCMvPolynomial_fromCMvPolynomial {p : CMvPolynomial n R} :
@@ -110,6 +84,40 @@ theorem fromCMvPolynomial_toCMvPolynomial {p : MvPolynomial (Fin n) R} :
   · have : ∀ x ∈ s, CMvMonomial.ofFinsupp x ≠ CMvMonomial.ofFinsupp m := by aesop
     grind
 
+lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _ _ _) := by
+  rw [Function.injective_iff_hasLeftInverse]
+  unfold Function.HasLeftInverse
+  exists toCMvPolynomial
+  unfold Function.LeftInverse
+  apply toCMvPolynomial_fromCMvPolynomial
+
+@[aesop simp]
+lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
+    u = v ↔ fromCMvPolynomial u = fromCMvPolynomial v := by
+  apply Iff.intro
+  · intros h; rw [h]
+  · apply fromCMvPolynomial_injective
+
+@[simp]
+lemma map_mul (a b : CMvPolynomial n R) :
+  fromCMvPolynomial (a * b) = (fromCMvPolynomial a) * (fromCMvPolynomial b)
+:= by
+  sorry
+
+@[simp]
+lemma map_add (a b : CMvPolynomial n R) :
+  fromCMvPolynomial (a + b) = fromCMvPolynomial a + fromCMvPolynomial b
+:= by
+  sorry
+
+@[simp]
+lemma map_zero : fromCMvPolynomial (0 : CMvPolynomial n R) = 0 := by
+  sorry
+
+@[simp]
+lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
+  sorry
+
 noncomputable def polyEquiv:
   Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
 where
@@ -118,35 +126,24 @@ where
   left_inv := fun _ ↦ toCMvPolynomial_fromCMvPolynomial
   right_inv := fun _ ↦ fromCMvPolynomial_toCMvPolynomial
 
-lemma add_zero {p : CMvPolynomial n R} : p + 0 = p := by aesop
-
-lemma zero_add {p : CMvPolynomial n R} : 0 + p = p := by aesop
-
 attribute [local grind=] Unlawful.add Lawful.add Unlawful.mul Lawful.mul
-
-lemma mul_one {p : CMvPolynomial n R} : p * 1 = p := by aesop
-
-lemma left_distrib : ∀ {p q r : CMvPolynomial n R}, (p + q) * r = p * r + q * r := by aesop
 
 instance {n : ℕ} : AddCommSemigroup (CPoly.CMvPolynomial n R) where
   add_assoc := by aesop (add safe apply add_assoc)
   add_comm := by grind
 
 instance {n : ℕ} : AddMonoid (CPoly.CMvPolynomial n R) where
-  zero_add _ := zero_add -- this is just `by grind` but in a different scope
-  add_zero _ := add_zero -- this is just `by grind` but in a different scope
+  zero_add _ := by aesop
+  add_zero _ := by aesop
   nsmul n p := (List.replicate n p).sum
   nsmul_succ {m x} := by grind -- `nsmul` def changed + `add_comm` is now available; `grind`!
-
-lemma mul_assoc : ∀ (a b c : CMvPolynomial n R), a * b * c = a * (b * c) := by
-  aesop (add safe apply _root_.mul_assoc)
 
 instance {n : ℕ} : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul := by grind
   mul_zero := by aesop
-  mul_assoc := mul_assoc
+  mul_assoc := by aesop (add safe apply _root_.mul_assoc)
   one_mul := by aesop
-  mul_one := fun _ ↦ mul_one
+  mul_one := by aesop
 
 instance {n : ℕ} : Semiring (CPoly.CMvPolynomial n R) where
   left_distrib {p q r} := by aesop

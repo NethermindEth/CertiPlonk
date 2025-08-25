@@ -169,6 +169,12 @@ lemma filter_not_mem {f : α → β → Bool} {m : Std.ExtTreeMap α β cmp} (h 
   rw [getElem?_filter]
   simp [h]
 
+@[grind=]
+lemma filter_not_pred {f : α → β → Bool} {m : Std.ExtTreeMap α β cmp} (h : k ∈ m) : ¬ (f k m[k]) → (Std.ExtTreeMap.filter f m)[k]? = .none := by
+  intros h
+  rw [getElem?_filter]
+  grind
+
 attribute [grind ext] Std.ExtTreeMap.ext_getElem?
 
 end ExtTreeMap

@@ -89,6 +89,13 @@ lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _
   exists toCMvPolynomial
   apply toCMvPolynomial_fromCMvPolynomial
 
+lemma coeff_eq {m} (a b : CMvPolynomial n R) : MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := by
+
+  sorry
+
+lemma filter_get {m : CMvMonomial n} (a : Unlawful n R) : (ExtTreeMap.filter (fun x c => c != v) a)[m]?.getD v = a[m]?.getD v := by
+  sorry
+
 @[aesop simp]
 lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
     u = v ↔ fromCMvPolynomial u = fromCMvPolynomial v := by
@@ -106,7 +113,22 @@ lemma map_mul (a b : CMvPolynomial n R) :
 lemma map_add (a b : CMvPolynomial n R) :
   fromCMvPolynomial (a + b) = fromCMvPolynomial a + fromCMvPolynomial b
 := by
-  sorry
+  ext m
+  rw [MvPolynomial.coeff_add, coeff_eq, coeff_eq, coeff_eq]
+  unfold CMvPolynomial.coeff
+  unfold_projs
+  unfold CPoly.Lawful.add
+  simp only [ExtTreeMap.get?_eq_getElem?, Unlawful.zero_eq_zero]
+  unfold_projs
+  unfold Unlawful.add Lawful.fromUnlawful
+  simp only [ExtTreeMap.get?_eq_getElem?, Unlawful.zero_eq_zero]
+  by_cases h : (CMvMonomial.ofFinsupp m) ∈ a.1 <;> by_cases h' : (CMvMonomial.ofFinsupp m) ∈ b.1
+  · have := @filter_get n R _ _ _ 0 (CMvMonomial.ofFinsupp m) (ExtTreeMap.mergeWith (fun x c₁ c₂ => c₁ + c₂) a.1 b.1)
+
+    sorry
+  · sorry
+  · sorry
+  · sorry
 
 @[simp]
 lemma map_zero : fromCMvPolynomial (0 : CMvPolynomial n R) = 0 := by

@@ -89,12 +89,27 @@ lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _
   exists toCMvPolynomial
   apply toCMvPolynomial_fromCMvPolynomial
 
-lemma coeff_eq {m} (a b : CMvPolynomial n R) : MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := by
+lemma coeff_eq {m} (a : CMvPolynomial n R) : MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := by
+  aesop
 
-  sorry
-
-lemma filter_get {m : CMvMonomial n} (a : Unlawful n R) : (ExtTreeMap.filter (fun x c => c != v) a)[m]?.getD v = a[m]?.getD v := by
-  sorry
+lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
+    (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
+  by_cases h : m ∈ a
+  · by_cases h' : a[m] = v
+    · erw [ExtTreeMap.filter_not_pred h (by simp [h'])]
+      have : a[m]? = .some v := by
+        aesop
+      rw [this]
+      simp
+    · erw [ExtTreeMap.filter_mem h (by simp [h'])]
+      have : a[m]?.getD v = a[m] := by
+        have : a[m]? = some a[m] := by
+          simp [h]
+        rw [this]
+        simp
+      rw [this]
+      simp
+  · simp [h, ExtTreeMap.filter_not_mem h]
 
 @[aesop simp]
 lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
@@ -122,13 +137,41 @@ lemma map_add (a b : CMvPolynomial n R) :
   unfold_projs
   unfold Unlawful.add Lawful.fromUnlawful
   simp only [ExtTreeMap.get?_eq_getElem?, Unlawful.zero_eq_zero]
+  erw [filter_get]
   by_cases h : (CMvMonomial.ofFinsupp m) ∈ a.1 <;> by_cases h' : (CMvMonomial.ofFinsupp m) ∈ b.1
-  · have := @filter_get n R _ _ _ 0 (CMvMonomial.ofFinsupp m) (ExtTreeMap.mergeWith (fun x c₁ c₂ => c₁ + c₂) a.1 b.1)
-
-    sorry
-  · sorry
-  · sorry
-  · sorry
+  · rw [ExtTreeMap.mergeWith₀ h h', Option.getD_some]
+    have h₁ : ((a.1)[CMvMonomial.ofFinsupp m]?.getD 0) = (a.1)[CMvMonomial.ofFinsupp m] := by simp [h]
+    have h₂ : ((b.1)[CMvMonomial.ofFinsupp m]?.getD 0) = (b.1)[CMvMonomial.ofFinsupp m] := by simp [h']
+    erw [h₁, h₂]
+    rfl
+  · rw [ExtTreeMap.mergeWith₁ h h']
+    have : ((b.1)[CMvMonomial.ofFinsupp m]?.getD 0) = 0 := by
+      simp [h']
+    erw [this]
+    have {x : R} : x + 0 = x := by simp
+    specialize @this ((a.1)[CMvMonomial.ofFinsupp m]?.getD 0)
+    unfold_projs at this
+    erw [this]
+    rfl
+  · rw [ExtTreeMap.mergeWith₂ h h']
+    have : ((a.1)[CMvMonomial.ofFinsupp m]?.getD 0) = 0 := by
+      simp [h]
+    erw [this]
+    have {x : R} : 0 + x = x := by simp
+    specialize @this ((b.1)[CMvMonomial.ofFinsupp m]?.getD 0)
+    unfold_projs at this
+    erw [this]
+    rfl
+  · rw [ExtTreeMap.mergeWith₃ h h']
+    have h₁ : ((a.1)[CMvMonomial.ofFinsupp m]?.getD 0) = 0 := by
+      simp [h]
+    have h₂ : ((b.1)[CMvMonomial.ofFinsupp m]?.getD 0) = 0 := by
+      simp [h']
+    erw [h₁, h₂, Option.getD_none]
+    have : 0 + 0 = (0 : R) := by simp
+    unfold_projs at this
+    erw [this]
+    rfl
 
 @[simp]
 lemma map_zero : fromCMvPolynomial (0 : CMvPolynomial n R) = 0 := by

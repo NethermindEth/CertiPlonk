@@ -119,12 +119,6 @@ lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
   · apply fromCMvPolynomial_injective
 
 @[simp]
-lemma map_mul (a b : CMvPolynomial n R) :
-  fromCMvPolynomial (a * b) = (fromCMvPolynomial a) * (fromCMvPolynomial b)
-:= by
-  sorry
-
-@[simp]
 lemma map_add (a b : CMvPolynomial n R) :
   fromCMvPolynomial (a + b) = fromCMvPolynomial a + fromCMvPolynomial b
 := by
@@ -172,6 +166,18 @@ lemma map_add (a b : CMvPolynomial n R) :
     unfold_projs at this
     erw [this]
     rfl
+
+-- def Unlawful.toMvPoly (p : Unlawful n R) : (Fin n →₀ ℕ) →₀ R :=
+--   let support : List (Fin n →₀ ℕ) :=
+--     (p.monomials.filter (fun x ↦ p[x]? != some 0)).map CMvMonomial.toFinsupp
+--   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
+--   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
+--     dsimp [toFun, support]
+--     refine ⟨fun _ _ ↦ ?p₁, fun _ ↦ ?p₂⟩
+--     · grind
+--     · suffices ∃ m ∈ p, CMvMonomial.toFinsupp m = a by grind
+--       grind
+--   Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
 
 @[simp]
 lemma map_zero : fromCMvPolynomial (0 : CMvPolynomial n R) = 0 := by
@@ -266,6 +272,158 @@ instance {n : ℕ} : AddMonoid (CPoly.CMvPolynomial n R) where
   add_zero _ := by aesop
   nsmul n p := (List.replicate n p).sum
   nsmul_succ {m x} := by grind -- `nsmul` def changed + `add_comm` is now available; `grind`!
+
+instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
+  toAddMonoid := inferInstance
+  add_comm := by grind
+
+omit [CommSemiring R] in
+lemma ofList_toList {terms : List (MonoR n R)} :
+  List.Pairwise (fun a b ↦ ¬compare a.1 b.1 = Ordering.eq) terms →
+  ExtTreeMap.toList (ExtTreeMap.ofList terms compare) = terms
+:= by
+  intro distinct
+  induction' terms with t ts ih
+  · simp
+  · simp only [List.pairwise_cons, Prod.forall] at distinct
+    -- rw [ExtTreeMap.ofList_cons]
+    specialize ih distinct.2
+    nth_rw 2 [←ih]
+    -- revert ts
+    -- induction' ts with t' ts' ih'
+    -- · rw [ofList_toList_empty, ofList_toList_MonoR]
+    -- · simp
+    sorry
+
+lemma mul_getD?₀ {m : Fin n →₀ ℕ} {p q : MvPolynomial (Fin n) R} :
+  (p * q).coeff m = c ↔
+  ∃ lms : List ((Fin n →₀ ℕ) × (Fin n →₀ ℕ)),
+    lms.foldr (fun (m₁, m₂) acc ↦ p.coeff m₁ * q.coeff m₂ + acc) 0 = c ∧
+    ∀ m₁ m₂ c₁ c₂,
+      p.coeff m₁ = c₁ ∧ q.coeff m₂ = c₂ ∧ m₁ * m₂ = m ∧ c₁ * c₂ ≠ 0 ↔ (m₁, m₂) ∈ lms
+:= by
+  sorry
+
+lemma mul_getD? {m : CMvMonomial n} {p q : CMvPolynomial n R} :
+  coeff m (p * q) = c ↔
+  ∃ lms : List (CMvMonomial n × CMvMonomial n),
+    lms.foldr (fun (m₁, m₂) acc ↦ coeff m₁ p * coeff m₂ q + acc) 0 = c ∧
+    ∀ m₁ m₂ c₁ c₂,
+      coeff m₁ p = c₁ ∧ coeff m₂ q = c₂ ∧ m₁ * m₂ = m ∧ c₁ * c₂ ≠ 0 ↔
+      (m₁, m₂) ∈ lms
+:= by
+  rw [HMul.hMul, instHMul, Mul.mul, Lawful.instMulOfAdd]; dsimp
+  simp only [Lawful.mul, Lawful.fromUnlawful];
+  rw [HMul.hMul, instHMul, Mul.mul, Unlawful.instMulOfLawfulBEqOfAddOfZero]; dsimp
+  -- rw [Unlawful.mul]
+  -- rw [ExtTreeMap.getElem?_filter]
+
+
+  -- have sum_list_getD? :
+  --   p.val[m]?.getD 0 =
+  --     List.sum (p.val.toList.map (fun t ↦ ({t} : Unlawful n R)[m]?.getD 0))
+  -- := by
+  --   generalize terms_def : ExtTreeMap.toList p.val = terms
+  --   revert p
+  --   induction' terms with t ts ih
+  --   · intro p terms_def
+  --     rw [ExtTreeMap.toList_eq_nil_iff] at terms_def
+  --     simp [*]
+  --   · intro p to_list_p
+  --     simp
+  --     have :
+  --       (List.map (fun t => ((∅ : Unlawful n R).insert t.1 t.2)[m]?.getD 0) ts).sum =
+  --     sorry
+  sorry
+
+lemma Option.filter_getD_0_id [BEq R] [LawfulBEq R] {o : Option R} :
+  (o.filter (fun c ↦ c != 0)).getD 0 = o.getD 0
+:= by
+  rcases o
+  case none => rfl
+  case some val =>
+    by_cases val_eq_0 : val = 0 <;> simp [Option.filter, val_eq_0]
+
+lemma filter_zero_coeff {u : Unlawful n R} :
+  coeff m (Lawful.fromUnlawful u) = coeff m u
+:= by
+  rcases o
+  case none => rfl
+  case some val =>
+    by_cases val_eq_0 : val = 0 <;> simp [Option.filter, val_eq_0]
+
+
+-- lemma Option.filter_getD_0_id [BEq R] [LawfulBEq R] {o : Option R} :
+--   (o.filter (fun c ↦ c != 0)).getD 0 = o.getD 0
+-- := by
+--   rcases o
+--   case none => rfl
+--   case some val =>
+--     by_cases val_eq_0 : val = 0 <;> simp [Option.filter, val_eq_0]
+
+lemma bad_lemma_name {t : Unlawful n R}
+  (f : CMvMonomial n → R → Unlawful n R) :
+  Lawful.fromUnlawful (ExtTreeMap.foldl (fun x p q => (f p q) + x) 0 t) =
+    ExtTreeMap.foldl (fun x p q => (Lawful.fromUnlawful (f p q)) + x) 0 (Lawful.fromUnlawful t).1
+:= by
+  sorry
+
+-- lemma foldl_eq_sum [AddCommMonoid δ] {t : Unlawful n R}
+--   (f : CMvMonomial n → R → δ) :
+--   ExtTreeMap.foldl (fun x p q => (f p q) + x) 0 t =
+--     Finsupp.sum (toMvPoly t) (f ∘ CMvMonomial.ofFinsupp)
+-- := by
+--   sorry
+
+lemma foldl_eq_sum' [AddCommMonoid δ] {t : CMvPolynomial n R}
+  (f : CMvMonomial n → R → δ) :
+  ExtTreeMap.foldl (fun x p q => (f p q) + x) 0 t.1 =
+    Finsupp.sum (fromCMvPolynomial t) (f ∘ CMvMonomial.ofFinsupp)
+:= by
+  sorry
+
+-- fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) f) = Finsupp.sum (fromCMvPolynomial a) g
+lemma abc {f : (Fin n →₀ ℕ) → R → Lawful n R } {a : MvPolynomial (Fin n) R}:
+  fromCMvPolynomial (Finsupp.sum a f) =
+    Finsupp.sum a g
+:= by sorry
+
+set_option pp.fieldNotation false
+@[simp]
+lemma map_mul (a b : CMvPolynomial n R) :
+  fromCMvPolynomial (a * b) = fromCMvPolynomial a * fromCMvPolynomial b
+:= by
+  unfold_projs
+  ext m
+  congr
+  -- simp only [coeff_eq]
+  unfold Lawful.mul
+  unfold_projs
+  unfold Unlawful.mul
+  simp only [bad_lemma_name]
+  simp only [Lawful.fromUnlawful_cast]
+  -- simp [foldl_eq_sum']
+  conv =>
+    lhs
+    arg 1; arg 1
+    -- arg 2; arg 1
+    ext x p q
+    rw [foldl_eq_sum' (fun p₁ q₁ ↦ Lawful.fromUnlawful {(p * p₁, q * q₁)})]
+  rw [foldl_eq_sum']
+  unfold MonoidAlgebra.mul'
+  generalize eq₁ : (fun p q =>
+          Finsupp.sum (fromCMvPolynomial b)
+            ((fun p₁ q₁ => Lawful.fromUnlawful {(p * p₁, q * q₁)}) ∘ CMvMonomial.ofFinsupp)) ∘
+        CMvMonomial.ofFinsupp = f
+  generalize eq₂ : (fun (a₁ : Multiplicative (Fin n →₀ ℕ)) b₁ =>
+    Finsupp.sum (fromCMvPolynomial b) fun (a₂ : Multiplicative (Fin n →₀ ℕ)) b₂ => MonoidAlgebra.single (a₁ * a₂) (b₁ * b₂))
+      = g
+  rw [eq₁.symm, eq₂.symm]
+
+  rewrite [abc (f := f)]
+  -- ext m
+  -- simp only [coeff_eq]
+  sorry
 
 instance {n : ℕ} : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul := by grind

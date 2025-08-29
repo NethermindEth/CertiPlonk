@@ -1,3 +1,6 @@
+import Mathlib.Algebra.Group.Finsupp
+import Mathlib.Algebra.Group.TypeTags.Basic
+import Mathlib.Algebra.GroupWithZero.Nat
 import Mathlib.Algebra.Ring.Defs
 import Mathlib.Data.Nat.Lattice
 import Mathlib.Data.Finsupp.Defs
@@ -94,6 +97,14 @@ def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
   invFun := ofFinsupp
   left_inv := fun _ ↦ ofFinsupp_toFinsupp
   right_inv := fun _ ↦ toFinsupp_ofFinsupp
+
+lemma map_mul {n : ℕ} {m₁ m₂ : Multiplicative (Fin n →₀ ℕ)} :
+  CMvMonomial.ofFinsupp (n := n) (m₁ * m₂) =
+    CMvMonomial.mul (CMvMonomial.ofFinsupp m₁) (CMvMonomial.ofFinsupp m₂)
+:= by
+  unfold_projs
+  ext
+  simp [Multiplicative.toAdd, Multiplicative.ofAdd, CMvMonomial.mul, ofFinsupp]
 
 end CMvMonomial
 

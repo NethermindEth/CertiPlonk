@@ -322,9 +322,9 @@ def normaliseConstants (lcInfo : Std.HashMap Name (ℤ × ℕ)) : MTacM Unit := 
     let const : Term := ⟨const⟩
     logInfo m!"rw [show ({const} : ZMod {modS}) = {const'} by neg_inv_mul_cancel] {l}"
     withMainContext ∘ liftMTac ∘ runTactic' <|
-      (←`(tactic| rw [show ($const : ZMod $modS) = $const' by neg_inv_mul_cancel] $l:location))
+      (←`(tactic| try rw [show ($const : ZMod $modS) = $const' by neg_inv_mul_cancel] $l:location))
     withMainContext ∘ liftMTac ∘ runTactic' <|
-      (←`(tactic| rw [show (($const')⁻¹ : ZMod $modS) = $inverse from ZMod.inv_eq_of_mul_eq_one _ _ _ rfl] $l:location))
+      (←`(tactic| try rw [show (($const')⁻¹ : ZMod $modS) = $inverse from ZMod.inv_eq_of_mul_eq_one _ _ _ rfl] $l:location))
 
 /--
 TODO: This is likely insufficient.
@@ -355,6 +355,7 @@ example {x y z : ZMod 394357} [Fact (Nat.Prime 394357)]
   (h₂ : z^3 + x^2 + x^2 = 0)
   (h₃ : 5 * x * y + y * x + 4 * x^2 + 5 * z^3 * x = 0)
   (h₄ : x * y + y * x + z^3 * x = 0)
+  (h₆ : 2 * 394356 * x = 0)
   : x - 42 = 0 := by
   normalise_system
   sorry

@@ -90,7 +90,7 @@ lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _
   apply toCMvPolynomial_fromCMvPolynomial
 
 lemma coeff_eq {m} (a : CMvPolynomial n R) : MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := by
-  aesop
+  rfl
 
 lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
     (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
@@ -330,7 +330,7 @@ lemma CMvPolynomial.add_getD? {m : CMvMonomial n} {p q : CMvPolynomial n R} :
   rw [filter_get]
   apply Unlawful.add_getD?
 
-lemma add_getD?' {m : CMvMonomial n} {p q : CMvPolynomial n R} :
+lemma coeff_add {m : CMvMonomial n} {p q : CMvPolynomial n R} :
   coeff m (p + q) = coeff m p + coeff m q
 := by
   simp only [coeff, add_getD?]
@@ -350,7 +350,7 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
     congr 1
     generalize f head.1 head.2 = x
     ext m
-    simp [add_getD?']
+    simp [coeff_add]
     unfold coeff Lawful.fromUnlawful
     simp [filter_get]
     apply Unlawful.add_getD?
@@ -370,7 +370,25 @@ lemma fromUnlawful_fold_eq_fold_fromUnlawful
 #check Multiset.fold_eq_foldr
 #check List.foldl_map
 #check Multiset.sum_eq_foldl
--- #check ExtTreeMap.toList
+#check Multiset.sum_coe
+#check Multiset.map
+
+-- example : Finsupp.sum (fromCMvPolynomial t) (f ∘ g) = sorry
+-- example [AddCommMonoid β]
+--   {supp : Finset m}
+--   {f₁ : m ↪ m'}
+--   {f : m' → c → β}
+--   {g₁ : m → c} :
+--   ∑ x ∈ supp, f (f₁ x) (g₁ x) = ∑ x ∈ supp.map f₁, f x (g₁ x)
+-- := by
+--   sorry
+
+-- example
+--   {p : MvPolynomial (Fin n) R}
+--   {f : CMvMonomial n → R → Lawful n R} :
+--   Multiset.map (fun x => f (CMvMonomial.ofFinsupp x) ((fromCMvPolynomial t).coeff x)) (fromCMvPolynomial t).support.val =
+--     Multiset.map (fun x => f x (t.coeff x)) ((fromCMvPolynomial t).support.val.map CMvMonomial.ofFinsupp)
+--   := sorry
 
 lemma foldl_eq_sum' -- [AddCommMonoid δ]
   {t : CMvPolynomial n R}
@@ -378,7 +396,9 @@ lemma foldl_eq_sum' -- [AddCommMonoid δ]
   ExtTreeMap.foldl (fun x m c => (f m c) + x) 0 t.1 =
     Finsupp.sum (fromCMvPolynomial t) (f ∘ CMvMonomial.ofFinsupp)
 := by
-  unfold Finsupp.sum Finset.sum
+  unfold Finsupp.sum
+  simp
+  unfold Finset.sum
   -- unfold Multiset.sum
   -- rw [←Multiset.fold_eq_foldr, Multiset.fold_eq_foldl]
   rw [ExtTreeMap.foldl_eq_foldl_toList]
@@ -386,15 +406,35 @@ lemma foldl_eq_sum' -- [AddCommMonoid δ]
   simp_rw [add_comm]
   -- rw [←Multiset.sum_eq_foldl]
   rw [←List.sum_eq_foldl]
-  simp only [Function.comp_apply]
+  -- simp only [Function.comp_apply]
   ext m
   sorry
 
-lemma abc {f : (Fin n →₀ ℕ) → R → Lawful n R } {a : CMvPolynomial n R} :
+lemma coeff_sum [AddCommMonoid X]
+  (s : Finset X)
+  (f : X → CMvPolynomial n R)
+  (m : CMvMonomial n) :
+  coeff m (∑ x ∈ s, f x) = ∑ x ∈ s, coeff m (f x)
+:= by
+  rw [←Finset.sum_map_toList s, ←Finset.sum_map_toList s]
+  induction' s.toList with h t ih
+  · grind
+  · simp [coeff_add]
+    congr
+
+lemma fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial
+  {f : (Fin n →₀ ℕ) → R → Lawful n R }
+  {a : CMvPolynomial n R} :
   fromCMvPolynomial (Finsupp.sum (fromCMvPolynomial a) f) =
     Finsupp.sum (fromCMvPolynomial a) (fun m c ↦ fromCMvPolynomial (f m c))
 := by
-  sorry
+  ext m
+  simp [coeff_eq]
+  unfold Finsupp.sum
+  dsimp
+  rw [MvPolynomial.coeff_sum, coeff_sum]
+  -- TODO (Andrei): I don't understand why `coeff_eq` is just `rfl`, neither why the current goal is closed with a `rfl`.
+  rfl
 
 set_option pp.fieldNotation false
 @[simp]
@@ -404,7 +444,8 @@ lemma map_mul (a b : CMvPolynomial n R) :
   dsimp only [HMul.hMul, Mul.mul, Lawful.mul, Unlawful.mul]
   simp only [fromUnlawful_fold_eq_fold_fromUnlawful]
   unfold MonoidAlgebra.mul'
-  rw [foldl_eq_sum']; simp_rw [foldl_eq_sum']
+  rw [foldl_eq_sum']
+  simp_rw [foldl_eq_sum']
   let F₀ (p q) : CMvMonomial n → R → Lawful n R :=
     fun p_1 q_1 ↦ Lawful.fromUnlawful {(CMvMonomial.mul p p_1 , Mul.mul q q_1)}
   set F₁ : (Fin n →₀ ℕ) → R → Lawful n R :=
@@ -421,7 +462,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
     fromCMvPolynomial (F₁ m₁ c₁) = F₃ m₁ c₁
   := by
     dsimp only [Function.comp_apply, F₁, F₀, F₃, F₂]
-    rw [abc]
+    rw [fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial]
     simp only [Function.comp_apply]
     congr
     ext (m₂ : Multiplicative (Fin n →₀ ℕ)) c₂ m
@@ -451,35 +492,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
       next h => simp_all only [Option.getD_none]
   have : F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) := by ext x y z; rw [this]
   rw [this]
-  rw [abc]
-
--- #check MvPolynomial.single
-  -- -- simp [foldl_eq_sum']
-  -- conv =>
-  --   lhs
-  --   arg 1; arg 1
-  --   -- arg 2; arg 1
-  --   ext x p q
-  --   rw [foldl_eq_sum']
-  -- rw [foldl_eq_sum']
-  -- unfold MonoidAlgebra.mul'
-  -- let F₀ (p q) : CMvMonomial n → R → Lawful n R :=
-  --   fun p_1 q_1 => Lawful.fromUnlawful (ExtTreeMap.insert ∅ (CMvMonomial.mul p p_1) (Mul.mul q q_1))
-  -- set F₁ : (Fin n →₀ ℕ) → R → Lawful n R :=
-  --   ((fun p q => Finsupp.sum (fromCMvPolynomial b) (F₀ p q ∘ CMvMonomial.ofFinsupp)) ∘ CMvMonomial.ofFinsupp)
-  --   with eqF₁
-  -- let F₂ (a₁ b₁) : Multiplicative (Fin n →₀ ℕ) → R → MonoidAlgebra R (Multiplicative (Fin n →₀ ℕ)) :=
-  --   fun a₂ b₂ => MonoidAlgebra.single (a₁ * a₂) (b₁ * b₂)
-  -- set F₃ : Multiplicative (Fin n →₀ ℕ) → R → MonoidAlgebra R (Multiplicative (Fin n →₀ ℕ)) :=
-  --   fun a₁ b₁ => Finsupp.sum (fromCMvPolynomial b) (F₂ a₁ b₁) with eqF₃
-
-
-  -- rewrite [abc (f := f)]
-  -- ext m
-  -- simp only [coeff_eq]
-  -- sorry
-
-#exit
+  rw [fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial]
 
 instance {n : ℕ} : MonoidWithZero (CPoly.CMvPolynomial n R) where
   zero_mul := by grind

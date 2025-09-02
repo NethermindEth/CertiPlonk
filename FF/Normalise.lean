@@ -286,7 +286,6 @@ elab "neg_inv_mul_cancel" : tactic => do
                           try rfl)))
 
 def cancelMultiplicands (lcInfo : Std.HashMap Name (ℤ × ℕ)) : MTacM Unit := withMainContext do
-  -- logInfo m!"lcInfo: {repr lcInfo}"
   for (hyp, e) in ←exprMap do
     have e : Q(Prop) := e
     let ~q(@Eq (ZMod $k) $lhs 0) := e | throwError s!"{e} must have rhs = 0."
@@ -308,19 +307,16 @@ def normaliseConstants (lcInfo : Std.HashMap Name (ℤ × ℕ)) : MTacM Unit := 
   let modS := Syntax.mkNatLit (←systemMod)
   let env ← getEnv
   for (name, const, inverse) in lcInfo do
-    logInfo m!"const {const} inverse: {inverse} const': {((const.cast : ZMod (←systemMod)).cast : ℤ).toNat}"
     if inverse == 1 then continue
     let .ok const' := runParserCategory env `term s!"{((const.cast : ZMod (←systemMod)).cast : ℤ).toNat}" | throwError s!"{const} is not a valid number."
     let const' : Term := ⟨const'⟩
     let inverse := Syntax.mkNatLit inverse
-    -- logInfo m!"inverse: {inverse}"
     let l ← locationOfNames (if name == (Name.mkSimple "⊢") then #[] else #[name])
     /-
     Is the `rfl` proof slow here? `grind` is inconsistent, the ring representations need work.
     -/
     let .ok const := runParserCategory env `term s!"{const}" | throwError s!"{const} is not a valid number."
     let const : Term := ⟨const⟩
-    logInfo m!"rw [show ({const} : ZMod {modS}) = {const'} by neg_inv_mul_cancel] {l}"
     withMainContext ∘ liftMTac ∘ runTactic' <|
       (←`(tactic| try rw [show ($const : ZMod $modS) = $const' by neg_inv_mul_cancel] $l:location))
     withMainContext ∘ liftMTac ∘ runTactic' <|

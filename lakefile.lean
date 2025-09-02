@@ -9,3 +9,6 @@ require mathlib from git
 
 @[default_target]
 lean_lib CMvPolynomial
+
+@[default_target]
+lean_lib FF

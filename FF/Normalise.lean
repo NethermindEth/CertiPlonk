@@ -1,5 +1,3 @@
-import Lean.Data.AssocList
-
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.NormNum
@@ -7,12 +5,13 @@ import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Ring
 import Mathlib.Algebra.MvPolynomial.Basic
 import Qq
-
-import CMvPolynomial.CMvMonomial
-import CMvPolynomial.CMvPolynomial
+import Lean
 
 namespace EzPz
 
+/--
+Workaround to use a `term` parser instead of `location`.
+-/
 scoped syntax "spoon" Lean.Parser.Tactic.location : term 
 
 open Lean Qq Parser Elab Tactic Meta 
@@ -28,6 +27,11 @@ private def debugGoalDecls (goal : Option MVarId) : MetaM Unit := do
   | .none => m
   | .some goal => goal.withContext m  
 
+/--
+Dumps the main target.
+
+- Debugging only.
+-/
 private def debugTarget (goal : MVarId) : MetaM Unit := goal.withContext do
   logInfo m!"target: {repr (←goal.getType)}"
 
@@ -138,6 +142,10 @@ def grindPolyOfZModEq (eQ : Q(Prop)) (indetMap : Std.HashMap Name ℕ) : MetaM (
   | ~q(@Eq (ZMod $k) $lhs 0) => grindPolyOfZMod lhs indetMap
   | _ => throwError "Expected _ = 0. Got: {eQ}"
 
+/--
+In a polynomial `xc₁ * xc₂ * ... * xcₖ + xc₁' * xc₂' * ... * xcⱼ' + ... + xc₁'' * ... * xcₗ''`,
+returns `[xcₖ, xcₖ', xcₗ'']`.
+-/
 partial def isolatedConstantsOfMonomials {kQ : Q(ℕ)} (eQ : Q(ZMod $kQ)) : MetaM (Array ℕ) := do
   let .succ _ ← unsafe evalExpr ℕ q(ℕ) kQ | return #[]
   match eQ with
@@ -155,6 +163,9 @@ partial def isolatedConstantsOfMonomials {kQ : Q(ℕ)} (eQ : Q(ZMod $kQ)) : Meta
   
 end
 
+/--
+`x = .none` means target, which we name `⊢`.
+-/
 def userNameOfFvarId? (x : Option FVarId) : MetaM Name :=
   match x with | .none => return Name.mkSimple "⊢" | .some x => x.getUserName >>= pure
 
@@ -164,6 +175,9 @@ structure NormaliseST where
 
 abbrev MTac := MVarId → MetaM (List MVarId)
 
+/--
+Similar to `TacticM`.
+-/
 abbrev MTacM := StateT NormaliseST MetaM
 
 def NormaliseST.ofGoal (goal : MVarId) : NormaliseST :=
@@ -172,13 +186,25 @@ def NormaliseST.ofGoal (goal : MVarId) : NormaliseST :=
     goals := #[]
   }
 
+/--
+Descend an `MTacM` into `MVarId → MetaM (List MVarId)`, where the latter is used at interface
+boundaries with existing functionality.
+
+- see also `liftMTac`
+-/
 def MTacM.toMTac (m : MTacM Unit) : MTac :=
   fun goal ↦ do
     let (_, {goal := goal, goals := goals, ..}) ← m.run (NormaliseST.ofGoal goal)
     pure (goal :: goals.toList)
 
+/--
+Similar to `TacticM.withMainContext`.
+-/
 def withMainContext {α : Type} (m : MTacM α) : MTacM α := do (←get).goal.withContext m
 
+/--
+Evaluates to all `ZMod k` indeterminates of the system and enforces uniform `k`.
+-/
 def consistentIndeterminates : MTacM (Option (Array Name × ℕ)) := do
   let mut mod : Option Nat := .none
   let mut indets : Array Name := #[]
@@ -204,8 +230,14 @@ def systemMod : MTacM ℕ := do
   let .some (_, mod) ← consistentIndeterminates | throwError "The system is inconsistent."
   return mod
 
+/--
+Lift a function of `MVarId` to operate over `MTacM` instead. The domain determines the main goal.
+-/
 def lift {α : Type} (f : MVarId → MetaM α) : MTacM α := do f (←get).goal
 
+/--
+Dual of `MTacM.toMTac`.
+-/
 def liftMTac (f : MTac) : MTacM Unit := do
   match ← lift f with
   | [] => pure ()
@@ -221,6 +253,9 @@ def locationsOfZModEqs : MTacM (Array Location) := do
   let target ← (if isTargetZmodEq then do pure #[←`(location|at ⊢)] else pure #[])
   return hyps ++ target
 
+/--
+TODO: Panics with unrecognised hypotheses. Fix one day.
+-/
 def exprMap : MTacM (Std.HashMap (Option FVarId) Expr) := do
   let (hyps, isTargetZmodEq) ← lift zModEqs
   let mut result := hyps.map Option.some |>.zip <| hyps.map (LocalDecl.type ∘ (←getLCtx).get!)
@@ -234,7 +269,10 @@ def runTactic' (tacticCode : Syntax) (mvarId : MVarId) : MetaM (List MVarId) :=
   (·.1) <$> runTactic mvarId tacticCode
 
 /--
-- zmod equations have specific shape requirements, careful whence this is called
+ZMod equations have specific shape requirements, careful whence this is called.
+
+- The leading coefficient of the least monomial with respect to the grevlex order,
+  as enforced by construction of `Poly`.
 -/
 def leadingCoeff (e : Expr) : MTacM ℤ := do
   let .some grindPoly ← grindPolyOfZModEq e (←indeterminatesMap)
@@ -248,12 +286,16 @@ def ring_nf : MTacM Unit := withMainContext do
 def subst_eqs : MTacM Unit := withMainContext do
   liftMTac ∘ runTactic' <| (←`(tactic| subst_eqs))
 
+/--
+Divides all ZMod equations by the leading coefficient. Discharges all necessary injectivity 
+obligations.
+-/
 def divideByLC : MTacM (Std.HashMap Name (ℤ × ℕ)) := withMainContext do
   let env ← getEnv
-  let mut lcInfo : Std.HashMap Name (ℤ × ℕ) := {}
   let mod ← systemMod
   let modS := Syntax.mkNumLit s!"{mod}"
   let inverseOf (z : ℤ) : ℕ := ((z.cast : ZMod mod).cast : ℤ).toNat
+  let mut lcInfo : Std.HashMap Name (ℤ × ℕ) := {}
   for (hyp, e) in ←exprMap do
     let lcZ ← leadingCoeff e
     let lc : ℕ := inverseOf lcZ
@@ -280,11 +322,17 @@ def divideByLC : MTacM (Std.HashMap Name (ℤ × ℕ)) := withMainContext do
 lemma neg_inv_mul_cancel₀ {α : Type*} [Field α] {x : α} (h : x ≠ 0)
   : (-x)⁻¹ * x = -1 := by simp only [inv_neg, neg_mul, neg_inj]; exact inv_mul_cancel₀ h
 
-elab "neg_inv_mul_cancel" : tactic => do
+/--
+Discharge `-C = C'` finite field equalities that are not `rfl`.
+-/
+local elab "neg_inv_mul_cancel" : tactic => do
   evalTactic (←`(tactic| (unfold_projs
                           simp [ZMod.inv, ZMod.val, ZMod, Nat.gcdA, Nat.xgcd, Nat.xgcdAux]
                           try rfl)))
 
+/--
+Normalisation after division by the leading coefficient. Cancels `a⁻¹ * a` and `-a⁻¹ * a`.
+-/
 def cancelMultiplicands (lcInfo : Std.HashMap Name (ℤ × ℕ)) : MTacM Unit := withMainContext do
   for (hyp, e) in ←exprMap do
     have e : Q(Prop) := e
@@ -296,13 +344,22 @@ def cancelMultiplicands (lcInfo : Std.HashMap Name (ℤ × ℕ)) : MTacM Unit :=
     let (lc, _) := lcInfo[hyp]!
     let rewrites :=
       "(\n" ++
-      ((res.map (fun n ↦ mkRewriteFrom s!"@mul_assoc _ _ _ ({lc})⁻¹ {n}" s!"{hyp}") ++
-       #[mkRewriteFrom "inv_mul_cancel₀ (by grind)" s!"{hyp}", mkRewriteFrom "mul_one" s!"{hyp}",
-         mkRewriteFrom "neg_inv_mul_cancel₀ (by grind)" s!"{hyp}", mkRewriteFrom "mul_neg_one" s!"{hyp}"])
-      |>.toList.intersperse "\n").foldl (·++·) "" ++ "\n)"
+      (
+        (res.map (fun n ↦ mkRewriteFrom s!"@mul_assoc _ _ _ ({lc})⁻¹ {n}" s!"{hyp}") ++
+         #[
+           mkRewriteFrom "inv_mul_cancel₀ (by grind)" s!"{hyp}",
+           mkRewriteFrom "mul_one" s!"{hyp}",
+           mkRewriteFrom "neg_inv_mul_cancel₀ (by grind)" s!"{hyp}",
+           mkRewriteFrom "mul_neg_one" s!"{hyp}"
+         ])
+      |>.toList.intersperse "\n").foldl (·++·) "" ++
+      "\n)"
     let .ok stx := runParserCategory (←getEnv) `tactic rewrites | throwError "{rewrites} is not a valid tactic."
     liftMTac <| runTactic' stx
 
+/--
+Normalises inverses in a finite field.
+-/
 def normaliseConstants (lcInfo : Std.HashMap Name (ℤ × ℕ)) : MTacM Unit := withMainContext do
   let modS := Syntax.mkNatLit (←systemMod)
   let env ← getEnv
@@ -311,10 +368,7 @@ def normaliseConstants (lcInfo : Std.HashMap Name (ℤ × ℕ)) : MTacM Unit := 
     let .ok const' := runParserCategory env `term s!"{((const.cast : ZMod (←systemMod)).cast : ℤ).toNat}" | throwError s!"{const} is not a valid number."
     let const' : Term := ⟨const'⟩
     let inverse := Syntax.mkNatLit inverse
-    let l ← locationOfNames (if name == (Name.mkSimple "⊢") then #[] else #[name])
-    /-
-    Is the `rfl` proof slow here? `grind` is inconsistent, the ring representations need work.
-    -/
+    let l ← locationOfNames (if name == Name.mkSimple "⊢" then #[] else #[name])
     let .ok const := runParserCategory env `term s!"{const}" | throwError s!"{const} is not a valid number."
     let const : Term := ⟨const⟩
     withMainContext ∘ liftMTac ∘ runTactic' <|

@@ -495,7 +495,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
   rw [fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial]
 
 instance {n : ℕ} : MonoidWithZero (CPoly.CMvPolynomial n R) where
-  zero_mul := by grind
+  zero_mul := by aesop
   mul_zero := by aesop
   mul_assoc := by aesop (add safe apply _root_.mul_assoc)
   one_mul := by aesop

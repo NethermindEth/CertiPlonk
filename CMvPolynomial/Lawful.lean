@@ -116,15 +116,6 @@ def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
 
 instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
 
-/--
-  Note to self: This goes too far, we could stop at `Unlawful.mul` and formualte lemmas thereabout.
--/
-@[grind=]
-protected lemma grind_mul_skip [Mul R] [Add R] {p₁ p₂ : Lawful n R} :
-  p₁ * p₂ =
-  fromUnlawful (List.map (fun t => Unlawful.mul₀ t p₂.1) (ExtTreeMap.toList p₁.1)).sum := by
-  sorry
-
 def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
 | .zero  , _ => 1
 | .succ n, p => (npow n p) * p

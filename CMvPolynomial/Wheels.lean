@@ -56,13 +56,6 @@ lemma distinct_of_inj_nodup {α β : Type*} {l : List α} {f : α → β}
     have : hd = a' := by aesop
     aesop
 
-/-
-  Something like this might be needed for `.getElem?_filter`.
--/
--- lemma ExtTreeMap.mem_filter {α β : Type} {cmp} [TransCmp cmp]
---                             {f : α → β → Bool} {m : ExtTreeMap α β cmp} {k : α} :
---   k ∈ m.filter f ↔ ∃ (h' : k ∈ m), f (m.getKey k h') m[k] = true := sorry
-
 namespace ExtTreeMap
 
 variable {α β : Type} [BEq α] [LawfulBEq α]

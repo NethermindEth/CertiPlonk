@@ -92,6 +92,9 @@ theorem toFinsupp_ofFinsupp {m : Fin n →₀ ℕ} : (ofFinsupp m).toFinsupp = m
 lemma injective_ofFinsupp : Function.Injective (ofFinsupp (n := n)) :=
   Function.HasLeftInverse.injective ⟨toFinsupp, fun _ ↦ toFinsupp_ofFinsupp⟩
 
+lemma injective_toFinsupp : Function.Injective (toFinsupp (n := n)) :=
+  Function.HasLeftInverse.injective ⟨ofFinsupp, fun _ ↦ ofFinsupp_toFinsupp⟩
+
 def equivFinsupp : CMvMonomial n ≃ (Fin n →₀ ℕ) where
   toFun := toFinsupp
   invFun := ofFinsupp

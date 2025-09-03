@@ -4,6 +4,8 @@ import Aesop
 import Std.Classes.Ord.Basic
 import Std.Data.ExtTreeMap
 import Std.Data.ExtTreeMap.Lemmas
+import CMvPolynomial.Data.DTreeMap.Lemmas
+import CMvPolynomial.Data.ExtTreeMap.Lemmas
 
 namespace Std
 
@@ -69,19 +71,39 @@ variable {α β : Type} [BEq α] [LawfulBEq α]
 
 @[grind=]
 lemma mergeWith₀ (h₁ : k ∈ m₁) (h₂ : k ∈ m₂) :
-  (m₁.mergeWith f m₂)[k]? = .some (f k m₁[k] m₂[k]) := sorry
+  (m₁.mergeWith f m₂)[k]? = .some (f k m₁[k] m₂[k]) := by
+  have h₁' : m₁[k]? = .some m₁[k] :=
+    Std.ExtTreeMap.getElem?_eq_some_getElem (t := m₁) (a := k) h₁
+  have h₂' : m₂[k]? = .some m₂[k] :=
+    Std.ExtTreeMap.getElem?_eq_some_getElem (t := m₂) (a := k) h₂
+  simp only [get?_mergeWith_at, h₁', h₂']
 
 @[grind=]
 lemma mergeWith₁ (h₁ : k ∈ m₁) (h₂ : k ∉ m₂) :
-  (m₁.mergeWith f m₂)[k]? = m₁[k]? := sorry
+  (m₁.mergeWith f m₂)[k]? = m₁[k]? :=  by
+  have h₁' : m₁[k]? = .some m₁[k] :=
+    Std.ExtTreeMap.getElem?_eq_some_getElem (t := m₁) (a := k) h₁
+  have h₂' : m₂[k]? = .none :=
+    Std.ExtTreeMap.getElem?_eq_none (t := m₂) (a := k) h₂
+  simp only [get?_mergeWith_at, h₁', h₂']
 
 @[grind=]
 lemma mergeWith₂ (h₁ : k ∉ m₁) (h₂ : k ∈ m₂) :
-  (m₁.mergeWith f m₂)[k]? = m₂[k]? := sorry
+  (m₁.mergeWith f m₂)[k]? = m₂[k]? := by
+  have h₁' : m₁[k]? = .none :=
+    Std.ExtTreeMap.getElem?_eq_none (t := m₁) (a := k) h₁
+  have h₂' : m₂[k]? = .some m₂[k] :=
+    Std.ExtTreeMap.getElem?_eq_some_getElem (t := m₂) (a := k) h₂
+  simp only [get?_mergeWith_at, h₁', h₂']
 
 @[grind=]
 lemma mergeWith₃ (h₁ : k ∉ m₁) (h₂ : k ∉ m₂) :
-  (m₁.mergeWith f m₂)[k]? = .none := sorry
+  (m₁.mergeWith f m₂)[k]? = .none := by
+  have h₁' : m₁[k]? = .none :=
+    Std.ExtTreeMap.getElem?_eq_none (t := m₁) (a := k) h₁
+  have h₂' : m₂[k]? = .none :=
+    Std.ExtTreeMap.getElem?_eq_none (t := m₂) (a := k) h₂
+  simp only [get?_mergeWith_at, h₁', h₂']
 
 @[simp, grind=]
 lemma filter_empty {α : Type} {f : α → β → Bool} {cmp : α → α → Ordering} : Std.ExtTreeMap.filter f (∅ : Std.ExtTreeMap α β cmp) = ∅ := by

@@ -6,7 +6,7 @@ namespace EzPz
 
 namespace CoCoA
 
-namespace Ast
+namespace AstAlt
 
 structure IndexedTerm where
   i : Nat
@@ -29,9 +29,9 @@ structure Cocoa where
   polynomials : Array Polynomial
   deriving Inhabited, Repr
 
-end Ast
+end AstAlt
 
-open Ast
+open AstAlt
 
 abbrev State (α : Type) := SimpleParser Substring Char α
 
@@ -107,81 +107,9 @@ end CoCoA
 
 end EzPz
 
-
--- import Mathlib.Lean.CoreM
-
--- import Lean
-
--- open Lean
-
--- namespace EzPz
-
--- namespace CoCoA
-
--- namespace Ast
-
--- structure IndexedTerm where
---   i : Nat
---   t : Term
-
--- inductive Reduction where
---   | M (i₁ i₂ : Nat)
---   | S (t₁ t₂ : IndexedTerm) (i : Nat)
---   | R (i₁ i₂ : Nat) (l : Array IndexedTerm)
---   deriving Inhabited
-
--- structure Polynomial where
---   P :: i : Nat
---        t : Term
---   deriving Inhabited
-
--- structure Cocoa where
---   reductions : Array Reduction
---   polynomials : Array Polynomial
---   deriving Inhabited
-
--- end Ast
-
--- declare_syntax_cat cocoa
--- declare_syntax_cat reduction
--- declare_syntax_cat polynomial
-
--- abbrev Cocoa := TSyntax `cocoa
--- abbrev Reduction := TSyntax `reduction
--- abbrev Polynomial := TSyntax `polynomial
-
--- syntax "UNSAT" "(" "REDUCTIONS" "(" reduction* ")" "POLYNOMIALS" "(" polynomial* ")" ")" : cocoa
-
--- syntax indexedTerm := num noWs "{" term "}"
-
--- syntax "P(" num "," term ")" : polynomial
-
--- syntax "M(" num "," num ")" : reduction
--- syntax "S(" indexedTerm "," indexedTerm "," num ")" : reduction
--- syntax "R(" num ";" indexedTerm,* ";" num ")" : reduction 
-
--- syntax "[CoCoA|" cocoa "]" : term
-
--- open Ast.Polynomial Ast.Reduction
-
--- def translatePolynomial : Polynomial → Ast.Polynomial
---   | `(polynomial|P($n, $t)) => P n.getNat t
---   | _                       => default
-
--- def translateReduction : Reduction → Ast.Reduction
---   | `(reduction|M($n₁, $n₂))                => M n₁.getNat n₂.getNat
---   | `(reduction|S($i₁{$t₁}, $i₂{$t₂}, $n))  => S ⟨i₁.getNat, t₁⟩ ⟨i₂.getNat, t₂⟩ n.getNat
---   | `(reduction|R($n₁; $[$nₖ{$tₖ}],*; $n₂)) => R n₁.getNat n₂.getNat (nₖ.zipWith (⟨·.getNat, ·⟩) tₖ)
---   | _ => default
-
--- def translateCocoa : Cocoa → Ast.Cocoa
---   | `(cocoa|UNSAT(REDUCTIONS($[$reductions]*) POLYNOMIALS($[$polynomials]*))) =>
---     {
---       reductions := reductions.map translateReduction
---       polynomials := polynomials.map translatePolynomial
---     }
---   | _ => default
-
--- end CoCoA
-
--- end EzPz
+def main (args : List String) : IO Unit := do
+  let (file :: _) := args | IO.println "No arguments; terminating. Usage: parse <file>"
+  let cocoaOutput ← IO.FS.readFile file
+  match EzPz.CoCoA.parseCocoa.run cocoaOutput with
+  | .ok _ out => IO.println (repr out)
+  | .error _ e => IO.println s!"Error parsing the file: {e}"

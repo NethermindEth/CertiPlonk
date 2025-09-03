@@ -16,7 +16,8 @@ lean_lib CMvPolynomial
 @[default_target]
 lean_lib FF
 
--- lean_exe Parse {
---   root := `Main
---   srcDir := "FF"
--- }
+lean_exe Parse {
+  root := `CocoaParser
+  srcDir := "FF"
+  exeName := "parse"
+}

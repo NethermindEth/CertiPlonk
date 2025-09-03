@@ -396,19 +396,5 @@ def normaliseSystem : MTacM Unit := do
   ring_nf
 
 elab "normalise_system" : tactic => liftMetaTactic normaliseSystem.toMTac
-
-example {x y z : ZMod 394357} [Fact (Nat.Prime 394357)]
-  (h : z * x * 9 * y + x * 9 - z * 2 = 3)
-  (h' : z * x * (-9) * y + x * 9 - z * 2 = 3)
-  (h'' : z * x * (-5) * y + x * 9 - z * 2 = 3)
-  (h₁ : x * 4 * y * 4 * x + z^4 = 2)
-  (h₂ : z^3 + x^2 + x^2 = 0)
-  (h₃ : 5 * x * y + y * x + 4 * x^2 + 5 * z^3 * x = 0)
-  (h₄ : x * y + y * x + z^3 * x = 0)
-  (h₆ : 2 * 394356 * x = 0)
-  : x - 42 = 0 := by
-  normalise_system
-  sorry
-
   
 end EzPz

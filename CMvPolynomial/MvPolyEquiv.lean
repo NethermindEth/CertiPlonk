@@ -167,22 +167,16 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
     unfold MvPolynomial.coeff
     unfold_projs
     simp only [Nat.zero_eq, Unlawful.zero_eq_zero]
-    split_ifs with h
-    · rw [h]
-      unfold AddMonoidAlgebra.single Finsupp.toFun Finsupp.single Pi.single Function.update
-      dsimp
-      simp
-    · unfold AddMonoidAlgebra.single Finsupp.toFun Finsupp.single Pi.single Function.update
-      dsimp
-      simp [h]
+    split_ifs with h <;>
+      unfold AddMonoidAlgebra.single Finsupp.toFun Finsupp.single <;>
+        simp [h]
   rw [this]
-  unfold fromCMvPolynomial
-  unfold MvPolynomial.coeff
+  unfold fromCMvPolynomial MvPolynomial.coeff
   simp only [Lawful.getElem?_eq_val_getElem?, Finsupp.coe_mk]
   unfold_projs
   unfold Lawful.C Unlawful.C MonoR.C
-  simp only [Nat.cast_one, ExtTreeMap.empty_eq_emptyc, ExtTreeMap.ofList_singleton,
-    ExtTreeMap.get?_eq_getElem?, Unlawful.zero_eq_zero, Nat.zero_eq]
+  simp only [Nat.cast_one]
+
   have triv_lem : (1 : R) = 0 → ∀ x y : R, x = y := by
     intros h
     have (x : R) : x = 0 := by
@@ -191,22 +185,21 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       simp only [mul_one, mul_zero] at this
       exact this
     intros x y; rw [this x, this y]
+
   split_ifs with g g' g'
   · rw [Nat.cast_one] at g; apply triv_lem g
   · rw [Nat.cast_one] at g; apply triv_lem g
-  · have : CMvMonomial.ofFinsupp m = CMvMonomial.one := by
+  · have finsupp_m_eq_one : CMvMonomial.ofFinsupp m = CMvMonomial.one := by
       rw [g']
       unfold CMvMonomial.ofFinsupp CMvMonomial.one
       ext i h
       simp
-    rw [this]
-    have h := @Std.ExtTreeMap.getElem?_insert (CMvMonomial n) R compare ∅ _ CMvMonomial.one CMvMonomial.one 1
-    simp only [compare_self, ↓reduceIte] at h
-    have : ((∅ : ExtTreeMap (CMvMonomial n) R compare).insert CMvMonomial.one 1)[(CMvMonomial.one : CMvMonomial n)]?.getD 0 = One.one := by
-      rw [h]
-      simp
-      rfl
-    convert this
+    rw [finsupp_m_eq_one]
+    have one_one_get₁ :
+      ({(CMvMonomial.one, 1)} : Unlawful n R)[(@CMvMonomial.one n)]?.getD 0 = One.one
+    := by
+      simp; rfl
+    convert one_one_get₁
   · have : CMvMonomial.ofFinsupp m ≠ CMvMonomial.one := by
       unfold CMvMonomial.ofFinsupp CMvMonomial.one
       intros h
@@ -215,15 +208,13 @@ lemma map_one : fromCMvPolynomial (1 : CMvPolynomial n R) = 1 := by
       apply g'
       ext i
       simp only [Finsupp.coe_mk]
-      specialize @this i
       simp only [Vector.get_ofFn, Vector.get_replicate] at this
       exact this
-    have h := @Std.ExtTreeMap.getElem?_insert (CMvMonomial n) R compare ∅ _ (CMvMonomial.ofFinsupp m) CMvMonomial.one 1
-    simp only [Std.compare_eq_iff_eq, this.symm, ExtTreeMap.not_mem_empty, not_false_eq_true, getElem?_neg, ↓reduceIte] at h
-    have h : ((∅ : ExtTreeMap (CMvMonomial n) R compare).insert CMvMonomial.one 1)[CMvMonomial.ofFinsupp m]?.getD 0 = 0 := by
-      rw [h]
-      simp
-    convert h
+    have one_one_get₂ :
+      ({(CMvMonomial.one, 1)} : Unlawful n R)[CMvMonomial.ofFinsupp m]?.getD 0 = 0
+    := by
+      simp [this.symm]
+    convert one_one_get₂
 
 noncomputable def polyEquiv:
   Equiv (CMvPolynomial n R) (MvPolynomial (Fin n) R)
@@ -250,13 +241,13 @@ instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
   add_comm := by grind
 
 omit [BEq R] [LawfulBEq R] in
-lemma Unlawful.toList_monomials_coeff
+lemma toList_pairs_monomial_coeff
   {t : Unlawful n R}
   {f : CMvMonomial n → R → Lawful n R} :
   t.toList.map (fun term => f term.1 term.2) =
     t.monomials.map (fun m => f m (t.coeff m))
 := by
-  unfold Unlawful.monomials coeff
+  unfold Unlawful.monomials Unlawful.coeff
   rw [←ExtTreeMap.map_fst_toList_eq_keys]
   rw [List.map_congr_left, List.map_map]
   grind
@@ -267,21 +258,16 @@ lemma foldl_eq_sum
   ExtTreeMap.foldl (fun x m c => (f m c) + x) 0 t.1 =
     Finsupp.sum (fromCMvPolynomial t) (f ∘ CMvMonomial.ofFinsupp)
 := by
-  unfold Finsupp.sum
-  simp
-  unfold Finset.sum
+  unfold Finsupp.sum Finset.sum
+  simp only [Function.comp_apply, add_comm]
   rw [ExtTreeMap.foldl_eq_foldl_toList]
-  rw [←List.foldl_map (g := fun x y ↦ y + x)]
-  simp_rw [add_comm]
-  rw [←List.sum_eq_foldl]
-  rw [Unlawful.toList_monomials_coeff]
-  have coeff_eq' {x} : (fromCMvPolynomial t).coeff x = t.coeff (CMvMonomial.ofFinsupp x) := by
-    rfl
-  conv => rhs; arg 1; arg 1; ext x; arg 2; rw [←MvPolynomial.coeff, coeff_eq']
+  rw [←List.foldl_map (g := fun x y ↦ x + y), ←List.sum_eq_foldl]
+  rw [toList_pairs_monomial_coeff]
+  conv => rhs; arg 1; arg 1; ext x; arg 2; rw [←MvPolynomial.coeff, coeff_eq]
   congr 1
   have monomials_dedup_self : (Lawful.monomials t).dedup = Lawful.monomials t := by
     unfold Lawful.monomials
-    simp [List.dedup_eq_self]
+    simp only [List.dedup_eq_self]
     grind [ExtTreeMap.distinct_keys_toList]
   rw [List.dedup_map_of_injective CMvMonomial.injective_toFinsupp]
   rw [monomials_dedup_self]
@@ -321,8 +307,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
   dsimp only [HMul.hMul, Mul.mul, Lawful.mul, Unlawful.mul]
   simp only [CMvPolynomial.fromUnlawful_fold_eq_fold_fromUnlawful]
   unfold MonoidAlgebra.mul'
-  rw [foldl_eq_sum]
-  simp_rw [foldl_eq_sum]
+  rw [foldl_eq_sum]; simp_rw [foldl_eq_sum]
   let F₀ (p q) : CMvMonomial n → R → Lawful n R :=
     fun p_1 q_1 ↦ Lawful.fromUnlawful {(CMvMonomial.mul p p_1 , Mul.mul q q_1)}
   set F₁ : (Fin n →₀ ℕ) → R → Lawful n R :=
@@ -335,39 +320,40 @@ lemma map_mul (a b : CMvPolynomial n R) :
     MonoidAlgebra.single (a₁ * a₂) (b₁ * b₂)
   set F₃ : Multiplicative (Fin n →₀ ℕ) → R → MvPolynomial (Fin n) R :=
     fun a₁ b₁ ↦ Finsupp.sum (fromCMvPolynomial b) (F₂ a₁ b₁) with eqF₃
-  have {m₁ : Multiplicative (Fin n →₀ ℕ)} {c₁ : R} :
+  have fromCMvPolynomial_F₁_eq_F₃ {m₁ : Multiplicative (Fin n →₀ ℕ)} {c₁ : R} :
     fromCMvPolynomial (F₁ m₁ c₁) = F₃ m₁ c₁
   := by
     dsimp only [Function.comp_apply, F₁, F₀, F₃, F₂]
     rw [fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial]
     simp only [Function.comp_apply]
     congr
-    ext (m₂ : Multiplicative (Fin n →₀ ℕ)) c₂ m
+    ext (m₂ : Multiplicative _) c₂ m
     rw [coeff_eq]
     unfold coeff Lawful.fromUnlawful
-    rw [Unlawful.filter_get]
-    rw [←CMvMonomial.map_mul]
-    simp only [ExtTreeMap.singleton_eq_insert]
-    by_cases m_in :
-      m = m₁ * m₂
-    · rw [←m_in, ExtTreeMap.getElem?_insert]
-      simp only [compare_self, ↓reduceIte, Option.getD_some]
-      unfold MvPolynomial.coeff
-      unfold MonoidAlgebra.single
+    rw [Unlawful.filter_get, ←CMvMonomial.map_mul, ExtTreeMap.singleton_eq_insert]
+    simp only [ExtTreeMap.getElem?_insert]
+    by_cases m_in : m = m₁ * m₂
+    · rw [←m_in]
+      simp only [compare_self]
+      unfold MvPolynomial.coeff MonoidAlgebra.single
       simp only [m_in, Finsupp.single_eq_same]
-      unfold_projs
       rfl
-    · simp only [ExtTreeMap.getElem?_insert]
-      simp only [Std.compare_eq_iff_eq, ExtTreeMap.not_mem_empty, not_false_eq_true, getElem?_neg]
-      unfold MvPolynomial.coeff
-      unfold MonoidAlgebra.single
+    · simp only
+        [ Std.compare_eq_iff_eq,
+          ExtTreeMap.not_mem_empty,
+          not_false_eq_true,
+          getElem?_neg
+        ]
+      unfold MvPolynomial.coeff MonoidAlgebra.single
       rw [Finsupp.single_eq_of_ne (by symm; exact m_in)]
       split
       next h contra =>
         exfalso; apply m_in; symm
         apply CMvMonomial.injective_ofFinsupp contra
       next h => simp_all only [Option.getD_none]
-  have : F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) := by ext x y z; rw [this]
+  have : F₃ = fun σ x ↦ fromCMvPolynomial (F₁ σ x) := by
+    ext x
+    rw [fromCMvPolynomial_F₁_eq_F₃]
   rw [this]
   rw [fromCMvPolynomial_sum_eq_sum_fromCMvPolynomial]
 

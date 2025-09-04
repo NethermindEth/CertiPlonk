@@ -28,8 +28,6 @@ partial def toString (fs: Nat) : FF.Term → String
   | .Exp b p => "(ff.mul" ++ (List.replicate p b).foldl (· ++ " " ++ toString fs ·) "" ++ ")"
   | .Eq  l r => "(= " ++ toString fs l ++ " " ++ toString fs r ++ ")"
 
-#eval toString 20 (.Eq (.Exp (.Sym (.str .anonymous "Test")) 2) (.Exp (.Sym (.str .anonymous "Test")) 2))
-
 -- From lean-smt Recognizers.lean
 namespace Lean.Expr
   def natLitOf? (e : Expr) (α : Expr) : Option Nat :=
@@ -82,25 +80,15 @@ namespace Lean.Expr
       none
 namespace Lean.Expr
 
-structure FF.TranslateS where
-  field  : Option Nat := none
-  --vars   : Lean.NameSet := ∅
-deriving Repr
-
 mutual
 
-partial def translate! (e : Expr) : /-StateT FF.TranslateS-/ MetaM FF.Term := do
+partial def translate! (e : Expr) : MetaM FF.Term := do
   let some tm ← translate? e | throwError "no translation for {e}"
   return tm
 
 partial def translate? (e: Expr) : /-StateT FF.TranslateS-/ MetaM (Option FF.Term) := do
-  --let state ← get
-  --logInfo f!"eee: {e}"
   let ⟨Level.succ Level.zero, ~q(ZMod $s), _⟩ ← inferTypeQ e | throwError f!"Not ZMod expression."
   let mkZMod := q(ZMod $s)
-  -- let s ← unsafe Meta.evalExpr ℕ q(ℕ) s
-  -- unless state.field.isNone ∨ state.field = s do throwError f!"Multiple field sizes"
-  -- set {state with field := s}
   if let some n := e.natLitOf? mkZMod then
     return some (.Lit n)
   else if let some (x, y) := e.hAddOf? mkZMod mkZMod then
@@ -118,20 +106,15 @@ partial def translate? (e: Expr) : /-StateT FF.TranslateS-/ MetaM (Option FF.Ter
     return some (.Sym $ ←Lean.FVarId.getUserName n)
   else
     return none
-  --if let some n := e.natLitOf?
 end
+
+structure FF.TranslateST where
+  asserts : List FF.Term
 
 def translateEq (eQ : Q(Prop)) : MetaM FF.Term := do
   match eQ with
   | ~q(@Eq (ZMod $k) $lhs $rhs) => return .Eq (← translate! lhs) (← translate! rhs)
   | _ => throwError "Not Eq ZMod expression"
-
-structure FF.TranslateCtx where
-  fieldSize : Nat := 0
-  symbols   : Lean.NameSet := ∅
-
-structure FF.TranslateST where
-  asserts : List FF.Term
 
 def isZModSym (goal : MVarId) (e : Expr) : MetaM (Option ℕ) := goal.withContext do
   let (``ZMod, #[size]) := e.getAppFnArgs | return .none
@@ -143,27 +126,28 @@ def zModSyms (goal : MVarId) : MetaM (Array (FVarId × ℕ)) := goal.withContext
 where
   f e := Lean.Meta.inferType e >>= isZModSym goal >>= Option.mapM (λ a => return (e.fvarId!, a))
 
-def zModTranslateCtx (goal : MVarId) : MetaM FF.TranslateCtx := goal.withContext do
+elab "test" : tactic => do
+  let goal ← Lean.Elab.Tactic.getMainGoal
   let (ids, szs) := (← zModSyms goal).unzip
   unless szs.sortDedup.size = 1 do throwError "Multiple field sizes"
-  return ⟨szs[0]!, Lean.NameSet.ofArray (← ids.mapM (·.getUserName))⟩
-
-elab "test" : tactic => do
-  let a ← zModTranslateCtx (←Lean.Elab.Tactic.getMainGoal)
-  let (zeqs, b) ← EzPz.zModEqs (←Lean.Elab.Tactic.getMainGoal)
-  for z in zeqs do
-    logInfo m!"z: {←z.getType}"
-    logInfo m!"translated: {toString a.fieldSize $ ← translateEq (←z.getType)}"
+  logInfo m!"(define-sort FF{szs[0]!} () (_ FiniteField {szs[0]!}))"
+  let vars ← ids.mapM (·.getUserName)
+  for v in vars do
+    logInfo m!"(declare-fun {Lean.Name.toString v} () FF{szs[0]!})"
+  let (zeqs, b) ← EzPz.zModEqs goal
+  let terms := (← zeqs.mapM (·.getType)).mapM translateEq
+  for i in ←terms do
+    logInfo m!"term: {toString szs[0]! i}"
 
 example {x y z : ZMod 394357} [Fact (Nat.Prime 394357)]
-  -- (h : x ^ 3 = 3)
-  -- (h' : z * x * (-9) * y + x * 9 - z * 2 = 3)
-  -- (h'' : z * x * (-5) * y + x * 9 - z * 2 = 3)
-  -- (h₁ : x * 4 * y * 4 * x + z^4 = 2)
+  (h : x ^ 3 = 3)
+  (h' : z * x * (-9) * y + x * 9 - z * 2 = 3)
+  (h'' : z * x * (-5) * y + x * 9 - z * 2 = 3)
+  (h₁ : x * 4 * y * 4 * x + z^4 = 2)
   (h₂ : z^3 + x^2 + x^2 = 0)
-  -- (h₃ : 5 * x * y + y * x + 4 * x^2 + 5 * z^3 * x = 0)
-  -- (h₄ : x * y + y * x + z^3 * x = 0)
-  -- (h₆ : 2 * 394356 * x = 0)
+  (h₃ : 5 * x * y + y * x + 4 * x^2 + 5 * z^3 * x = 0)
+  (h₄ : x * y + y * x + z^3 * x = 0)
+  (h₆ : 2 * 394356 * x = 0)
   : x - 42 = 0 := by
   test
   sorry

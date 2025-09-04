@@ -1,5 +1,5 @@
 import CMvPolynomial.Unlawful
-import CMvPolynomial.Wheels
+import Mathlib.Analysis.Normed.Ring.Lemmas
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
@@ -109,7 +109,7 @@ protected lemma grind_add_skip [Add R] {p₁ p₂ : Lawful n R} :
 -/
 @[grind=]
 protected lemma grind_add_skip_aggressive [Add R] {p₁ p₂ : Lawful n R} :
-  p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun x c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
+  p₁ + p₂ = fromUnlawful (ExtTreeMap.mergeWith (fun _ c₁ c₂ => c₁ + c₂) p₁.1 p₂.1) := rfl
 
 def mul [Mul R] [Add R] (p₁ p₂ : Lawful n R) : Lawful n R :=
   fromUnlawful <| p₁.val * p₂.val
@@ -119,8 +119,6 @@ instance [Mul R] [Add R] [Zero R] : Mul (Lawful n R) := ⟨mul⟩
 def npow [NatCast R] [Add R] [Mul R] : ℕ → Lawful n R → Lawful n R
 | .zero  , _ => 1
 | .succ n, p => (npow n p) * p
-
--- instance [NatCast R] [Add R] [Mul R] : HPow (Lawful n R) ℕ (Lawful n R) := ⟨fun p n => npow n p⟩
 
 instance [NatCast R] [Add R] [Mul R] : NatPow (Lawful n R) := ⟨fun e b ↦ npow b e⟩
 

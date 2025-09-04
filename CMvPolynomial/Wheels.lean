@@ -1,11 +1,7 @@
-import Mathlib.Logic.Function.Defs
-import Mathlib.Tactic.Cases
 import Aesop
-import Std.Classes.Ord.Basic
-import Std.Data.ExtTreeMap
-import Std.Data.ExtTreeMap.Lemmas
-import CMvPolynomial.Data.DTreeMap.Lemmas
+import Mathlib.Logic.Function.Defs
 import CMvPolynomial.Data.ExtTreeMap.Lemmas
+import Mathlib.Tactic.Cases
 
 namespace Std
 
@@ -177,3 +173,5 @@ lemma Option.filter_irrel {α : Type} {o : Option α} {p : α → Bool}
   aesop (add simp Option.filter)
 
   variable {α : Type u} {β : Type v}
+
+#min_imports

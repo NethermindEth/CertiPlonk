@@ -1,6 +1,7 @@
 import CMvPolynomial.CMvMonomial
+import CMvPolynomial.Wheels
 import Mathlib.Algebra.Lie.OfAssociative
-import Std.Data.ExtTreeMap.Lemmas
+import Std.Classes.Ord.Vector
 
 attribute [local instance 5] instDecidableEqOfLawfulBEq
 
@@ -154,15 +155,50 @@ instance [BEq R] [LawfulBEq R] [CommRing R]
 def coeff {R : Type} {n : ℕ} [Zero R] (m : CMvMonomial n) (p : Unlawful n R) : R :=
   p[m]?.getD 0
 
-/--
-  Conditional extensionality.
--/
-theorem ext' {n : ℕ} [Zero R] {p q : Unlawful n R}
-  (h₀ : isNoZeroCoef p) (h₁ : isNoZeroCoef q)
-  (h : ∀ m, coeff m p = coeff m q) : p = q := by
-  unfold coeff at h
-  apply ExtTreeMap.ext_getElem?
-  grind
+lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
+    (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
+  by_cases h : m ∈ a
+  · by_cases h' : a[m] = v
+    · erw [ExtTreeMap.filter_not_pred h (by simp [h'])]
+      have : a[m]? = .some v := by
+        aesop
+      rw [this]
+      simp
+    · erw [ExtTreeMap.filter_mem h (by simp [h'])]
+      have : a[m]?.getD v = a[m] := by
+        have : a[m]? = some a[m] := by
+          simp [h]
+        rw [this]
+        simp
+      rw [this]
+      simp
+  · simp [h, ExtTreeMap.filter_not_mem h]
+
+lemma add_getD? [CommSemiring R] {m : CMvMonomial n} {p q : Unlawful n R} :
+  (p.add q)[m]?.getD 0 = p[m]?.getD 0 + q[m]?.getD 0
+:= by
+  rw [Unlawful.add]
+  by_cases in_p : m ∈ p <;> by_cases in_q : m ∈ q
+  · simp [ExtTreeMap.mergeWith₀ in_p in_q]
+    by_cases sum_0 : p[m] + q[m] != 0
+      <;> by_cases pm_0 : p[m] = 0 <;> by_cases qm_0 : q[m] = 0
+      <;> grind [add_comm]
+  · simp [ExtTreeMap.mergeWith₁ in_p in_q]
+    by_cases p[m] = 0
+    · aesop
+    · rw [ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists] at in_p
+      rcases in_p with ⟨c₁, in_p⟩
+      simp [in_p]
+      by_cases c₁_eq_0 : c₁ = 0 <;> simp [c₁_eq_0, in_q]
+  · simp [ExtTreeMap.mergeWith₂ in_p in_q]
+    by_cases q[m] = 0
+    · aesop
+    · rw [ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists] at in_q
+      rcases in_q with ⟨c₁, in_q⟩
+      simp [in_q]
+      by_cases c₁_eq_0 : c₁ = 0 <;> simp [c₁_eq_0, in_p]
+  · simp [ExtTreeMap.mergeWith₃ in_p in_q]
+    aesop
 
 end Unlawful
 

@@ -1,8 +1,4 @@
 import CMvPolynomial.CMvPolynomial
-import CMvPolynomial.Wheels
-import Mathlib.Algebra.Equiv.TransferInstance
-import Mathlib.Algebra.MvPolynomial.Basic
-import Mathlib
 
 section
 
@@ -89,27 +85,10 @@ lemma fromCMvPolynomial_injective : Function.Injective (@fromCMvPolynomial n R _
   exists toCMvPolynomial
   apply toCMvPolynomial_fromCMvPolynomial
 
-lemma coeff_eq {m} (a : CMvPolynomial n R) : MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m) := by
+lemma coeff_eq {m} (a : CMvPolynomial n R) :
+  MvPolynomial.coeff m (fromCMvPolynomial a) = a.coeff (CMvMonomial.ofFinsupp m)
+:= by
   rfl
-
-lemma filter_get {R : Type} [BEq R] [LawfulBEq R] {v : R} {m : CMvMonomial n} (a : Unlawful n R) :
-    (ExtTreeMap.filter (fun _ c => c != v) a)[m]?.getD v = a[m]?.getD v := by
-  by_cases h : m ∈ a
-  · by_cases h' : a[m] = v
-    · erw [ExtTreeMap.filter_not_pred h (by simp [h'])]
-      have : a[m]? = .some v := by
-        aesop
-      rw [this]
-      simp
-    · erw [ExtTreeMap.filter_mem h (by simp [h'])]
-      have : a[m]?.getD v = a[m] := by
-        have : a[m]? = some a[m] := by
-          simp [h]
-        rw [this]
-        simp
-      rw [this]
-      simp
-  · simp [h, ExtTreeMap.filter_not_mem h]
 
 @[aesop simp]
 lemma eq_iff_fromCMvPolynomial {u v: CMvPolynomial n R} :
@@ -131,7 +110,7 @@ lemma map_add (a b : CMvPolynomial n R) :
   unfold_projs
   unfold Unlawful.add Lawful.fromUnlawful
   simp only [ExtTreeMap.get?_eq_getElem?, Unlawful.zero_eq_zero]
-  erw [filter_get]
+  erw [Unlawful.filter_get]
   by_cases h : (CMvMonomial.ofFinsupp m) ∈ a.1 <;> by_cases h' : (CMvMonomial.ofFinsupp m) ∈ b.1
   · rw [ExtTreeMap.mergeWith₀ h h', Option.getD_some]
     have h₁ : ((a.1)[CMvMonomial.ofFinsupp m]?.getD 0) = (a.1)[CMvMonomial.ofFinsupp m] := by simp [h]
@@ -167,25 +146,18 @@ lemma map_add (a b : CMvPolynomial n R) :
     erw [this]
     rfl
 
--- def Unlawful.toMvPoly (p : Unlawful n R) : (Fin n →₀ ℕ) →₀ R :=
---   let support : List (Fin n →₀ ℕ) :=
---     (p.monomials.filter (fun x ↦ p[x]? != some 0)).map CMvMonomial.toFinsupp
---   let toFun (f : Fin n →₀ ℕ) : R := p[CMvMonomial.ofFinsupp f]?.getD 0
---   let mem_support_fun {a : Fin n →₀ ℕ} : a ∈ support ↔ toFun a ≠ 0 := by
---     dsimp [toFun, support]
---     refine ⟨fun _ _ ↦ ?p₁, fun _ ↦ ?p₂⟩
---     · grind
---     · suffices ∃ m ∈ p, CMvMonomial.toFinsupp m = a by grind
---       grind
---   Finsupp.mk support.toFinset toFun (by simp [mem_support_fun])
-
 @[simp]
 lemma map_zero : fromCMvPolynomial (0 : CMvPolynomial n R) = 0 := by
   ext m
   rw [MvPolynomial.coeff_zero]
   unfold fromCMvPolynomial
-  simp only [Lawful.getElem?_eq_val_getElem?, Lawful.mem_iff_cast, Lawful.not_mem_zero,
-    not_false_eq_true, getElem?_neg, Option.getD_none]
+  simp only
+    [ Lawful.getElem?_eq_val_getElem?,
+      Lawful.mem_iff_cast,
+      Lawful.not_mem_zero,
+      not_false_eq_true,
+      getElem?_neg, Option.getD_none
+    ]
   rfl
 
 @[simp]
@@ -271,100 +243,11 @@ instance {n : ℕ} : AddMonoid (CPoly.CMvPolynomial n R) where
   zero_add _ := by aesop
   add_zero _ := by aesop
   nsmul n p := (List.replicate n p).sum
-  nsmul_succ {m x} := by grind -- `nsmul` def changed + `add_comm` is now available; `grind`!
+  nsmul_succ {m x} := by grind
 
 instance {n : ℕ} : AddCommMonoid (CPoly.CMvPolynomial n R) where
   toAddMonoid := inferInstance
   add_comm := by grind
-
--- lemma filter_zero_coeff {u : Unlawful n R} :
---   coeff m (Lawful.fromUnlawful u) = coeff m u
--- := by
---   rcases o
---   case none => rfl
---   case some val =>
---     by_cases val_eq_0 : val = 0 <;> simp [Option.filter, val_eq_0]
-
-
--- lemma Option.filter_getD_0_id [BEq R] [LawfulBEq R] {o : Option R} :
---   (o.filter (fun c ↦ c != 0)).getD 0 = o.getD 0
--- := by
---   rcases o
---   case none => rfl
---   case some val =>
---     by_cases val_eq_0 : val = 0 <;> simp [Option.filter, val_eq_0]
--- #check List.fold_fil
-
-lemma Unlawful.add_getD? {m : CMvMonomial n} {p q : Unlawful n R} :
-  (p.add q)[m]?.getD 0 = p[m]?.getD 0 + q[m]?.getD 0
-:= by
-  rw [Unlawful.add]
-  by_cases in_p : m ∈ p <;> by_cases in_q : m ∈ q
-  · simp [ExtTreeMap.mergeWith₀ in_p in_q]
-    by_cases sum_0 : p[m] + q[m] != 0
-      <;> by_cases pm_0 : p[m] = 0 <;> by_cases qm_0 : q[m] = 0
-      <;> grind [add_comm]
-  · simp [ExtTreeMap.mergeWith₁ in_p in_q]
-    by_cases p[m] = 0
-    · aesop
-    · rw [ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists] at in_p
-      rcases in_p with ⟨c₁, in_p⟩
-      simp [in_p]
-      by_cases c₁_eq_0 : c₁ = 0 <;> simp [c₁_eq_0, in_q]
-  · simp [ExtTreeMap.mergeWith₂ in_p in_q]
-    by_cases q[m] = 0
-    · aesop
-    · rw [ExtTreeMap.mem_iff_isSome_getElem?, Option.isSome_iff_exists] at in_q
-      rcases in_q with ⟨c₁, in_q⟩
-      simp [in_q]
-      by_cases c₁_eq_0 : c₁ = 0 <;> simp [c₁_eq_0, in_p]
-  · simp [ExtTreeMap.mergeWith₃ in_p in_q]
-    aesop
-
-lemma CMvPolynomial.add_getD? {m : CMvMonomial n} {p q : CMvPolynomial n R} :
-  (p + q).val[m]?.getD 0 = p.val[m]?.getD 0 + q.val[m]?.getD 0
-:= by
-  rw [HAdd.hAdd, instHAdd, Add.add, Lawful.instAdd]; dsimp
-  simp only [Lawful.add, Lawful.fromUnlawful];
-  rw [HAdd.hAdd, instHAdd, Add.add, Unlawful.instAdd]; dsimp
-  rw [filter_get]
-  apply Unlawful.add_getD?
-
-lemma coeff_add {m : CMvMonomial n} {p q : CMvPolynomial n R} :
-  coeff m (p + q) = coeff m p + coeff m q
-:= by
-  simp only [coeff, add_getD?]
-
-lemma fromUnlawful_fold_eq_fold_fromUnlawful₀
-  {t : List (CMvMonomial n × R)}
-  {f : CMvMonomial n → R → Unlawful n R} :
-  ∀ init : Unlawful n R,
-  Lawful.fromUnlawful (List.foldl (fun u term => (f term.1 term.2) + u) init t) =
-    List.foldl (fun l term => (Lawful.fromUnlawful (f term.1 term.2)) + l) (Lawful.fromUnlawful init) t
-:= by
-  induction' t with head tail ih
-  · simp
-  · intro init
-    simp only [List.foldl_cons]
-    rw [ih]
-    congr 1
-    generalize f head.1 head.2 = x
-    ext m
-    simp [coeff_add]
-    unfold coeff Lawful.fromUnlawful
-    simp [filter_get]
-    apply Unlawful.add_getD?
-
-lemma fromUnlawful_fold_eq_fold_fromUnlawful
-  {t : Unlawful n R}
-  {f : CMvMonomial n → R → Unlawful n R} :
-  Lawful.fromUnlawful (ExtTreeMap.foldl (fun u m c => (f m c) + u) 0 t) =
-    ExtTreeMap.foldl (fun l m c => (Lawful.fromUnlawful (f m c)) + l) 0 t
-:= by
-  simp [ExtTreeMap.foldl_eq_foldl_toList]
-  generalize list_def : ExtTreeMap.toList t = list
-  rw [fromUnlawful_fold_eq_fold_fromUnlawful₀ 0]
-  simp
 
 omit [BEq R] [LawfulBEq R] in
 lemma Unlawful.toList_monomials_coeff
@@ -436,7 +319,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
   fromCMvPolynomial (a * b) = fromCMvPolynomial a * fromCMvPolynomial b
 := by
   dsimp only [HMul.hMul, Mul.mul, Lawful.mul, Unlawful.mul]
-  simp only [fromUnlawful_fold_eq_fold_fromUnlawful]
+  simp only [CMvPolynomial.fromUnlawful_fold_eq_fold_fromUnlawful]
   unfold MonoidAlgebra.mul'
   rw [foldl_eq_sum]
   simp_rw [foldl_eq_sum]
@@ -462,7 +345,7 @@ lemma map_mul (a b : CMvPolynomial n R) :
     ext (m₂ : Multiplicative (Fin n →₀ ℕ)) c₂ m
     rw [coeff_eq]
     unfold coeff Lawful.fromUnlawful
-    rw [filter_get]
+    rw [Unlawful.filter_get]
     rw [←CMvMonomial.map_mul]
     simp only [ExtTreeMap.singleton_eq_insert]
     by_cases m_in :

@@ -6,6 +6,7 @@ import Mathlib.Tactic.Ring
 import Mathlib.Algebra.MvPolynomial.Basic
 import Qq
 import Lean
+import FF.MTacM
 
 namespace EzPz
 
@@ -169,16 +170,7 @@ end
 def userNameOfFvarId? (x : Option FVarId) : MetaM Name :=
   match x with | .none => return Name.mkSimple "⊢" | .some x => x.getUserName >>= pure
 
-structure NormaliseST where
-  goal : MVarId
-  goals : Array MVarId
-
 abbrev MTac := MVarId → MetaM (List MVarId)
-
-/--
-Similar to `TacticM`.
--/
-abbrev MTacM := StateT NormaliseST MetaM
 
 def NormaliseST.ofGoal (goal : MVarId) : NormaliseST :=
   {
@@ -186,16 +178,10 @@ def NormaliseST.ofGoal (goal : MVarId) : NormaliseST :=
     goals := #[]
   }
 
-/--
-Descend an `MTacM` into `MVarId → MetaM (List MVarId)`, where the latter is used at interface
-boundaries with existing functionality.
-
-- see also `liftMTac`
--/
-def MTacM.toMTac (m : MTacM Unit) : MTac :=
-  fun goal ↦ do
-    let (_, {goal := goal, goals := goals, ..}) ← m.run (NormaliseST.ofGoal goal)
-    pure (goal :: goals.toList)
+def MTacM.toTacticM (m : MTacM Unit) : TacticM Unit := do
+  if let goal :: goals ← getGoals then
+  let (_, st) ← m.run ⟨goal, goals.toArray⟩
+  setGoals (st.goal :: st.goals.toList)
 
 /--
 Similar to `TacticM.withMainContext`.
@@ -235,9 +221,6 @@ Lift a function of `MVarId` to operate over `MTacM` instead. The domain determin
 -/
 def lift {α : Type} (f : MVarId → MetaM α) : MTacM α := do f (←get).goal
 
-/--
-Dual of `MTacM.toMTac`.
--/
 def liftMTac (f : MTac) : MTacM Unit := do
   match ← lift f with
   | [] => pure ()
@@ -395,6 +378,6 @@ def normaliseSystem : MTacM Unit := do
   normaliseConstants lcInfo
   ring_nf
 
-elab "normalise_system" : tactic => liftMetaTactic normaliseSystem.toMTac
+elab "normalise_system" : tactic => normaliseSystem.toTacticM
   
 end EzPz

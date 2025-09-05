@@ -41,56 +41,90 @@ syntax ident "^" num : zmodeq
 syntax "[zmodeq|" zmodeq "]" : term
 syntax "[CoCoA|" cocoa "]" : term
 
-def translateIdent (idn : TSyntax `ident) : MacroM Term :=
-  let idn := Syntax.mkStrLit idn.getId.toString
-  `(Γ[$idn]!)
+-- def translateIdent (idn : TSyntax `ident) : MacroM Term :=
+--   let idn := Syntax.mkStrLit idn.getId.toString
+--   `(Γ[$idn]!)
 
-private partial def translateZmodEq : ZmodEq → MacroM Term
-  | `(zmodeq|$n:num) => `($n)
-  | `(zmodeq|$idn:ident) => translateIdent idn
-  | `(zmodeq|-$n) => `(-$n)
+-- def translateIdent (idn : TSyntax `ident) : MacroM Term :=
+--   -- let idn := Syntax.mkStrLit idn.getId.toString
+--   `(`($idn))
+
+-- private partial def translateZmodEq : ZmodEq → MacroM Term
+--   | `(zmodeq|$n:num) => do
+--     `(`($n))
+--   | `(zmodeq|$idn:ident) => translateIdent idn
+--   | `(zmodeq|-$n) => `(`(-$n))
+--   | `(zmodeq|diseq[$n]) =>
+--     let idn := mkIdent (Name.mkSimple s!"diseq{n.getNat}")
+--     translateIdent idn
+--   | `(zmodeq|$lhs * $rhs) => do
+--     let lhs ← translateZmodEq lhs
+--     let rhs ← translateZmodEq rhs
+--     `($lhs * $rhs)
+--   | `(zmodeq|$lhs + $rhs) => do
+--     let lhs ← translateZmodEq lhs
+--     let rhs ← translateZmodEq rhs
+--     `($lhs + $rhs)
+--   | `(zmodeq|$lhs - $rhs) => do
+--     let lhs ← translateZmodEq lhs
+--     let rhs ← translateZmodEq rhs
+--     `($lhs - $rhs)
+--   | `(zmodeq|$lhs:ident ^ $rhs:num) => do
+--     let lhs ← translateIdent lhs
+--     `($lhs ^ $rhs)
+--   | stx => Macro.throwError s!"Unrecognised: {stx}"
+
+def translateIdent (idn : TSyntax `ident) : MacroM Term :=
+  pure (Syntax.mkStrLit idn.getId.toString)
+
+private partial def translateZmodEq : ZmodEq → MacroM String
+  | `(zmodeq|$n:num) =>
+    pure s!"{n.getNat}"
+  | `(zmodeq|$idn:ident) => do
+    pure s!"{idn.getId.toString}"
+  | `(zmodeq|-$n) =>
+    pure s!"-{n.getNat}"
   | `(zmodeq|diseq[$n]) =>
-    let idn := mkIdent (Name.mkSimple s!"diseq{n.getNat}")
-    translateIdent idn
+    pure s!"diseq_{n.getNat}"
   | `(zmodeq|$lhs * $rhs) => do
     let lhs ← translateZmodEq lhs
     let rhs ← translateZmodEq rhs
-    `($lhs * $rhs)
+    pure s!"{lhs} * {rhs}"
   | `(zmodeq|$lhs + $rhs) => do
     let lhs ← translateZmodEq lhs
     let rhs ← translateZmodEq rhs
-    `($lhs + $rhs)
+    pure s!"{lhs} + {rhs}"
   | `(zmodeq|$lhs - $rhs) => do
     let lhs ← translateZmodEq lhs
     let rhs ← translateZmodEq rhs
-    `($lhs - $rhs)
+    pure s!"{lhs} - {rhs}"
   | `(zmodeq|$lhs:ident ^ $rhs:num) => do
-    let lhs ← translateIdent lhs
-    `($lhs ^ $rhs)
+    pure s!"{lhs.getId.toString} - {rhs.getNat}"
   | stx => Macro.throwError s!"Unrecognised: {stx}"
 
--- partial def translateZmodEq : ZmodEq → MacroM Term
---   | `(zmodeq|$zmodeq) => do
---   let zmodeq ← translateZmodEq_aux zmodeq
---   `(fun (Γ : Std.HashMap String (ZMod 41)) ↦ $zmodeq)
+macro_rules
+  | `([zmodeq|$z]) => do pure (Syntax.mkStrLit (← translateZmodEq z))
 
 macro_rules
-  | `([zmodeq|$z]) => translateZmodEq z
-
-macro_rules
-  | `(indexedTerm|$n{$t}) => do let t ← translateZmodEq t; `(Ast.IndexedTerm.mk $n $t)
+  | `(indexedTerm|$n{$t}) => do let t ← translateZmodEq t
+                                let t := Syntax.mkStrLit t
+                                `(Ast.IndexedTerm.mk $n $t)
 
 open Ast.Polynomial Ast.Reduction
 
 def translateIndexedTerm : TSyntax `EzPz.CoCoA.indexedTerm → MacroM Term
-  | `(indexedTerm|$n{$t}) => do let t ← translateZmodEq t; `(Ast.IndexedTerm.mk $n $t)
+  | `(indexedTerm|$n{$t}) => do let t ← translateZmodEq t
+                                let t := Syntax.mkStrLit t
+                                `(Ast.IndexedTerm.mk $n $t)
   | stx => Macro.throwError s!"Expected IndexedTerm. Got: {stx}"
 
 def translateReduction : Reduction → MacroM Term
   | `(reduction|M($n₁, $n₂)) => `(M $n₁ $n₂)
   | `(reduction|S($i₁{$t₁}, $i₂{$t₂}, $n)) => do
     let t₁ ← translateZmodEq t₁
+    let t₁ := Syntax.mkStrLit t₁
     let t₂ ← translateZmodEq t₂
+    let t₂ := Syntax.mkStrLit t₂
     `(S ⟨$i₁, $t₁⟩ ⟨$i₂, $t₂⟩ $n)
   | `(reduction|R($n₁; $[$its],*; $n₂)) => do
     let indexedTerms ← its.mapM translateIndexedTerm
@@ -98,7 +132,9 @@ def translateReduction : Reduction → MacroM Term
   | _ => default
 
 def translatePolynomial : Polynomial → MacroM Term
-  | `(polynomial|P($n, $t)) => do let t ← translateZmodEq t; `(P $n $t)
+  | `(polynomial|P($n, $t)) => do let t ← translateZmodEq t
+                                  let t := Syntax.mkStrLit t
+                                  `(P $n $t)
   | _                       => default
 
 def translateCocoa : Cocoa → MacroM Term
@@ -108,32 +144,60 @@ def translateCocoa : Cocoa → MacroM Term
     `(Ast.Cocoa.mk #[$reductions,*] #[$polynomials,*])
   | _ => default
 
+-- macro_rules
+--   | `([CoCoA|$cocoa]) => do
+--   let cocoa ← translateCocoa cocoa
+--   `(fun (Γ : Std.HashMap String (ZMod 41)) ↦ $cocoa)
+
 macro_rules
-  | `([CoCoA|$cocoa]) => do
-  let cocoa ← translateCocoa cocoa
-  `(fun (Γ : Std.HashMap String (ZMod 41)) ↦ $cocoa)
+  | `([CoCoA|$cocoa]) => translateCocoa cocoa
 
 #check [CoCoA|
   UNSAT(
     REDUCTIONS(
       M(13, 14)
-      S(11{1}, 12{diseq[0]}, 13)
-      R(5; 6{c1*x}, 8{2*c1*x}, 8{c2*x}, 9{2*c1*x}, 9{2*c2*x}, 9{c3*x}, 10{2*c1*x}, 10{2*c2*x}, 10{2*c3*x}, 10{c4*x}, 6{7*x}, 8{5*x}, 9{3*x}, 10{x}, 6{-1}, 8{-1}, 9{-1}, 10{-1}; 12)
-      R(7; 6{x*diseq[0]}, 8{x*diseq[0]}, 9{x*diseq[0]}, 10{x*diseq[0]}; 11)
     )
     POLYNOMIALS(
-      P(5, c1^2*x +2*c1*c2*x +c2^2*x +2*c1*c3*x +2*c2*c3*x +c3^2*x +2*c1*c4*x +2*c2*c4*x +2*c3*c4*x +c4^2*x -c1 -c2 -c3 -c4)
       P(6, c1 -1)
-      P(7, c1*x*diseq[0] +c2*x*diseq[0] +c3*x*diseq[0] +c4*x*diseq[0] -diseq[0] +1)
-      P(8, c2 -1)
-      P(9, c3 -1)
-      P(10, c4 -1)
-      P(11, x*diseq[0] +98589*diseq[0] -98589)
-      P(12, x +98589)
-      P(13, -98589)
-      P(14, 1)
     )
 )]
+
+-- #check [CoCoA|
+--   UNSAT(
+--     REDUCTIONS(
+--       M(13, 14)
+--       S(11{1}, 12{diseq[0]}, 13)
+--       R(5; 6{c1*x}, 8{2*c1*x}, 8{c2*x}, 9{2*c1*x}, 9{2*c2*x}, 9{c3*x}, 10{2*c1*x}, 10{2*c2*x}, 10{2*c3*x}, 10{c4*x}, 6{7*x}, 8{5*x}, 9{3*x}, 10{x}, 6{-1}, 8{-1}, 9{-1}, 10{-1}; 12)
+--       R(7; 6{x*diseq[0]}, 8{x*diseq[0]}, 9{x*diseq[0]}, 10{x*diseq[0]}; 11)
+--     )
+--     POLYNOMIALS(
+--       P(5, c1^2*x +2*c1*c2*x +c2^2*x +2*c1*c3*x +2*c2*c3*x +c3^2*x +2*c1*c4*x +2*c2*c4*x +2*c3*c4*x +c4^2*x -c1 -c2 -c3 -c4)
+--       P(6, c1 -1)
+--       P(7, c1*x*diseq[0] +c2*x*diseq[0] +c3*x*diseq[0] +c4*x*diseq[0] -diseq[0] +1)
+--       P(8, c2 -1)
+--       P(9, c3 -1)
+--       P(10, c4 -1)
+--       P(11, x*diseq[0] +98589*diseq[0] -98589)
+--       P(12, x +98589)
+--       P(13, -98589)
+--       P(14, 1)
+--     )
+-- )]
+
+-- #check [CoCoA|UNSAT(
+--      REDUCTIONS(
+--      )
+--      POLYNOMIALS(
+--        P(1, z ^ 3 * x + x * y * 2)
+--        P(1, x)
+--        P(1, -2 + z ^ 4 + x ^ 2 * y * 16)
+--        P(1, z ^ 3 + x ^ 2 * 2)
+--        P(1, z ^ 3 * x + x * y * 946458 + x ^ 2 * 630972)
+--        P(1, -262905 - z * 175270 + z * x * y + x)
+--        P(1, -709842 - z * 473228 + z * x * y + x * 2129526)
+--        P(1, -920166 - z * 613444 + z * x * y - x)
+--      )
+--    )]
 
 -- #check [zmodeq|c1^2*x +2*c1*c2*x +c2^2*x +2*c1*c3*x +2*c2*c3*x +c3^2*x +2*c1*c4*x +2*c2*c4*x +2*c3*c4*x +c4^2*x -c1 -c2 -c3 -c4]
    

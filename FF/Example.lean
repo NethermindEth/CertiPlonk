@@ -8,6 +8,8 @@ namespace EzPz
 
 open CoCoA
 
+def c1 : Fin 41 := default
+
 def test : String :=
   "UNSAT(" ++
   "  REDUCTIONS(" ++
@@ -18,13 +20,17 @@ def test : String :=
   "  )" ++
   ")"
 
-def obtainInfo : TacticM Unit := do
+def obtainInfo : MTacM Unit := do
   -- let x ← IO.FS.readFile "FF/Sample.txt"
   match Parser.runParserCategory (←getEnv) `term s!"[CoCoA|{test}]" with
   | .ok stx => let `([CoCoA|$cocoa]) := stx | throwError "Malformed CoCoA."
-               logInfo m!"cocoa: {repr cocoa}"
-               let xyz ← unsafe Elab.Term.evalTerm Ast.Cocoa q(Ast.Cocoa) stx
-               logInfo m!"xyz: {repr xyz}"
+              --  logInfo m!"cocoa: {repr cocoa}"
+               let xyz ← unsafe Elab.Term.evalTerm (Std.HashMap String (ZMod 41) → Ast.Cocoa) q( Std.HashMap String (ZMod 41) → Ast.Cocoa) stx
+               let verbibols : Std.HashMap String (ZMod 41) :=
+                 Std.HashMap.ofList [
+                   ("c1", (4 : ZMod 41)), ("y", (4 : ZMod 41)), ("z", (4 : ZMod 41))
+                 ]
+               logInfo m!"xyz: {repr (xyz verbibols)}"
               --  let xyz ← Elab.Term.elabTerm stx .none
               --  logInfo m!"xyz: {xyz}"
               --  liftMTac ∘ runTactic' <| ←`(tactic|have h₇ : )

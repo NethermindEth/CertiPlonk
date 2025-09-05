@@ -8,20 +8,20 @@ namespace Ast
 
 open Lean
 
-structure IndexedExpr where
+structure IndexedTerm where
   i : Nat
-  t : Expr
+  t : ZMod 41
   deriving Inhabited, Repr
 
 inductive Reduction where
   | M (i₁ i₂ : Nat)
-  | S (t₁ t₂ : IndexedExpr) (i : Nat)
-  | R (i₁ i₂ : Nat) (l : Array IndexedExpr)
+  | S (t₁ t₂ : IndexedTerm) (i : Nat)
+  | R (i₁ i₂ : Nat) (l : Array IndexedTerm)
   deriving Inhabited, Repr
 
 structure Polynomial where
   P :: i : Nat
-       t : Expr
+       t : ZMod 41
   deriving Inhabited, Repr
 
 structure Cocoa where

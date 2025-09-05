@@ -54,7 +54,7 @@ lemma distinct_of_inj_nodup {α β : Type*} {l : List α} {f : α → β}
 
 namespace ExtTreeMap
 
-variable {α β : Type} [BEq α] [LawfulBEq α]
+variable {α β : Type}
          {cmp : α → α → Ordering} [Std.TransCmp cmp] [Std.LawfulEqCmp cmp]
          {k : α} {m m₁ m₂ : Std.ExtTreeMap α β cmp} {f : α → β → β → β}
 
@@ -95,12 +95,23 @@ lemma mergeWith₃ (h₁ : k ∉ m₁) (h₂ : k ∉ m₂) :
   simp only [get?_mergeWith_at, h₁', h₂']
 
 @[simp, grind=]
-lemma filter_empty {α : Type} {f : α → β → Bool} {cmp : α → α → Ordering} : Std.ExtTreeMap.filter f (∅ : Std.ExtTreeMap α β cmp) = ∅ := by
-  rfl
-
-@[simp, grind=]
 lemma mergeWith_empty {f : α → β → β → β} {cmp : α → α → Ordering} [Std.TransCmp cmp] [Std.LawfulEqCmp cmp] {t : Std.ExtTreeMap α β cmp} :
   Std.ExtTreeMap.mergeWith f t ∅ = t := by ext; grind
+
+lemma mergeWith_of_comm (h : ∀ {x}, Std.Commutative (f x)) :
+    m₁.mergeWith f m₂ = m₂.mergeWith f m₁ := by
+  ext k v
+  by_cases h' : k ∈ m₁ <;> by_cases h'' : k ∈ m₂
+  · rw [mergeWith₀ h' h'', mergeWith₀ h'' h', h.comm]
+  · rw [mergeWith₁ h' h'', mergeWith₂ h'' h']
+  · rw [mergeWith₂ h' h'', mergeWith₁ h'' h']
+  · rw [mergeWith₃ h' h'', mergeWith₃ h'' h']
+
+variable [BEq α] [LawfulBEq α]
+
+@[simp, grind=]
+lemma filter_empty {α : Type} {f : α → β → Bool} {cmp : α → α → Ordering} : Std.ExtTreeMap.filter f (∅ : Std.ExtTreeMap α β cmp) = ∅ := by
+  rfl
 
 @[simp, grind=]
 lemma toList_ofList {a : Std.ExtTreeMap α β cmp} : @Std.ExtTreeMap.ofList α β (@Std.ExtTreeMap.toList α β cmp _ a) cmp = a := by
@@ -126,15 +137,6 @@ grind_pattern mergeWith₀ => k ∈ m₁, k ∈ m₂, Std.ExtTreeMap.mergeWith f
 grind_pattern mergeWith₁ => k ∈ m₁, k ∈ m₂, Std.ExtTreeMap.mergeWith f m₁ m₂
 grind_pattern mergeWith₂ => k ∈ m₁, k ∈ m₂, Std.ExtTreeMap.mergeWith f m₁ m₂
 grind_pattern mergeWith₃ => (Std.ExtTreeMap.mergeWith f m₁ m₂)[k]?
-
-lemma mergeWith_of_comm (h : ∀ {x}, Std.Commutative (f x)) :
-    m₁.mergeWith f m₂ = m₂.mergeWith f m₁ := by
-  ext k v
-  by_cases h' : k ∈ m₁ <;> by_cases h'' : k ∈ m₂
-  · rw [mergeWith₀ h' h'', mergeWith₀ h'' h', h.comm]
-  · rw [mergeWith₁ h' h'', mergeWith₂ h'' h']
-  · rw [mergeWith₂ h' h'', mergeWith₁ h'' h']
-  · rw [mergeWith₃ h' h'', mergeWith₃ h'' h']
 
 open Std ExtTreeMap
 

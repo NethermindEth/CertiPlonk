@@ -22,7 +22,7 @@ namespace Add8Air.extraction
 
   @[simp]
   def constraint_2 {C : Type → Type → Type} {F ExtF : Type} [Field F] [Field ExtF] [Circuit F ExtF C] (c : C F ExtF) (row: ℕ) :=
-    ((Circuit.main c (column := 2) (row := row) (rotation := 0)) - ((((((((Circuit.main c (column := 4) (row := row) (rotation := 0)) + ((Circuit.main c (column := 5) (row := row) (rotation := 0)) * 2)) + ((Circuit.main c (column := 6) (row := row) (rotation := 0)) * 4)) + ((Circuit.main c (column := 7) (row := row) (rotation := 0)) * 8)) + ((Circuit.main c (column := 8) (row := row) (rotation := 0)) * 16)) + ((Circuit.main c (column := 9) (row := row) (rotation := 0)) * 32)) + ((Circuit.main c (column := 10) (row := row) (rotation := 0)) * 64)) + ((Circuit.main c (column := 11) (row := row) (rotation := 0)) * 128))) = 0
+    ((Circuit.main c (column := 2) (row := row) (rotation := 0)) - (((((((((Circuit.main c (column := 4) (row := row) (rotation := 0)) * 1) + ((Circuit.main c (column := 5) (row := row) (rotation := 0)) * 2)) + ((Circuit.main c (column := 6) (row := row) (rotation := 0)) * 4)) + ((Circuit.main c (column := 7) (row := row) (rotation := 0)) * 8)) + ((Circuit.main c (column := 8) (row := row) (rotation := 0)) * 16)) + ((Circuit.main c (column := 9) (row := row) (rotation := 0)) * 32)) + ((Circuit.main c (column := 10) (row := row) (rotation := 0)) * 64)) + ((Circuit.main c (column := 11) (row := row) (rotation := 0)) * 128))) = 0
 
   @[simp]
   def constraint_3 {C : Type → Type → Type} {F ExtF : Type} [Field F] [Field ExtF] [Circuit F ExtF C] (c : C F ExtF) (row: ℕ) :=

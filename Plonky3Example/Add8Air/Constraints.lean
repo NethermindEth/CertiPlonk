@@ -61,10 +61,10 @@ namespace Add8Air.constraints
       @[Add8Air_constraint_and_interaction_simplification]
       def constraint_2 (air : Valid_Add8Air F ExtF) (row : ℕ) : Prop :=
         air.c row 0 -
-          (air.c₀ row 0 + air.c₁ row 0 * 2 + air.c₂ row 0 * 4 + air.c₃ row 0 * 8 + air.c₄ row 0 * 16 + air.c₅ row 0 * 32 +
-              air.c₆ row 0 * 64 +
-            air.c₇ row 0 * 128) =
-        0
+      (air.c₀ row 0 + air.c₁ row 0 * 2 + air.c₂ row 0 * 4 + air.c₃ row 0 * 8 + air.c₄ row 0 * 16 + air.c₅ row 0 * 32 +
+          air.c₆ row 0 * 64 +
+        air.c₇ row 0 * 128) =
+    0
 
       @[Add8Air_air_simplification]
       lemma constraint_2_of_extraction
@@ -235,7 +235,7 @@ namespace Add8Air.constraints
 
       @[Add8Air_constraint_and_interaction_simplification]
       def constrain_interactions (air : Valid_Add8Air F ExtF) : Prop :=
-        air.bus = List.flatMap (fun _ ↦ []) (List.range (air.last_row + 1))
+        air.bus = List.flatMap (fun row ↦ []) (List.range (air.last_row + 1))
 
       @[Add8Air_air_simplification]
       lemma constrain_interactions_of_extraction
@@ -260,79 +260,79 @@ namespace Add8Air.constraints
     -- constraint list and allHold
 
     @[simp]
-    def extracted_row_constraint_list
-      [Field ExtF]
-      (air : Valid_Add8Air FBB ExtF)
-      (row : ℕ)
-    : List Prop :=
-      [
-        Add8Air.extraction.constraint_0 air row,
-        Add8Air.extraction.constraint_1 air row,
-        Add8Air.extraction.constraint_2 air row,
-        Add8Air.extraction.constraint_3 air row,
-        Add8Air.extraction.constraint_4 air row,
-        Add8Air.extraction.constraint_5 air row,
-        Add8Air.extraction.constraint_6 air row,
-        Add8Air.extraction.constraint_7 air row,
-        Add8Air.extraction.constraint_8 air row,
-        Add8Air.extraction.constraint_9 air row,
-        Add8Air.extraction.constraint_10 air row,
-      ]
+def extracted_row_constraint_list
+  [Field ExtF]
+  (air : Valid_Add8Air FBB ExtF)
+  (row : ℕ)
+: List Prop :=
+  [
+    Add8Air.extraction.constraint_0 air row,
+    Add8Air.extraction.constraint_1 air row,
+    Add8Air.extraction.constraint_2 air row,
+    Add8Air.extraction.constraint_3 air row,
+    Add8Air.extraction.constraint_4 air row,
+    Add8Air.extraction.constraint_5 air row,
+    Add8Air.extraction.constraint_6 air row,
+    Add8Air.extraction.constraint_7 air row,
+    Add8Air.extraction.constraint_8 air row,
+    Add8Air.extraction.constraint_9 air row,
+    Add8Air.extraction.constraint_10 air row,
+  ]
 
-    @[simp]
-    def allHold
-      [Field ExtF]
-      (air : Valid_Add8Air FBB ExtF)
-      (row : ℕ)
-      (_ : row ≤ air.last_row)
-    : Prop :=
-      Add8Air.extraction.constrain_interactions air ∧
-      List.Forall (·) (extracted_row_constraint_list air row)
+@[simp]
+def allHold
+  [Field ExtF]
+  (air : Valid_Add8Air FBB ExtF)
+  (row : ℕ)
+  (_ : row ≤ air.last_row)
+: Prop :=
+  Add8Air.extraction.constrain_interactions air ∧
+  List.Forall (·) (extracted_row_constraint_list air row)
 
-    @[simp]
-    def row_constraint_list
-      [Field ExtF]
-      (air : Valid_Add8Air FBB ExtF)
-      (row : ℕ)
-    : List Prop :=
-      [
-        constraint_0 air row,
-        constraint_1 air row,
-        constraint_2 air row,
-        constraint_3 air row,
-        constraint_4 air row,
-        constraint_5 air row,
-        constraint_6 air row,
-        constraint_7 air row,
-        constraint_8 air row,
-        constraint_9 air row,
-        constraint_10 air row,
-      ]
+@[simp]
+def row_constraint_list
+  [Field ExtF]
+  (air : Valid_Add8Air FBB ExtF)
+  (row : ℕ)
+: List Prop :=
+  [
+    constraint_0 air row,
+    constraint_1 air row,
+    constraint_2 air row,
+    constraint_3 air row,
+    constraint_4 air row,
+    constraint_5 air row,
+    constraint_6 air row,
+    constraint_7 air row,
+    constraint_8 air row,
+    constraint_9 air row,
+    constraint_10 air row,
+  ]
 
-    @[simp]
-    def allHold_simplified
-      [Field ExtF]
-      (air : Valid_Add8Air FBB ExtF)
-      (row : ℕ)
-      (_ : row ≤ air.last_row)
-    : Prop :=
-      constrain_interactions air ∧
-      List.Forall (·) (row_constraint_list air row)
+@[simp]
+def allHold_simplified
+  [Field ExtF]
+  (air : Valid_Add8Air FBB ExtF)
+  (row : ℕ)
+  (_ : row ≤ air.last_row)
+: Prop :=
+  constrain_interactions air ∧
+  List.Forall (·) (row_constraint_list air row)
 
-    lemma allHold_simplified_of_allHold
-      [Field ExtF]
-      (air : Valid_Add8Air FBB ExtF)
-      (row : ℕ)
-      (h_row : row ≤ air.last_row)
-    : allHold air row h_row ↔ allHold_simplified air row h_row := by
-      unfold allHold allHold_simplified
-      apply Iff.and
-      . unfold Add8Air.extraction.constrain_interactions
-        simp [plonky3_encapsulation]
-        rfl
-      . simp only [extracted_row_constraint_list,
-                  row_constraint_list,
-                  Add8Air_air_simplification]
+lemma allHold_simplified_of_allHold
+  [Field ExtF]
+  (air : Valid_Add8Air FBB ExtF)
+  (row : ℕ)
+  (h_row : row ≤ air.last_row)
+: allHold air row h_row ↔ allHold_simplified air row h_row := by
+  unfold allHold allHold_simplified
+  apply Iff.and
+  . unfold Add8Air.extraction.constrain_interactions
+    simp [plonky3_encapsulation]
+    rfl
+  . simp only [extracted_row_constraint_list,
+              row_constraint_list,
+              Add8Air_air_simplification]
 
   end allHold
 

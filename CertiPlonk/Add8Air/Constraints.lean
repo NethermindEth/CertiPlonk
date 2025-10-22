@@ -1,7 +1,7 @@
-import Plonky3Example.Add8Air.Air
-import Plonky3Example.Add8Air.Extraction
-import Plonky3Example.Fundamentals.BabyBear
-import Plonky3Example.Util
+import CertiPlonk.Add8Air.Air
+import CertiPlonk.Add8Air.Extraction
+import CertiPlonk.Fundamentals.BabyBear
+import CertiPlonk.Util
 
 import LeanZKCircuit.Interactions
 

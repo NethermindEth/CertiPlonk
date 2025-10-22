@@ -1,5 +1,5 @@
-import Plonky3Example.Fundamentals.Core
--- import Plonky3Example.Fundamentals.U32
+import CertiPlonk.Fundamentals.Core
+-- import CertiPlonk.Fundamentals.U32
 
 notation "BB_prime" => 2013265921
 @[simp] lemma BB_eq : BB_prime = 2013265921 := rfl

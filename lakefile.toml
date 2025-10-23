@@ -15,9 +15,9 @@ scope = "leanprover-community"
 rev = "v4.23.0-rc2"
 
 [[require]]
-name = "LeanZKCircuit"
-git = "https://github.com/NethermindEth/leanzkcircuit.git"
-rev = "Dom/plonky3"
+name = "LeanZKCircuit_Plonky3"
+git = "https://github.com/NethermindEth/LeanZKCircuit-Plonky3.git"
+rev = "1981f3b481515abf76eccc3bea132ebdabd22eea"
 
 [[lean_lib]]
 name = "CertiPlonk"

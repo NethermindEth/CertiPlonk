@@ -1,7 +1,7 @@
 import Mathlib
 
-import LeanZKCircuit.Plonky3.Circuit
-import LeanZKCircuit.Plonky3.Command.Air.define_air
+import LeanZKCircuit_Plonky3.Plonky3.Circuit
+import LeanZKCircuit_Plonky3.Plonky3.Command.Air.define_air
 
 open Plonky3
 

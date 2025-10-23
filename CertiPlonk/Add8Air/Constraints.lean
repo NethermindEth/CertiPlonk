@@ -3,7 +3,7 @@ import CertiPlonk.Add8Air.Extraction
 import CertiPlonk.Fundamentals.BabyBear
 import CertiPlonk.Util
 
-import LeanZKCircuit.Interactions
+import LeanZKCircuit_Plonky3.Interactions
 
 namespace Add8Air.constraints
 

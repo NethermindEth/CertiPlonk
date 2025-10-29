@@ -8,8 +8,6 @@ We have produced
 2. A [model of Plonky3 AIRs](https://github.com/NethermindEth/LeanZKCircuit-Plonky3) that acts as a basis for verifying the extracted circuits.
 3. A [tactic](https://github.com/NethermindEth/FF_CVC5_Lean) for automatically proving goals over finite fields, by extracting the relevant goal and assumptions into CVC5's FF theory and reconstructing the resulting Gröbner basis reduction in Lean. 
 
-More complete README coming soon!
-
 # How Does It Work?
 
 There are two key steps in formally verifying a constraint system using Plonky3: *(1) Constraint extraction into the Lean proof assistant*, and *(2) Proving desired properties using Lean*.

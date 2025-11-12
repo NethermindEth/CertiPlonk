@@ -25,7 +25,8 @@ namespace IsZeroAir.constraints
       -- z * x = 0
       @[IsZeroAir_constraint_and_interaction_simplification]
       def constraint_0 (air : Valid_IsZeroAir F ExtF) (row : ℕ) : Prop :=
-        air.z row 0 * air.x row 0 = 0
+        -- air.z row 0 * air.x row 0 = 0
+        air.z row 0 = 0 ∨ air.x row 0 = 0
 
       @[IsZeroAir_air_simplification]
       lemma constraint_0_of_extraction
@@ -44,7 +45,8 @@ namespace IsZeroAir.constraints
       -- (z - 1) * (x * y - 1) = 0
       @[IsZeroAir_constraint_and_interaction_simplification]
       def constraint_1 (air : Valid_IsZeroAir F ExtF) (row : ℕ) : Prop :=
-        (air.z row 0 - 1) * (air.x row 0 * air.y row 0 - 1) = 0
+        -- (air.z row 0 - 1) * (air.x row 0 * air.y row 0 - 1) = 0
+        air.z row 0 - 1 = 0 ∨ air.x row 0 * air.y row 0 - 1 = 0
       
       @[IsZeroAir_air_simplification]
       lemma constraint_1_of_extraction

@@ -413,9 +413,6 @@ lemma allHold_simplified_of_allHold
       (h_eq_a : air₁.a row₁ 0 = air₂.a row₂ 0)
       (h_eq_b : air₁.b row₁ 0 = air₂.b row₂ 0)
     :
-      air₁.a row₁ 0 = air₂.a row₁ 0 ∧
-      air₂.b row₂ 0 = air₂.b row₂ 0
-        →
       air₁.c row₁ 0 = air₂.c row₂ 0 ∧
       air₁.r row₁ 0 = air₂.r row₂ 0 ∧
       air₁.c₀ row₁ 0 = air₂.c₀ row₂ 0 ∧
@@ -427,7 +424,6 @@ lemma allHold_simplified_of_allHold
       air₁.c₆ row₁ 0 = air₂.c₆ row₂ 0 ∧
       air₁.c₇ row₁ 0 = air₂.c₇ row₂ 0
     := by
-      intro ⟨ eq_a, eq_b ⟩
       obtain ⟨ h_c, h_eq_c ⟩ : air₁.c row₁ 0 < 256 ∧ air₁.c row₁ 0 = air₂.c row₂ 0
       := by
         have := spec_soundness_FBB r_le₁ h_a h_b h_cstrs₁

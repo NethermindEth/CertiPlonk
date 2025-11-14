@@ -191,12 +191,10 @@ theorem determinism
 (h_eq_a : air₁.a row₁ 0 = air₂.a row₂ 0)
 (h_eq_b : air₁.b row₁ 0 = air₂.b row₂ 0)
 :
-air₁.a row₁ 0 = air₂.a row₁ 0 ∧
-air₂.b row₂ 0 = air₂.b row₂ 0
-  →
 air₁.c row₁ 0 = air₂.c row₂ 0 ∧
 air₁.r row₁ 0 = air₂.r row₂ 0 ∧
-air₁.c₀ row₁ 0 = air₂.c₀ row₁ row₁ 0 = air₂.c₁ row₂ 0 ∧
+air₁.c₀ row₁ 0 = air₂.c₀ row₂ 0 ∧
+air₁.c₁ row₁ 0 = air₂.c₁ row₂ 0 ∧
 air₁.c₂ row₁ 0 = air₂.c₂ row₂ 0 ∧
 air₁.c₃ row₁ 0 = air₂.c₃ row₂ 0 ∧
 air₁.c₄ row₁ 0 = air₂.c₄ row₂ 0 ∧

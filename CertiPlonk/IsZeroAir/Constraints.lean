@@ -198,7 +198,18 @@ namespace IsZeroAir.constraints
     := by
       intro constraints
       simp [IsZeroAir_constraint_and_interaction_simplification] at constraints
-      grind
+      -- grind
+      have ⟨hBus, h₁, h₂, h₃⟩ := constraints
+      by_cases hZ : (air.z row 0 = 0)
+      · simp [hZ]
+        simp [hZ] at h₂
+        intro hX
+        rw [hX] at h₂
+        simp at h₂
+      · simp [hZ] at h₁
+        simp [h₁]
+        simp [hZ] at h₃
+        exact h₃
 
     theorem spec_soundness_ℕ
       {air : Valid_IsZeroAir FBB ExtF}
@@ -212,7 +223,20 @@ namespace IsZeroAir.constraints
     := by
       intro constraints
       have := spec_soundness_FBB r_le constraints
-      grind
+      -- grind
+      simp [IsZeroAir_constraint_and_interaction_simplification] at constraints
+      have ⟨hBus, h₁, h₂, h₃⟩ := constraints
+      by_cases hZ : (air.z row 0 = 0)
+      · simp [hZ]
+        simp [hZ] at h₂
+        intro hX
+        rw [hX] at h₂
+        simp at h₂
+      · simp [hZ] at h₁
+        simp [h₁]
+        simp [hZ] at h₃
+        rw [h₃]
+        simp
       
     theorem determinism
       {air₁ : Valid_IsZeroAir FBB ExtF}

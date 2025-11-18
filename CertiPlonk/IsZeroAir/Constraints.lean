@@ -251,9 +251,13 @@ namespace IsZeroAir.constraints
       air₁.z row₁ 0 = air₂.z row₂ 0
     := by
       have h_eq_z : air₁.z row₁ 0 = air₂.z row₂ 0 := by
-        have := spec_soundness_FBB r_le₁ h_cstrs₁
-        have := spec_soundness_FBB r_le₂ h_cstrs₂
-        grind
+        have h₁ := spec_soundness_FBB r_le₁ h_cstrs₁
+        have h₂ := spec_soundness_FBB r_le₂ h_cstrs₂
+        -- grind
+        rw [←h_eq_a] at h₂
+        by_cases h₃ : air₁.x row₁ 0 = 0
+        · simp_all
+        · simp_all
       simp [IsZeroAir_constraint_and_interaction_simplification] at h_cstrs₁ h_cstrs₂
       obtain ⟨ h_bus₁, h0₁, h1₁, h2₁ ⟩ := h_cstrs₁
       obtain ⟨ h_bus₂, h0₂, h1₂, h2₂ ⟩ := h_cstrs₂

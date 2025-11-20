@@ -184,7 +184,20 @@ namespace IsZeroAir.constraints
     variable[Field ExtF]
     
     @[simp]
-    lemma is_bool {a : FBB} : a * a - a = 0 ↔ a = 0 ∨ a = 1 := by grind
+    lemma is_bool {a : FBB} : a * a - a = 0 ↔ a = 0 ∨ a = 1 := by
+    --  grind
+      constructor
+      · intro h
+        by_cases hA : a = 0
+        · left; assumption
+        · right
+          have h₁ : a * (a - 1) = 0 := by rw [mul_sub_left_distrib]; simp [h]
+          have h₂ : a = 0 ∨ a - 1 = 0 := by simp_all [mul_eq_zero]
+          rcases h₂ with h₂' | h₂'
+          · contradiction
+          · exact BabyBear.neg_one_plus_eq_zero.mp h₂'
+      · intro h
+        rcases h with h' | h' <;> simp [h']
 
     theorem spec_soundness_FBB
       {air : Valid_IsZeroAir FBB ExtF}

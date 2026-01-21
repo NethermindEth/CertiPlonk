@@ -12,12 +12,12 @@ pp.unicode.fun = true # pretty-prints `fun a ↦ b`
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.23.0-rc2"
+rev = "v4.27.0-rc1"
 
 [[require]]
 name = "LeanZKCircuit_Plonky3"
 git = "https://github.com/NethermindEth/LeanZKCircuit-Plonky3.git"
-rev = "1981f3b481515abf76eccc3bea132ebdabd22eea"
+rev = "Dom/4.27.0-rc1"
 
 [[lean_lib]]
 name = "CertiPlonk"
